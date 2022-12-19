@@ -1,7 +1,9 @@
 @ECHO OFF
 
+::
 :: GO!
 :: Execute this in the root directory
+::
 
 IF NOT EXIST "build" (
     ECHO GO! Creating build directory
@@ -15,4 +17,4 @@ POPD
 
 ECHO GO! Open the Visual Studio solution with
 ECHO     ./build/surf.sln
-ECHO GO! Surf's up!
+ECHO GO! surf!

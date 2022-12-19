@@ -6,3 +6,8 @@ void surf_BridgeTest()
 {
     printf("surf. Bridge Test.\n");
 }
+
+int surf_BridgeTestReturn()
+{
+    return 1;
+}
