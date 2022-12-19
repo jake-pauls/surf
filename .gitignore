@@ -1,0 +1,10 @@
+# VS
+*.vs/*
+*.vscode/*
+*.vcxproj*
+
+# CMake
+CMakeFiles
+CMakeCache.txt
+*.cmake
+build/*
