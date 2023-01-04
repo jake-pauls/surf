@@ -12,12 +12,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Use folders to group targets
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+# Set the 'wave' engine as the default startup project
+set_directory_properties(PROPERTIES VS_STARTUP_PROJECT wave)
 
-# Set 'surf' as the default startup project
-set_directory_properties(PROPERTIES VS_STARTUP_PROJECT surf)
+# Set a custom define for debug configurations
+add_compile_options("$<$<CONFIG:DEBUG>:-D_WAVE_DEBUG>")
 
-# lang?
 add_subdirectory(api)
 add_subdirectory(client)
