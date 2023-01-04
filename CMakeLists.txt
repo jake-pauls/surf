@@ -17,6 +17,7 @@ set_directory_properties(PROPERTIES VS_STARTUP_PROJECT wave)
 
 # Set a custom define for debug configurations
 add_compile_options("$<$<CONFIG:DEBUG>:-D_WAVE_DEBUG>")
+add_compile_options("$<$<CONFIG:DEBUG>:-D_WAVE_ENABLE_LOGGING>")
 
 add_subdirectory(api)
 add_subdirectory(client)

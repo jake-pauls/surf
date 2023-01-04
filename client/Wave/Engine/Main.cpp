@@ -1,11 +1,13 @@
-#include <iostream>
-
 #include <surf/surf.h>
 
 int main(int argc, char* argv[])
 {
+    core::InitializeLogging();
+        
     surf_BridgeTest();
+    core::Log(ELogType::Info, "surf. Client Test");
 
-    std::cout << "surf. Client Test" << std::endl;
-    std::cin;
+    core::KillLogging();
+
+    return 0;
 }

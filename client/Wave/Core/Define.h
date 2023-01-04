@@ -12,3 +12,5 @@
 #else
 	#define WAVE_DEBUGBREAK()
 #endif
+
+#define __FILE_NAME__ std::filesystem::path(__FILE__).filename().string()

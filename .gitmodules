@@ -4,3 +4,6 @@
 [submodule "client/Vendor/SDL"]
 	path = client/Vendor/SDL
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "client/Vendor/spdlog"]
+	path = client/Vendor/spdlog
+	url = https://github.com/gabime/spdlog.git

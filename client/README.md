@@ -2,5 +2,6 @@
 <p align="center">Rendering engine to demonstrate <b>surf</b>.</p>
 
 ### Dependencies
-* SDL
-* Catch2
+* [SDL](https://www.libsdl.org/)
+* [spdlog](https://github.com/gabime/spdlog)
+* [Catch2](https://github.com/catchorg/Catch2)
