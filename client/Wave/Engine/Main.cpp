@@ -1,11 +1,12 @@
-#include <surf/surf.h>
+#include "Application.h"
 
 int main(int argc, char* argv[])
 {
     core::InitializeLogging();
-        
-    surf_BridgeTest();
-    core::Log(ELogType::Info, "surf. Client Test");
+
+    wv::Application* app = new wv::Application();
+    app->Run();
+    delete app;
 
     core::KillLogging();
 

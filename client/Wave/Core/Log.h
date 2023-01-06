@@ -1,7 +1,10 @@
 #pragma once
 
+#include <source_location>
+
 #include <spdlog/spdlog.h>
 
+/// @brief Logging types available for log messages
 enum class ELogType
 {
 	Error,
@@ -10,15 +13,24 @@ enum class ELogType
 	Debug
 };
 
-namespace core 
+namespace core
 {
 #ifdef _WAVE_ENABLE_LOGGING
+	/// @brief Initializes logging sinks across the renderer
 	void InitializeLogging();
 
+	/// @brief Flushes logging sinks across the renderer
 	void KillLogging();
 
+	/// @brief Base logging function for a log message without arguments
+	/// @param type Enum to determine the type of log being created
+	/// @param message Message to insert into the log
 	void Log(const ELogType type, const char* message);
 
+	/// @brief Variadic logging function for a log message with arguments
+	/// @param type Enum to determine the type of log being created
+	/// @param message Message to insert into the log
+	/// @param ...args Arguments to pass into the log, uses fmt formatting
 	template<typename... TArgs>
 	inline void Log(const ELogType type, const char* message, TArgs... args)
 	{

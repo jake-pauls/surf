@@ -6,6 +6,6 @@ Surfing is easy.
 
 ```
 $ git clone --recursive git@github.com:jake-pauls/surf.git
-$ ./go
+$ python surf.py
 $ ./build/surf.sln
 ```
