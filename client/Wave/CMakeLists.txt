@@ -46,12 +46,13 @@ target_link_libraries(${WAVE_EXECUTABLE_NAME}
 if(MSVC)
 	target_compile_options(${WAVE_EXECUTABLE_NAME} PRIVATE /WX)
 else()
-	# TODO: Play with compiler flags on g++
-	target_compile_options(${WAVE_EXECUTABLE_NAME} PRIVATE -Wall -Wextra -pedantic -Werror)
+	target_compile_options(${WAVE_EXECUTABLE_NAME} PRIVATE -pthread)
 endif()
 
 # Post-build: copy the SDL dll into the build folder
-add_custom_command(TARGET ${WAVE_EXECUTABLE_NAME} POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-	"${VENDOR_OUTPUT_DIR}/SDL/$<CONFIGURATION>/SDL3.dll"
-	$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>)
+if (WIN32)
+    add_custom_command(TARGET ${WAVE_EXECUTABLE_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${VENDOR_OUTPUT_DIR}/SDL/$<CONFIGURATION>/SDL3.dll"
+        $<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>)
+endif()
