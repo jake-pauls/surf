@@ -44,7 +44,7 @@ jobs:
           vulkan-use-cache: true
 
       - name: Build project
-        run: python ./surf.py
+        run: python ./scripts/surf.py
 
       - name: Run msbuild
         run: msbuild ./build/surf.sln -interactive:False -property:Configuration=Debug -m
@@ -79,7 +79,7 @@ jobs:
           vulkan-use-cache: true
 
       - name: Build project
-        run: python ./surf.py
+        run: python ./scripts/surf.py
 
       - name: Run msbuild
         run: msbuild ./build/surf.sln -interactive:False -property:Configuration=Release -m
@@ -111,7 +111,7 @@ jobs:
           vulkan-use-cache: true
 
       - name: Build project
-        run: python ./surf.py
+        run: python ./scripts/surf.py
 
       - name: Run make
         working-directory: ./build

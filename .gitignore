@@ -10,3 +10,5 @@ CMakeCache.txt
 *.cmake
 build/*
 Testing/*
+compile_commands.json
+

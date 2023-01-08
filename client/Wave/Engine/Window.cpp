@@ -34,7 +34,7 @@ void wv::Window::Render()
 
 void wv::Window::Teardown()
 {
-	WAVE_ASSERT(m_Window, "Teardown() is being called on a Window that hasn't been initialized")
+	WAVE_ASSERT(m_Window, "Teardown() is being called on a Window that hasn't been initialized");
 	SDL_DestroyWindow(m_Window);
 	SDL_Quit();
 }
