@@ -2,9 +2,13 @@
 *.vs/*
 *.vscode/*
 *.vcxproj*
+*.sln
 
 # CMake
 CMakeFiles
 CMakeCache.txt
 *.cmake
 build/*
+Testing/*
+compile_commands.json
+
