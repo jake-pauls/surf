@@ -1,5 +1,5 @@
 ##
-## surf Interpreter
+## surf
 ## Simple commands to control with dune
 ##
 

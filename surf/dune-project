@@ -15,9 +15,9 @@
 
 (package
  (name surf)
- (synopsis "surf")
- (description "scripting? the graphics pipeline.")
- (depends ocaml dune)
+ (synopsis "Surf")
+ (description "Scripting? the graphics pipeline")
+ (depends ocaml dune core alcotest)
  (tags
   (graphics dsl interpreter)))
 

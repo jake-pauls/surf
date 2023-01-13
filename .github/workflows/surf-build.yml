@@ -1,0 +1,50 @@
+name: surf Builds (OCaml)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths-ignore:
+      - 'build/**'
+      - '.vs/**'
+      - '.vscode/**'
+      - '**/*.md'
+      - '*.git*'
+
+jobs:
+  build-test:
+    name: OCaml Build/Test
+    strategy: 
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+        ocaml-compiler:
+          - 4.14.0  
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with: 
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: Install dependencies (opam)
+        working-directory: ./surf
+        run: opam install . --deps-only --with-test
+
+      - name: Run build (dune)
+        working-directory: ./surf
+        run: opam exec -- dune build
+
+      - name: Run tests (Alcotest)
+        working-directory: ./surf
+        run: opam exec -- dune test
