@@ -1,0 +1,3 @@
+(library
+ (name surf)
+ (libraries core))
