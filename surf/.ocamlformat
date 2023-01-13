@@ -1,0 +1,9 @@
+version = 0.23.0
+profile = conventional
+
+break-infix = fit-or-vertical
+module-item-spacing = compact
+parse-docstrings = true
+sequence-style = before
+wrap-comments = true
+line-endings = lf

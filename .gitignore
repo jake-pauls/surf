@@ -12,3 +12,22 @@ build/*
 Testing/*
 compile_commands.json
 
+# OCaml
+surf/_build
+
+# ocamlbuild targets
+*.byte
+*.native
+
+# oasis generated files
+setup.data
+setup.log
+
+# Dune generated files
+*.install
+
+# Local OPAM switch
+_opam/
+
+# Sample data
+data/

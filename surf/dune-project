@@ -1,0 +1,24 @@
+(lang dune 3.5)
+
+(name surf)
+
+(generate_opam_files true)
+
+(source
+ (github jake-pauls/surf))
+
+(authors "Jake Pauls")
+
+(maintainers "Jake Pauls")
+
+(license LICENSE)
+
+(package
+ (name surf)
+ (synopsis "Surf")
+ (description "Scripting? the graphics pipeline")
+ (depends ocaml dune core alcotest)
+ (tags
+  (graphics dsl interpreter)))
+
+; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

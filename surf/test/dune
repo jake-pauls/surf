@@ -1,0 +1,13 @@
+(executables
+ (names def_tests surf_tests)
+ (libraries alcotest surf))
+
+(rule
+ (alias runtest)
+ (action
+  (run %{dep:def_tests.exe} -q --color=always)))
+
+(rule
+ (alias runtest)
+ (action
+  (run %{dep:surf_tests.exe} --q --color=always)))

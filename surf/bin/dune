@@ -1,0 +1,4 @@
+(executable
+ (public_name surf)
+ (name main)
+ (libraries core surf))
