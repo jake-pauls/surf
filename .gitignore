@@ -1,6 +1,6 @@
 # VS
 *.vs/*
-*.vscode/*
+**/*.vscode/*
 *.vcxproj*
 *.sln
 
@@ -8,7 +8,7 @@
 CMakeFiles
 CMakeCache.txt
 *.cmake
-build/*
+**/build/*
 Testing/*
 compile_commands.json
 
