@@ -2,24 +2,12 @@ cmake_minimum_required(VERSION 3.0)
 project(vendor)
 
 # Vulkan
-find_package(Vulkan REQUIRED COMPONENTS dxc)
-message(STATUS "")
-if (${Vulkan_FOUND})
-    message(STATUS "[Vendor] Vulkan Information")
-    message(STATUS "[Vendor] Vulkan include dir: ${Vulkan_INCLUDE_DIR}")
-    message(STATUS "[Vendor] Vulkan library path: ${Vulkan_LIBRARIES}")
-
-    if ((${Vulkan_dxc_lib_FOUND}) OR (${Vulkan_dxc_exe_FOUND}))
-        message(STATUS "[Vendor] DXC Information")
-        message(STATUS "  This is some information for DXC, for some reason Vulkan checks for a DXC debug library that is never configured in FindVulkan.")
-        message(STATUS "  If it hasn't been fixed/changed you might still see a warning above this.")
-        message(STATUS "  Note #1: This DXC library is not enabled to work with DirectX by default, visa versa the Visual Studio DXC is not enabled to work with Vulkan.")
-        message(STATUS "  Why can't they be enabled for both APIs? Well. Capitalism probably. Read this: https://vulkan.lunarg.com/doc/view/latest/windows/DXC.html")
-        message(STATUS "  Note #2: Compile and link DXC manually for both APIs to be compatable with it.")
-        message(STATUS "[Vendor] DXC lib path: ${Vulkan_dxc_LIBRARY}")
-        message(STATUS "[Vendor] DXC executable path: ${Vulkan_dxc_EXECUTABLE}")
-    endif()
-endif()
+# TODO: Detect Win32 vs Debian
+add_library(Vulkan STATIC IMPORTED)
+set_target_properties(Vulkan PROPERTIES
+    IMPORTED_LOCATION "Vulkan/Lib/vulkan-1.lib"
+    INTERFACE_INCLUDE_DIRECTORIES "Vulkan/Include")
+message(STATUS "[Vendor] Created library for local include Vulkan")
 
 # Catch2
 add_library(Catch2 INTERFACE)

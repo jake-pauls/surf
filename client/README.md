@@ -6,4 +6,4 @@
 * [SDL](https://www.libsdl.org/)
 * [spdlog](https://github.com/gabime/spdlog)
 * [Catch2](https://github.com/catchorg/Catch2)
-* [glm](https://github.com/g-truc/glm);
+* [glm](https://github.com/g-truc/glm)

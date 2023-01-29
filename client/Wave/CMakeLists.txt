@@ -60,7 +60,7 @@ target_include_directories(${WAVE_EXECUTABLE_NAME}
     PRIVATE Engine
 	PRIVATE Renderer
     # Vendor
-    ${Vulkan_INCLUDE_DIR})
+    PRIVATE "${CMAKE_SOURCE_DIR}/client/Vendor/Vulkan/Include")
 
 # Link the surf DSL API via it's alias, see api/CMakeLists.txt for more details
 target_link_libraries(${WAVE_EXECUTABLE_NAME}
@@ -68,7 +68,7 @@ target_link_libraries(${WAVE_EXECUTABLE_NAME}
     SDL3::SDL3
     # Vendor
     spdlog
-    ${Vulkan_LIBRARIES})
+    "${CMAKE_SOURCE_DIR}/client/Vendor/Vulkan/Lib/vulkan-1.lib")
 
 # Platform specific compiler flags
 if(MSVC)
