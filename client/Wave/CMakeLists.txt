@@ -8,7 +8,7 @@ set(CORE_SOURCE_FILES
 set(CORE_HEADER_FILES
     wpch.h
     Core/Define.h
-    Core/Assert.h
+    Core/Asserts.h
     Core/Log.h
     Core/Memory.h)
 
@@ -58,13 +58,17 @@ target_precompile_headers(${WAVE_EXECUTABLE_NAME} PRIVATE wpch.h)
 target_include_directories(${WAVE_EXECUTABLE_NAME}
     PRIVATE Core
     PRIVATE Engine
-	PRIVATE Renderer)
+	PRIVATE Renderer
+    # Vendor
+    ${Vulkan_INCLUDE_DIR})
 
 # Link the surf DSL API via it's alias, see api/CMakeLists.txt for more details
 target_link_libraries(${WAVE_EXECUTABLE_NAME}
     surf::api
     SDL3::SDL3
-    spdlog)
+    # Vendor
+    spdlog
+    ${Vulkan_LIBRARIES})
 
 # Platform specific compiler flags
 if(MSVC)

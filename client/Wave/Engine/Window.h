@@ -13,19 +13,19 @@ namespace wv
 	struct WindowProperties
 	{
 		std::string Title;
-		unsigned int Width;
-		unsigned int Height;
-		float AspectRatio;
-		std::pair<unsigned int, unsigned int> MaxDimensions;
-		std::pair<unsigned int, unsigned int> MinDimensions;
+		const uint32_t Width;
+		const uint32_t Height;
+		const float AspectRatio;
+		const std::pair<uint32_t, uint32_t> MaxDimensions;
+		const std::pair<uint32_t, uint32_t> MinDimensions;
 
 		WindowProperties(const std::string& title = "wave.",
-			unsigned int width = 1250,
-			unsigned int height = 725,
-			unsigned int maxWidth = 3840,
-			unsigned int maxHeight = 2160,
-			unsigned int minWidth = 500,
-			unsigned int minHeight = 300)
+			const uint32_t width = 1250,
+			const uint32_t height = 725,
+			const uint32_t maxWidth = 3840,
+			const uint32_t maxHeight = 2160,
+			const uint32_t minWidth = 500,
+			const uint32_t minHeight = 300)
 			: Title(title)
 			, Width(width)
 			, Height(height)

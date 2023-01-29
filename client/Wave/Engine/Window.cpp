@@ -20,7 +20,7 @@ void wv::Window::Init()
 	
 	// Set window flags, retrieve context specific flags from render context
 	SDL_WindowFlags contextFlags = m_RendererContext->GetContextSDLWindowFlags();
-	SDL_WindowFlags windowFlags = static_cast<SDL_WindowFlags>(contextFlags | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+	SDL_WindowFlags windowFlags = static_cast<SDL_WindowFlags>(contextFlags | SDL_WINDOW_ALLOW_HIGHDPI);
 
 	m_Window = SDL_CreateWindow(
 		m_WindowProperties.Title.c_str(), 
