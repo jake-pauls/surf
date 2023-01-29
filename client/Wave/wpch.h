@@ -5,3 +5,4 @@
 #include "Log.h"
 #include "Assert.h"
 #include "Define.h"
+#include "Memory.h"

@@ -5,6 +5,8 @@
 
 #include <SDL3/SDL.h>
 
+#include "RendererContext.h"
+
 namespace wv
 {
 	/// @brief Data container for the properties used to initialize an SDL window
@@ -43,13 +45,17 @@ namespace wv
 		void Init();
 
 		/// @brief Render loop for SDL window 
-		void Render();
+		void Render() const;
 
 		/// @brief Destroys window in SDL and ends SDL session
-		void Teardown();
+		void Teardown() const;
 	
+		/// @brief Retrievies pointer to the currently open SDL window
+		inline SDL_Window* GetSDLWindow() const { return m_Window; }
+
 	private:
 		WindowProperties m_WindowProperties;
 		SDL_Window* m_Window = nullptr;
+		Unique<RendererContext> m_RendererContext = nullptr;
 	};
 }

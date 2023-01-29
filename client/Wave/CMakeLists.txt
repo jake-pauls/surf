@@ -9,7 +9,8 @@ set(CORE_HEADER_FILES
     wpch.h
     Core/Define.h
     Core/Assert.h
-    Core/Log.h)
+    Core/Log.h
+    Core/Memory.h)
 
 # Engine Package
 set(ENGINE_SOURCE_FILES
@@ -21,20 +22,43 @@ set(ENGINE_HEADER_FILES
     Engine/Application.h
 	Engine/Window.h)
 
+# Renderer Package
+set(RENDERER_SOURCE_FILES
+    Renderer/Renderer.cpp
+    Renderer/RendererContext.cpp)
+
+set(RENDERER_HEADER_FILES
+    Renderer/Renderer.h
+    Renderer/RendererContext.h)
+
+# Renderer/Vulkan Package
+set(VKRENDERER_SOURCE_FILES
+	Renderer/Vulkan/VkRenderer.cpp
+    Renderer/Vulkan/VkRendererContext.cpp)
+
+set(VKRENDERER_HEADER_FILES
+	Renderer/Vulkan/VkRenderer.h
+    Renderer/Vulkan/VkRendererContext.h)
+
 # Executable definition
 add_executable(${WAVE_EXECUTABLE_NAME}
     ${CORE_SOURCE_FILES} ${CORE_HEADER_FILES}
-    ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES})
+    ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES}
+    ${RENDERER_SOURCE_FILES} ${RENDERER_HEADER_FILES}
+	${VKRENDERER_SOURCE_FILES} ${VKRENDERER_HEADER_FILES})
 
 # Groups for Visuals Studio filters
-source_group("Core" FILES ${CORE_SOURCE_FILES})
-source_group("Engine" FILES ${ENGINE_SOURCE_FILES})
+source_group("Core" FILES ${CORE_SOURCE_FILES} ${CORE_HEADER_FILES})
+source_group("Engine" FILES ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES})
+source_group("Renderer" FILES ${RENDERER_SOURCE_FILES} ${RENDERER_HEADER_FILES})
+source_group("Renderer/Vulkan" FILES ${VKRENDERER_SOURCE_FILES} ${VKRENDERER_HEADER_FILES})
 
 target_precompile_headers(${WAVE_EXECUTABLE_NAME} PRIVATE wpch.h)
 
 target_include_directories(${WAVE_EXECUTABLE_NAME}
     PRIVATE Core
-    PRIVATE Engine)
+    PRIVATE Engine
+	PRIVATE Renderer)
 
 # Link the surf DSL API via it's alias, see api/CMakeLists.txt for more details
 target_link_libraries(${WAVE_EXECUTABLE_NAME}
