@@ -13,10 +13,16 @@ wv::Application::~Application()
 void wv::Application::Run()
 {
 	core::Log(ELogType::Info, "[Application] Starting the wave");
+	//core::Log(this, ELogType::Debug, "Starting the wave");
 
-	m_Window->Init();
+	// Create rendering context, for now it's Vulkan
+	// TODO: Determining this at runtime would be sick
+	using GAPI = IRenderer::GraphicsAPI;
+	GAPI vk = GAPI::Vulkan;
 
-	m_VkRenderer = Renderer::CreateRendererWithAPISpec(wv::Renderer::GraphicsAPI::Vulkan);
+	// Initialize the window and it's corresponding graphics context
+	m_Window->Init(vk);
+	m_VkRenderer = IRenderer::CreateRendererWithGAPI(m_Window, vk);
 	m_VkRenderer->Init();
 
 	bool isRunning = true;
@@ -40,4 +46,8 @@ void wv::Application::Run()
 void wv::Application::Teardown() const
 {
 	core::Log(ELogType::Info, "[Application] Tearing down the wave");
+
+	m_VkRenderer->Teardown();
+
+	m_Window->Teardown();
 }

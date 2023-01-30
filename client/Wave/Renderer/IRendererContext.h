@@ -2,17 +2,17 @@
 
 #include <SDL3/SDL.h>
 
-#include "Renderer.h"
+#include "IRenderer.h"
 
 namespace wv
 {
 	class Window;
 
 	/// @brief Abstract renderer context for a particular API implementation
-	class RendererContext
+	class IRendererContext
 	{
 	public:
-		virtual ~RendererContext() = default;
+		virtual ~IRendererContext() = default;
 
 		/// @brief Initializes the renderer's particular context
 		virtual void Init() = 0;
@@ -22,6 +22,6 @@ namespace wv
 
 		/// @brief Creates a context for a provided renderer to a window
 		/// @return Unique pointer containing the graphics context 
-		static Unique<RendererContext> CreateRendererContext(Window* window, Renderer::GraphicsAPI api);
+		static Unique<IRendererContext> CreateRendererContext(Window* window, IRenderer::GraphicsAPI api);
 	};
 }

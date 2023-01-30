@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Window.h"
-#include "Renderer.h"
+#include "IRenderer.h"
 
 namespace wv
 {
@@ -19,6 +19,6 @@ namespace wv
 
 	private:
 		Window* m_Window = nullptr;
-		Unique<Renderer> m_VkRenderer = nullptr;
+		Unique<IRenderer> m_VkRenderer = nullptr;
 	};
 }

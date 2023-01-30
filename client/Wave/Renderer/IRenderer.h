@@ -2,21 +2,26 @@
 
 namespace wv
 {
+    class Window;
+
     /// @brief Abstract renderer with a particular API implementation
-    class Renderer 
+    class IRenderer 
     {
     public:
         /// @brief Represents available graphics backends
         enum class GraphicsAPI
         {
             None = 0,
-            Vulkan = 1
+            DirectX = 1,
+            Vulkan = 2
         };
 
     public:
-        virtual ~Renderer() = default;
+        virtual ~IRenderer() = default;
 
         virtual void Init() = 0;
+
+        virtual void Teardown() const = 0;
 
         virtual void Clear() const = 0;
 
@@ -24,6 +29,6 @@ namespace wv
 
 		/// @brief Creates a renderer containing the implementation for the selected rendering API
 		/// @return Unique pointer containing the constructed renderer 
-		static wv::Unique<Renderer> CreateRendererWithAPISpec(wv::Renderer::GraphicsAPI api);
+		static wv::Unique<IRenderer> CreateRendererWithGAPI(Window* window, IRenderer::GraphicsAPI gapi);
     };
 }

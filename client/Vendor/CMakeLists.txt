@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.0)
 project(vendor)
 
 # Vulkan
-# TODO: Detect Win32 vs Debian
 add_library(Vulkan STATIC IMPORTED)
 set_target_properties(Vulkan PROPERTIES
     IMPORTED_LOCATION "Vulkan/Lib/vulkan-1.lib"
@@ -23,7 +22,6 @@ message(STATUS "[Vendor] Created library for submodule spdlog")
 add_library(glm INTERFACE)
 target_include_directories(glm INTERFACE glm/glm)
 message(STATUS "[Vendor] Created library for submodule glm")
-message(STATUS "")
 
 # SDL
 add_subdirectory(SDL EXCLUDE_FROM_ALL)

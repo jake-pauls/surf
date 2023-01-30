@@ -9,12 +9,11 @@ wv::Window::Window(const WindowProperties& props)
 	WAVE_ASSERT(result >= 0, "Failed to initialize SDL context");
 }
 
-void wv::Window::Init()
+void wv::Window::Init(IRenderer::GraphicsAPI gapi)
 {
 	WAVE_ASSERT(!m_Window, "Init() is being called on a window that has already been initialized");
 
-	// Create rendering context, for now it's Vulkan
-	m_RendererContext = RendererContext::CreateRendererContext(this, wv::Renderer::GraphicsAPI::Vulkan);
+	m_RendererContext = IRendererContext::CreateRendererContext(this, gapi);
 	WAVE_ASSERT(m_RendererContext, "Failed to create renderer context");
 	m_RendererContext->Init();
 	
@@ -38,6 +37,7 @@ void wv::Window::Init()
 
 void wv::Window::Render() const
 {
+	// Draw stuff here
 }
 
 void wv::Window::Teardown() const
