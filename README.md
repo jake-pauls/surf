@@ -5,7 +5,9 @@
 Surfing is (kinda) easy.
 
 #### Development Setup
-1. Clone the repo and it's submodules recursively
+1. Install the [Vulkan SDK](https://vulkan.lunarg.com/sdk/home#windows)
+
+2. Clone the repo and it's submodules recursively
 ```
 $ git clone --recursive git@github.com:jake-pauls/surf.git
 ```

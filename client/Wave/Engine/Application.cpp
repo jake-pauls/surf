@@ -13,7 +13,6 @@ wv::Application::~Application()
 void wv::Application::Run()
 {
 	core::Log(ELogType::Info, "[Application] Starting the wave");
-	//core::Log(this, ELogType::Debug, "Starting the wave");
 
 	// Create rendering context, for now it's Vulkan
 	// TODO: Determining this at runtime would be sick

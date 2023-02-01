@@ -1,6 +1,6 @@
 #include "VkRenderer.h"
 
-#include <SDL3/SDL_Vulkan.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include <vector>
 
@@ -16,7 +16,7 @@ void wvk::VkRenderer::Init()
 {
 	core::Log(ELogType::Info, "[VkRenderer] Initialized Vulkan renderer specification");
 
-	// Initialize validation layers 
+	// Initialize validation layers
 	bool initializedValidationLayers = InitValidationLayers();
 	WAVE_ASSERT(initializedValidationLayers, "Unsuccessfully retrieved required validation layers");
 
@@ -60,7 +60,7 @@ void wvk::VkRenderer::CreateInstance(bool listAvailableExtensions /* = false */)
 	vkCreateInfo.pApplicationInfo = &vkAppInfo;
 	vkCreateInfo.enabledExtensionCount = static_cast<uint32_t>(contextExtensions.size());
 	vkCreateInfo.ppEnabledExtensionNames = contextExtensions.data();
-	
+
 	core::Log(ELogType::Info, "[VkRenderer] Successfully loaded {} extension(s)", contextExtensions.size());
 
 	// Ensure that the instance contains validation layers if they exist

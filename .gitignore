@@ -31,3 +31,6 @@ _opam/
 
 # Sample data
 data/
+
+# Bear
+.cache

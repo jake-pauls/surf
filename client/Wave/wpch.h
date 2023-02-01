@@ -9,6 +9,3 @@
 #include "Define.h"
 #include "Memory.h"
 #include "StringHelpers.h"
-
-/// Codegen
-#include "ReflectedTypes.h"

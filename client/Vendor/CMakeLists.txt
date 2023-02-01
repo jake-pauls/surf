@@ -2,11 +2,13 @@ cmake_minimum_required(VERSION 3.0)
 project(vendor)
 
 # Vulkan
-add_library(Vulkan STATIC IMPORTED)
-set_target_properties(Vulkan PROPERTIES
-    IMPORTED_LOCATION "Vulkan/Lib/vulkan-1.lib"
-    INTERFACE_INCLUDE_DIRECTORIES "Vulkan/Include")
-message(STATUS "[Vendor] Created library for local include Vulkan")
+find_package(Vulkan REQUIRED)
+if (${Vulkan_FOUND})
+	message(STATUS "[Vendor] Found Vulkan include path -> '${Vulkan_INCLUDE_DIR}'")
+	message(STATUS "[Vendor] Found Vulkan libraries ->  '${Vulkan_LIBRARY}'")
+else()
+	message(WARNING "[Vendor] Failed to find the Vulkan SDK on the system! Do you have it installed?")
+endif()
 
 # Catch2
 add_library(Catch2 INTERFACE)
@@ -18,7 +20,7 @@ add_library(spdlog INTERFACE)
 target_include_directories(spdlog INTERFACE spdlog/include)
 message(STATUS "[Vendor] Created library for submodule spdlog")
 
-# glm 
+# glm
 add_library(glm INTERFACE)
 target_include_directories(glm INTERFACE glm/glm)
 message(STATUS "[Vendor] Created library for submodule glm")

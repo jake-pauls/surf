@@ -3,7 +3,6 @@ project(surf
     VERSION 0.0.1
     LANGUAGES CXX C)
 
-
 # C17
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)

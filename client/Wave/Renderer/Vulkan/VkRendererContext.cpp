@@ -1,6 +1,6 @@
 #include "VkRendererContext.h"
 
-#include <SDL3/SDL_Vulkan.h>
+#include <SDL3/SDL_vulkan.h>
 
 wvk::VkRendererContext::VkRendererContext(wv::Window* window)
 	: m_Window(window)
@@ -28,7 +28,7 @@ std::vector<const char*> wvk::VkRendererContext::GetVulkanContextExtensions(bool
 	std::vector<const char*> contextExtensions = std::vector<const char*>(contextExtensionCount);
 	SDL_Vulkan_GetInstanceExtensions(window, &contextExtensionCount, contextExtensions.data());
 
-	// Ensure that the debug utils extension is included if validation layers are enabled 
+	// Ensure that the debug utils extension is included if validation layers are enabled
 	if (vLayerExtensions)
 		contextExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 

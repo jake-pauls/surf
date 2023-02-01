@@ -48,23 +48,6 @@ namespace core
 		}
 	}
 
-	template<typename T, typename... TArgs>
-	inline void Log(T that, const ELogType type, const char* message, TArgs... args)
-	{
-		char const* name = Typename(*that);
-
-		std::string finalMessageString = "";
-		finalMessageString.append(message);
-
-		if constexpr (sizeof...(args) > 0)
-		{
-			core::Log(type, finalMessageString.c_str(), args...);
-		}
-		else
-		{
-			core::Log(type, finalMessageString.c_str());
-		}
-	}
 #else
 	inline void InitializeLogging() { }
 	inline void KillLogging() { }
