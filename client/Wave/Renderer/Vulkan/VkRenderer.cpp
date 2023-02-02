@@ -3,16 +3,17 @@
 #include <SDL3/SDL_vulkan.h>
 
 #include <vector>
+#include <map>
 
 #include "VkRendererContext.h"
 
-wvk::VkRenderer::VkRenderer(wv::Window* window)
+vkn::VkRenderer::VkRenderer(wv::Window* window)
 	: m_Window(window)
 	, m_VkInstance(nullptr)
 {
 }
 
-void wvk::VkRenderer::Init()
+void vkn::VkRenderer::Init()
 {
 	core::Log(ELogType::Info, "[VkRenderer] Initialized Vulkan renderer specification");
 
@@ -22,22 +23,25 @@ void wvk::VkRenderer::Init()
 
 	// Create VkInstance
 	CreateInstance();
+	
+	// Select a physical device
+	SelectPhysicalDevice();
 }
 
-void wvk::VkRenderer::Teardown() const
+void vkn::VkRenderer::Teardown() const
 {
 	vkDestroyInstance(m_VkInstance, nullptr);
 }
 
-void wvk::VkRenderer::Clear() const
+void vkn::VkRenderer::Clear() const
 {
 }
 
-void wvk::VkRenderer::ClearColor() const
+void vkn::VkRenderer::ClearColor() const
 {
 }
 
-void wvk::VkRenderer::CreateInstance(bool listAvailableExtensions /* = false */)
+void vkn::VkRenderer::CreateInstance(bool listAvailableExtensions /* = false */)
 {
 	SDL_Window* window = m_Window->GetSDLWindow();
 
@@ -90,7 +94,7 @@ void wvk::VkRenderer::CreateInstance(bool listAvailableExtensions /* = false */)
 	core::Log(ELogType::Info, "[VkRenderer] Created Vulkan instance");
 }
 
-bool wvk::VkRenderer::InitValidationLayers() const
+bool vkn::VkRenderer::InitValidationLayers() const
 {
 	if (!m_ValidationLayersEnabled)
 	{
@@ -110,7 +114,7 @@ bool wvk::VkRenderer::InitValidationLayers() const
 	{
 		bool isLayerFound = false;
 
-		for (const auto& layerProperties : availableLayers)
+		for (const VkLayerProperties& layerProperties : availableLayers)
 		{
 			if (core::StringHelpers::Equals(layerName, layerProperties.layerName))
 			{
@@ -130,4 +134,101 @@ bool wvk::VkRenderer::InitValidationLayers() const
 	core::Log(ELogType::Info, "[VkRenderer] Successfully loaded {} validation layer(s)", vLayerLoadedCount);
 
 	return true;
+}
+
+void vkn::VkRenderer::SelectPhysicalDevice()
+{
+	uint32_t deviceCount = 0;
+	VK_CALL(vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, nullptr));
+	std::vector<VkPhysicalDevice> vkPhysicalDevices = std::vector<VkPhysicalDevice>(deviceCount);
+	VK_CALL(vkEnumeratePhysicalDevices(m_VkInstance, &deviceCount, vkPhysicalDevices.data()));
+
+	// Map device scores to their handles
+	std::multimap<int, VkPhysicalDevice> candidateDevices = std::multimap<int, VkPhysicalDevice>();
+	for (const VkPhysicalDevice& device : vkPhysicalDevices)
+	{
+		int deviceScore = GetDeviceScore(device);
+		candidateDevices.emplace(deviceScore, device);
+	}
+
+	// First result in a sorted multimap should always be the most 'suitable' device
+	if (candidateDevices.begin()->first > 0)
+	{
+		m_VkPhysicalDevice = candidateDevices.begin()->second;
+
+		// TODO: Abstract device into sepearte class and retrieve props/features inherently
+		VkPhysicalDeviceProperties vkPhysicalDeviceProps = VkPhysicalDeviceProperties();
+		vkGetPhysicalDeviceProperties(m_VkPhysicalDevice, &vkPhysicalDeviceProps);
+		VkPhysicalDeviceFeatures vkPhysicalDeviceFeatures = VkPhysicalDeviceFeatures();
+		vkGetPhysicalDeviceFeatures(m_VkPhysicalDevice, &vkPhysicalDeviceFeatures);
+
+		core::Log(ELogType::Info, "[VkRenderer] Selected '{}' as the physical device", vkPhysicalDeviceProps.deviceName);
+	}
+
+	WAVE_ASSERT(m_VkPhysicalDevice, "Failed to locate a suitable physical device");
+}
+
+unsigned int vkn::VkRenderer::GetDeviceScore(VkPhysicalDevice device) const 
+{ 
+	VkPhysicalDeviceProperties vkPhysicalDeviceProps = VkPhysicalDeviceProperties();
+	vkGetPhysicalDeviceProperties(device, &vkPhysicalDeviceProps);
+	VkPhysicalDeviceFeatures vkPhysicalDeviceFeatures = VkPhysicalDeviceFeatures();
+	vkGetPhysicalDeviceFeatures(device, &vkPhysicalDeviceFeatures);
+
+	// Cannot function without geometry shaders
+	WAVE_ASSERT(vkPhysicalDeviceFeatures.geometryShader, "Physical device cannot process geometry");
+	if (!vkPhysicalDeviceFeatures.geometryShader)
+		return 0;
+
+	// Cannot function without a valid graphics queue family
+	QueueFamily deviceQueueFamily = FindQueueFamilies(device);
+	WAVE_ASSERT(deviceQueueFamily.HasGraphicsFamily(), "Physical device doesn't have a valid graphics queue family");
+	if (!deviceQueueFamily.HasGraphicsFamily())
+		return 0;
+
+	// Score can be measured by a variety of engine requirements
+	// At the moment the only measure of score is the GPU type
+	unsigned int score = 0;
+
+	switch (vkPhysicalDeviceProps.deviceType)
+	{
+	case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:	  // (Most) Hardware GPUs
+		score += 3;
+		break;
+	case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:  // GPUs on a chip (ie: Laptops)
+		score += 2;
+		break;
+	case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:	  // GPUs virtualized (ie: through VirtualBox or a VM)
+		score += 1;
+		break;
+	default:
+		WAVE_ASSERT(false, "Unknown GPU type, the GPU type should be added as an applicable device before use")
+		break;
+	}
+
+	return score;
+}
+
+vkn::QueueFamily vkn::VkRenderer::FindQueueFamilies(VkPhysicalDevice device) const
+{
+	QueueFamily result;
+
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+	std::vector<VkQueueFamilyProperties> vkQueueFamilies = std::vector<VkQueueFamilyProperties>(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, vkQueueFamilies.data());
+
+	unsigned int i = 0;
+	for (const VkQueueFamilyProperties& queueFamily : vkQueueFamilies)
+	{
+		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			result.m_GraphicsFamily = i;
+
+		if (result.HasGraphicsFamily())
+			break;
+
+		i++;
+	}
+
+	return result;
 }

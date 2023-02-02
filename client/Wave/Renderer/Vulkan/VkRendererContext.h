@@ -5,7 +5,7 @@
 #include "IRendererContext.h"
 #include "Window.h"
 
-namespace wvk
+namespace vkn
 {
     class VkRendererContext final : public wv::IRendererContext
     {

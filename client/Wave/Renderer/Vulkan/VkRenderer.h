@@ -5,8 +5,15 @@
 #include "IRenderer.h"
 #include "Window.h"
 
-namespace wvk
+namespace vkn
 {
+	struct QueueFamily 
+	{
+		std::optional<uint32_t> m_GraphicsFamily;
+
+		bool HasGraphicsFamily() const { return m_GraphicsFamily.has_value(); }
+	};
+
 	/// @brief Implementation for Vulkan renderer
 	class VkRenderer final : public wv::IRenderer
 	{
@@ -30,10 +37,24 @@ namespace wvk
 		/// @brief Checks validation layer support and initializes them if possible 
 		bool InitValidationLayers() const;
 
+		/// @brief Selects one physical device appropriate for use
+		void SelectPhysicalDevice();
+
+		/// @brief Evaluates the amount at which a particular VkPhysicalDevice is suitable for use 
+		/// @param device The VkPhysicalDevice to check
+		/// @return Retrieves a score for the device based on its available features and context
+		unsigned int GetDeviceScore(VkPhysicalDevice device) const;
+
+		/// @brief Logic to find graphics queue families 
+		/// @param device The VkPhysicalDevice to retrieve the queue families of
+		/// @return The corresponding queue family of the physical device
+		QueueFamily FindQueueFamilies(VkPhysicalDevice device) const;
+
 	private:
 		wv::Window* m_Window = nullptr;
 
-		VkInstance m_VkInstance;
+		VkInstance m_VkInstance = VK_NULL_HANDLE;
+		VkPhysicalDevice m_VkPhysicalDevice = VK_NULL_HANDLE;
 
 #ifdef _WAVE_DEBUG
 		const bool m_ValidationLayersEnabled = true;

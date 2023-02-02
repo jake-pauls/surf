@@ -16,6 +16,9 @@ namespace wv
             Vulkan = 2
         };
 
+    private:
+        const IRenderer& operator=(const IRenderer& other) = delete;
+
     public:
         virtual ~IRenderer() = default;
 

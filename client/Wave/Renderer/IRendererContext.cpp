@@ -13,7 +13,7 @@ wv::Unique<wv::IRendererContext> wv::IRendererContext::CreateRendererContext(wv:
 		WAVE_ASSERT(false, "DirectX is unimplemented");
 		return nullptr;
 	case IRenderer::GraphicsAPI::Vulkan:
-		return CreateUnique<wvk::VkRendererContext>(window);
+		return CreateUnique<vkn::VkRendererContext>(window);
 	}
 
 	WAVE_ASSERT(false, "Unknown rendering API selected");
