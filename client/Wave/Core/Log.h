@@ -10,7 +10,8 @@ enum class ELogType
 	Error,
 	Warn,
 	Info,
-	Debug
+	Debug,
+	Trace
 };
 
 namespace core

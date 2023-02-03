@@ -1,6 +1,7 @@
 #include "VkRendererContext.h"
 
 #include <SDL3/SDL_vulkan.h>
+#include <vulkan/vulkan.h>
 
 vkn::VkRendererContext::VkRendererContext(wv::Window* window)
 	: m_Window(window)
@@ -33,4 +34,9 @@ std::vector<const char*> vkn::VkRendererContext::GetVulkanContextExtensions(bool
 		contextExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
 	return contextExtensions;
+}
+
+void vkn::VkRendererContext::GetSDLVulkanSurface(VkInstance instance, VkSurfaceKHR& surface) const
+{
+	SDL_Vulkan_CreateSurface(m_Window->GetSDLWindow(), instance, &surface);
 }

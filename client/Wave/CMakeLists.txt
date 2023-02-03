@@ -36,10 +36,12 @@ set(RENDERER_HEADER_FILES
 
 # Renderer/Vulkan Package
 set(VKRENDERER_SOURCE_FILES
+	Renderer/Vulkan/VkHardware.cpp
 	Renderer/Vulkan/VkRenderer.cpp
     Renderer/Vulkan/VkRendererContext.cpp)
 
 set(VKRENDERER_HEADER_FILES
+	Renderer/Vulkan/VkHardware.h
 	Renderer/Vulkan/VkRenderer.h
     Renderer/Vulkan/VkRendererContext.h)
 

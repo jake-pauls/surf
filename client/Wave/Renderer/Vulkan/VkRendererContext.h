@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <vulkan/vulkan.hpp>
+
 #include "IRendererContext.h"
 #include "Window.h"
 
@@ -22,6 +24,11 @@ namespace vkn
         /// @param vLayerExtensions Determines whether validation layer/debug extensions should be included in the list 
         /// @return Vector containing a string list of extension names
         std::vector<const char*> GetVulkanContextExtensions(bool vLayerExtensions = false) const;
+
+        /// @brief Retrieves the Vulkan surface from SDL, SDL will allocate into the surface pointer
+        /// @param instance Vulkan instance in use
+        /// @param surface Allocated surface pointer
+        void GetSDLVulkanSurface(VkInstance instance, VkSurfaceKHR& surface) const;
 
     private:
         wv::Window* m_Window = nullptr;
