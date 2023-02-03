@@ -2,9 +2,14 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "Window.h"
 #include "IRenderer.h"
 #include "VkHardware.h"
+#include "VkSwapChain.h"
+
+namespace wv
+{
+	class Window;
+}
 
 namespace vkn
 {
@@ -13,11 +18,11 @@ namespace vkn
 	{
 	public:
 		explicit VkRenderer(wv::Window* window);
-		~VkRenderer() override;
+		~VkRenderer() override = default;
 
 		void Init() override;
 
-		void Teardown() const override;
+		void Teardown() override;
 
 		void Clear() const override;
 
@@ -25,6 +30,8 @@ namespace vkn
 
 	private:
 		wv::Window* m_Window = nullptr;
-		VkHardware* m_VkHardware = nullptr;
+
+		VkHardware m_VkHardware;
+		VkSwapChain m_VkSwapChain;
 	};
 }

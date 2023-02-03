@@ -14,7 +14,7 @@ void vkn::VkRendererContext::Init()
 	core::Log(ELogType::Info, "[VkRendererContext] Initialized context for Vulkan renderer");
 }
 
-SDL_WindowFlags vkn::VkRendererContext::GetContextSDLWindowFlags()
+SDL_WindowFlags vkn::VkRendererContext::GetContextSDLWindowFlags() const
 {
 	return static_cast<SDL_WindowFlags>(SDL_WINDOW_VULKAN);
 }
@@ -36,7 +36,16 @@ std::vector<const char*> vkn::VkRendererContext::GetVulkanContextExtensions(bool
 	return contextExtensions;
 }
 
-void vkn::VkRendererContext::GetSDLVulkanSurface(VkInstance instance, VkSurfaceKHR& surface) const
+void vkn::VkRendererContext::SetupSDLVulkanSurface(VkInstance instance, VkSurfaceKHR* surface) const
 {
-	SDL_Vulkan_CreateSurface(m_Window->GetSDLWindow(), instance, &surface);
+	SDL_Vulkan_CreateSurface(m_Window->GetSDLWindow(), instance, surface);
+}
+
+std::pair<uint32_t, uint32_t> vkn::VkRendererContext::GetVulkanClientDimensions() const
+{
+	int width, height;
+
+	SDL_Vulkan_GetDrawableSize(m_Window->GetSDLWindow(), &width, &height);
+
+	return std::make_pair(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 }

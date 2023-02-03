@@ -36,17 +36,16 @@ set(RENDERER_HEADER_FILES
 
 # Renderer/Vulkan Package
 set(VKRENDERER_SOURCE_FILES
+	Renderer/Vulkan/VkSwapChain.cpp
 	Renderer/Vulkan/VkHardware.cpp
 	Renderer/Vulkan/VkRenderer.cpp
     Renderer/Vulkan/VkRendererContext.cpp)
 
 set(VKRENDERER_HEADER_FILES
+	Renderer/Vulkan/VkSwapChain.h
 	Renderer/Vulkan/VkHardware.h
 	Renderer/Vulkan/VkRenderer.h
     Renderer/Vulkan/VkRendererContext.h)
-
-# Codegen Package
-file(GLOB_RECURSE CODEGEN_FILES Codegen/*.h)
 
 # Executable definition
 add_executable(${WAVE_EXECUTABLE_NAME}

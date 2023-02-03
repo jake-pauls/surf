@@ -24,7 +24,7 @@ namespace wv
 
         virtual void Init() = 0;
 
-        virtual void Teardown() const = 0;
+        virtual void Teardown() = 0;
 
         virtual void Clear() const = 0;
 

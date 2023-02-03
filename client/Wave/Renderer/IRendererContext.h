@@ -18,7 +18,7 @@ namespace wv
 		virtual void Init() = 0;
 
 		/// @brief Retrieves context-specific SDL window flags
-		virtual SDL_WindowFlags GetContextSDLWindowFlags() = 0;
+		virtual SDL_WindowFlags GetContextSDLWindowFlags() const = 0;
 
 		/// @brief Creates a context for a provided renderer to a window
 		/// @return Unique pointer containing the graphics context 

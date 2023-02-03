@@ -92,15 +92,17 @@ void vkn::VkHardware::CreateInstance(bool listAvailableExtensions /* = false */)
 		VK_CALL(vkEnumerateInstanceExtensionProperties(nullptr, &totalExtensionCount, totalExtensions.data()));
 
 		core::Log(ELogType::Trace, "[VkHardware] Available extensions:");
-		for (const auto& extension : totalExtensions)
+		for (const VkExtensionProperties& extension : totalExtensions)
+		{
 			core::Log(ELogType::Trace, "[VkHardware] \t{}", extension.extensionName);
+		}
 	}
 
 	VK_CALL(vkCreateInstance(&vkCreateInfo, nullptr, &m_Instance));
 	core::Log(ELogType::Trace, "[VkHardware] Created Vulkan instance");
 
 	// Setup the surface with SDL
-	vkContext->GetSDLVulkanSurface(m_Instance, m_Surface);
+	vkContext->SetupSDLVulkanSurface(m_Instance, &m_Surface);
 }
 
 bool vkn::VkHardware::InitValidationLayers() const
@@ -207,7 +209,11 @@ void vkn::VkHardware::CreateLogicalDevice()
 	vkDeviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(vkDeviceQueueCreateInfos.size());
 	vkDeviceCreateInfo.pQueueCreateInfos = vkDeviceQueueCreateInfos.data();
 	vkDeviceCreateInfo.pEnabledFeatures = &vkDeviceFeatures;
-	vkDeviceCreateInfo.enabledExtensionCount = 0;
+
+	// Enable the swap chain and other device extensions
+	vkDeviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size());
+	vkDeviceCreateInfo.ppEnabledExtensionNames = m_DeviceExtensions.data();
+	core::Log(ELogType::Trace, "[VkHardware] Enabled the swap chain");
 
 	if (c_ValidationLayersEnabled)
 	{
@@ -230,7 +236,7 @@ void vkn::VkHardware::CreateLogicalDevice()
 		core::Log(ELogType::Trace, "[VkHardware] Created graphics and presentation queues");
 }
 
-vkn::QueueFamily vkn::VkHardware::FindQueueFamilies(VkPhysicalDevice device) const
+vkn::QueueFamily vkn::VkHardware::FindQueueFamilies(const VkPhysicalDevice& device) const
 {
 	QueueFamily result;
 
@@ -261,7 +267,28 @@ vkn::QueueFamily vkn::VkHardware::FindQueueFamilies(VkPhysicalDevice device) con
 	return result;
 }
 
-unsigned int vkn::VkHardware::GetDeviceScore(VkPhysicalDevice device) const 
+bool vkn::VkHardware::HasRequiredExtensions(const VkPhysicalDevice& device) const
+{
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+	std::vector<VkExtensionProperties> availableExtensions = std::vector<VkExtensionProperties>(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+	std::set<std::string> requiredExtensions = std::set<std::string>(m_DeviceExtensions.begin(), m_DeviceExtensions.end());
+	for (const VkExtensionProperties& extension : availableExtensions)
+	{
+		// 'Check' extensions off the list as they become available
+		requiredExtensions.erase(extension.extensionName);
+
+		// Return early if all extensions have been found
+		if (requiredExtensions.empty())
+			break;
+	}
+
+	return requiredExtensions.empty();
+}
+
+unsigned int vkn::VkHardware::GetDeviceScore(const VkPhysicalDevice& device) const 
 { 
 	VkPhysicalDeviceProperties vkPhysicalDeviceProps = VkPhysicalDeviceProperties();
 	vkGetPhysicalDeviceProperties(device, &vkPhysicalDeviceProps);
@@ -273,7 +300,7 @@ unsigned int vkn::VkHardware::GetDeviceScore(VkPhysicalDevice device) const
 	if (!vkPhysicalDeviceFeatures.geometryShader)
 		return 0;
 
-	// Extra check: ensure there are valid graphics and presentation queue families
+	// Ensure there are valid graphics and presentation queue families
 	QueueFamily deviceQueueFamily = FindQueueFamilies(device);
 
 	WAVE_ASSERT(deviceQueueFamily.HasGraphicsFamily(), "Physical device doesn't have a valid graphics queue");
@@ -283,6 +310,14 @@ unsigned int vkn::VkHardware::GetDeviceScore(VkPhysicalDevice device) const
 	WAVE_ASSERT(deviceQueueFamily.HasPresentationFamily(), "Physical device doesn't have a valid presentation queue");
 	if (!deviceQueueFamily.HasPresentationFamily())
 		return 0;
+
+	// Ensure that the proper device extensions are supported
+	bool extensionsSupported = HasRequiredExtensions(device);
+	WAVE_ASSERT(extensionsSupported, "Physical device doesn't support the required extensions");
+	if (!extensionsSupported)
+		return 0;
+
+	// Note: Swap chain support is currently being checked when a swap chain is created
 
 	// Score can be measured by a variety of engine requirements
 	// At the moment the only measure of score is the GPU type
@@ -301,8 +336,11 @@ unsigned int vkn::VkHardware::GetDeviceScore(VkPhysicalDevice device) const
 		break;
 	default:
 		WAVE_ASSERT(false, "Unknown GPU type, the GPU type should be added as an applicable device before use")
+		score = 0;
 		break;
 	}
+
+	WAVE_ASSERT(score > 0, "Returning score for unsuitable GPU, undefined behaviour may occur if this GPU is selected");
 
 	return score;
 }

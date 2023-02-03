@@ -1,10 +1,18 @@
 #pragma once
 
-#include "Window.h"
+#include <vector>
+#include <optional>
+
+namespace wv
+{
+	class Window;
+}
 
 namespace vkn
 {
-	/// @brief Struct containing indices for various queue families available in Vulkan devices
+	class VkSwapChain;
+
+	/// @brief Indices for various queue families available in Vulkan devices
 	struct QueueFamily 
 	{
 		/// @brief Graphics family supports drawing functions
@@ -20,6 +28,8 @@ namespace vkn
 
 	class VkHardware final
 	{
+		friend class VkSwapChain;
+
 	public:
 		explicit VkHardware(wv::Window* window);
 		~VkHardware() = default;
@@ -45,12 +55,17 @@ namespace vkn
 		/// @brief Logic to find graphics queue families 
 		/// @param device The VkPhysicalDevice to retrieve the queue families of
 		/// @return The corresponding queue family of the physical device
-		QueueFamily FindQueueFamilies(VkPhysicalDevice device) const;
+		QueueFamily FindQueueFamilies(const VkPhysicalDevice& device) const;
+
+		/// @brief Logic to check if the physical device has required extensions
+		/// @param device The VkPhysicalDevice to retrieve the extensions of
+		/// @return True if the passed device has the required extensions
+		bool HasRequiredExtensions(const VkPhysicalDevice& device) const;
 
 		/// @brief Evaluates the amount at which a particular VkPhysicalDevice is suitable for use 
 		/// @param device The VkPhysicalDevice to check
 		/// @return Retrieves a score for the device based on its available features and context
-		unsigned int GetDeviceScore(VkPhysicalDevice device) const;
+		unsigned int GetDeviceScore(const VkPhysicalDevice& device) const;
 
 	private:
 		wv::Window* m_Window = nullptr;
@@ -64,6 +79,8 @@ namespace vkn
 
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VkQueue m_PresentationQueue = VK_NULL_HANDLE;
+
+		const std::vector<const char*> m_DeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 #ifdef _WAVE_DEBUG
 		const bool c_ValidationLayersEnabled = true;

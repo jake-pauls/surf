@@ -6,29 +6,34 @@
 #include <set>
 #include <vector>
 
+#include "VkHardware.h"
 #include "VkRendererContext.h"
 
 vkn::VkRenderer::VkRenderer(wv::Window* window)
 	: m_Window(window)
+	, m_VkHardware(window)
+	, m_VkSwapChain(window, m_VkHardware)
 {
-	m_VkHardware = new VkHardware(window);
-}
-
-vkn::VkRenderer::~VkRenderer()
-{
-	delete m_VkHardware;
 }
 
 void vkn::VkRenderer::Init()
 {
-	m_VkHardware->Init();
+	// Initialize hardware harness first
+	m_VkHardware.Init();
+
+	// Create swap chains
+	m_VkSwapChain.Create();
 }
 
-void vkn::VkRenderer::Teardown() const
+void vkn::VkRenderer::Teardown()
 {
 	core::Log(ELogType::Trace, "[VkRenderer] Tearing down Vulkan renderer");
 
-	m_VkHardware->Teardown();
+	// Destroy existing swap chains first
+	m_VkSwapChain.Destroy();
+
+	// Teardown hardware last
+	m_VkHardware.Teardown();
 }
 
 void vkn::VkRenderer::Clear() const
