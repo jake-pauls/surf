@@ -11,6 +11,7 @@ namespace wv
 namespace vkn
 {
 	class VkSwapChain;
+	class VkShaderPipeline;
 
 	/// @brief Indices for various queue families available in Vulkan devices
 	struct QueueFamily 
@@ -29,6 +30,7 @@ namespace vkn
 	class VkHardware final
 	{
 		friend class VkSwapChain;
+		friend class VkShaderPipeline;
 
 	public:
 		explicit VkHardware(wv::Window* window);

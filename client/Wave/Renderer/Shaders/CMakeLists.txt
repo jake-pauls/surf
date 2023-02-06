@@ -2,6 +2,10 @@
 set(SHADER_FILES 
     glsl/Triangle.vert glsl/Triangle.frag)
 
+# Add shaders to the source executable
+list(TRANSFORM SHADER_FILES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+target_sources(${WAVE_EXECUTABLE_NAME} PRIVATE ${SHADER_FILES})
+
 # Find shader compilers
 message(STATUS)
 find_program(GLSLC glslc)
@@ -25,20 +29,23 @@ endif()
 
 # Compile shaders to SPIR-V
 foreach (SHADER_FILE ${SHADER_FILES}) 
-    # Set SPIR-V output info
-    set(CURRENT_SHADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_FILE}")
-    set(CURRENT_SPIRV_PATH "${CMAKE_CURRENT_SOURCE_DIR}/bin")
-    file(MAKE_DIRECTORY ${CURRENT_SPIRV_PATH})
-
     # Retrieve shader file metadata 
-    get_filename_component(SHADER_NAME ${SHADER_FILE} NAME_WLE)
-    get_filename_component(SHADER_DIR ${SHADER_FILE} DIRECTORY)
+    get_filename_component(SHADER_NAME ${SHADER_FILE} NAME)
     get_filename_component(SHADER_EXT ${SHADER_FILE} LAST_EXT)
 
+    # Retrieve the parent directory of the shader file (ie: 'glsl', 'hlsl', etc.)
+    get_filename_component(SHADER_DIR ${SHADER_FILE} DIRECTORY)
+    cmake_path(GET SHADER_DIR FILENAME SHADER_DIR)
+
+    # Set SPIR-V output info
+    set(CURRENT_SHADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_DIR}/${SHADER_NAME}")
+    set(CURRENT_SPIRV_PATH "${CMAKE_CURRENT_SOURCE_DIR}/spv")
+    file(MAKE_DIRECTORY ${CURRENT_SPIRV_PATH})
+
     # Set Shader output info, append shader dir (ie: glsl, hlsl, cg, etc.) to prevent duplicates
-    set(SHADER_OUT_NAME "${SHADER_NAME}${SHADER_EXT}.${SHADER_DIR}.spv")
+    set(SHADER_OUT_NAME "${SHADER_NAME}.spv")
     set(SHADER_OUTPUT "${CURRENT_SPIRV_PATH}/${SHADER_OUT_NAME}")
-    message(STATUS "[Shaders] (SPIR-V) Adding command to convert ${SHADER_NAME}${SHADER_EXT} to ${SHADER_OUT_NAME}")
+    message(STATUS "[Shaders] (SPIR-V) Adding command to convert ${SHADER_NAME} to ${SHADER_OUT_NAME}")
 
     # Add a custom command to compile shaders to SPIR-V at build time
     # By default, shaders will only be generated if they a valid shader to SPIR-V compiler is found on the system 

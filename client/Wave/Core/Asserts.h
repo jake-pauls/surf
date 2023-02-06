@@ -20,4 +20,4 @@
 bool VkCheckError(VkResult error, const char* function, const char* file, int line);
 
 #define VK_CALL(x) { VkResult error = x; \
-	WAVE_ASSERT(VkCheckError(error, #x, __FILE_NAME_C_STR__, __LINE__), "VK_CALL faied, refer to Vulkan trace above for more information"); }
+	WAVE_ASSERT(VkCheckError(error, #x, __FILE_NAME_C_STR__, __LINE__), "VK_CALL failed, refer to Vulkan trace above for more information"); }

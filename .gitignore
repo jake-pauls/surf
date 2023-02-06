@@ -13,7 +13,7 @@ Testing/*
 compile_commands.json
 
 # SPIR-V
-**/Shaders/bin/**
+**/Shaders/spv/**
 
 # OCaml
 surf/_build

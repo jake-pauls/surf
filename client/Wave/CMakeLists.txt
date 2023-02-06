@@ -3,54 +3,69 @@ set(WAVE_EXECUTABLE_NAME wave)
 
 # Core Package
 set(CORE_SOURCE_FILES
-    Core/Log.cpp
-    Core/Asserts.cpp
-    Core/StringHelpers.cpp
-    Core/FileHelpers.cpp)
+    Log.cpp
+    Asserts.cpp
+    StringHelpers.cpp
+    FileHelpers.cpp)
 
 set(CORE_HEADER_FILES
-    wpch.h
-    Core/Define.h
-    Core/Asserts.h
-    Core/Log.h
-    Core/Memory.h
-    Core/StringHelpers.h
-    Core/FileHelpers.h)
+    Define.h
+    Asserts.h
+    Log.h
+    Memory.h
+    StringHelpers.h
+    FileHelpers.h
+    FileSystem.h)
+
+list(TRANSFORM CORE_SOURCE_FILES PREPEND "Core/")
+list(TRANSFORM CORE_HEADER_FILES PREPEND "Core/")
 
 # Engine Package
 set(ENGINE_SOURCE_FILES
-    Engine/Main.cpp
-    Engine/Application.cpp
-	Engine/Window.cpp)
+    Main.cpp
+    Application.cpp
+	Window.cpp)
 
 set(ENGINE_HEADER_FILES
-    Engine/Application.h
-	Engine/Window.h)
+    Application.h
+	Window.h)
+
+list(TRANSFORM ENGINE_SOURCE_FILES PREPEND "Engine/")
+list(TRANSFORM ENGINE_HEADER_FILES PREPEND "Engine/")
 
 # Renderer Package
 set(RENDERER_SOURCE_FILES
-    Renderer/Renderer.cpp
-    Renderer/RendererContext.cpp)
+    Renderer.cpp
+    RendererContext.cpp)
 
 set(RENDERER_HEADER_FILES
-    Renderer/Renderer.h
-    Renderer/RendererContext.h)
+    Renderer.h
+    RendererContext.h
+    Shader.h)
+
+list(TRANSFORM RENDERER_SOURCE_FILES PREPEND "Renderer/")
+list(TRANSFORM RENDERER_HEADER_FILES PREPEND "Renderer/")
 
 # Renderer/Vulkan Package
 set(VKRENDERER_SOURCE_FILES
-	Renderer/Vulkan/VkSwapChain.cpp
-	Renderer/Vulkan/VkHardware.cpp
-	Renderer/Vulkan/VkRenderer.cpp
-    Renderer/Vulkan/VkRendererContext.cpp)
+	VkSwapChain.cpp
+	VkHardware.cpp
+	VkRenderer.cpp
+    VkRendererContext.cpp
+    VkShaderPipeline.cpp)
 
 set(VKRENDERER_HEADER_FILES
-	Renderer/Vulkan/VkSwapChain.h
-	Renderer/Vulkan/VkHardware.h
-	Renderer/Vulkan/VkRenderer.h
-    Renderer/Vulkan/VkRendererContext.h)
+	VkSwapChain.h
+	VkHardware.h
+	VkRenderer.h
+    VkRendererContext.h
+    VkShaderPipeline.h)
+
+list(TRANSFORM VKRENDERER_SOURCE_FILES PREPEND "Renderer/Vulkan/")
+list(TRANSFORM VKRENDERER_HEADER_FILES PREPEND "Renderer/Vulkan/")
 
 # Executable definition
-add_executable(${WAVE_EXECUTABLE_NAME}
+add_executable(${WAVE_EXECUTABLE_NAME} wpch.h
     ${CORE_SOURCE_FILES} ${CORE_HEADER_FILES}
     ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES}
     ${RENDERER_SOURCE_FILES} ${RENDERER_HEADER_FILES}
