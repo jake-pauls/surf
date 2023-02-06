@@ -1,0 +1,61 @@
+# Shader Package
+set(SHADER_FILES 
+    glsl/Triangle.vert glsl/Triangle.frag)
+
+# Find shader compilers
+message(STATUS)
+find_program(GLSLC glslc)
+if (GLSLC)
+    message(STATUS "[Shaders] Found GLSLC -> ${GLSLC}")
+else()
+    message(WARNING "[Shaders] Could not find GLSLC, GLSL will not be compiled to SPIR-V")
+endif()
+
+find_program(DXC dxc)
+if (DXC)
+    message(STATUS "[Shaders] Found DXC -> ${DXC}")
+else()
+    message(WARNING "[Shaders] Could not find DXC, HLSL will not be compiled to SPIR-V")
+endif()
+
+# Fail build if a valid shader compiler was not found
+if (NOT GLSLC AND NOT DXC)
+    message(FATAL_ERROR "[Shaders] Couldn't find a valid shader compiler")
+endif()
+
+# Compile shaders to SPIR-V
+foreach (SHADER_FILE ${SHADER_FILES}) 
+    # Set SPIR-V output info
+    set(CURRENT_SHADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_FILE}")
+    set(CURRENT_SPIRV_PATH "${CMAKE_CURRENT_SOURCE_DIR}/bin")
+    file(MAKE_DIRECTORY ${CURRENT_SPIRV_PATH})
+
+    # Retrieve shader file metadata 
+    get_filename_component(SHADER_NAME ${SHADER_FILE} NAME_WLE)
+    get_filename_component(SHADER_DIR ${SHADER_FILE} DIRECTORY)
+    get_filename_component(SHADER_EXT ${SHADER_FILE} LAST_EXT)
+
+    # Set Shader output info, append shader dir (ie: glsl, hlsl, cg, etc.) to prevent duplicates
+    set(SHADER_OUT_NAME "${SHADER_NAME}${SHADER_EXT}.${SHADER_DIR}.spv")
+    set(SHADER_OUTPUT "${CURRENT_SPIRV_PATH}/${SHADER_OUT_NAME}")
+    message(STATUS "[Shaders] (SPIR-V) Adding command to convert ${SHADER_NAME}${SHADER_EXT} to ${SHADER_OUT_NAME}")
+
+    # Add a custom command to compile shaders to SPIR-V at build time
+    # By default, shaders will only be generated if they a valid shader to SPIR-V compiler is found on the system 
+    if (SHADER_DIR STREQUAL "glsl" AND GLSLC)
+        add_custom_command(OUTPUT ${SHADER_OUTPUT}
+            COMMAND ${GLSLC} ${CURRENT_SHADER_PATH} -o ${SHADER_OUTPUT}
+            DEPENDS ${CURRENT_SHADER_PATH}
+            VERBATIM)
+    elseif (SHADER_DIR STREQUAL "hlsl" AND DXC)
+        set(SHADER_COMPILER ${DXC})
+    endif()
+
+    list(APPEND SPIRV_OUT_FILES ${SHADER_OUTPUT})
+endforeach()
+message(STATUS)
+
+# Add the generated SPIR-V to a custom target to depend on at build time
+# This ensures that the custom commands are properly run
+add_custom_target(SPIRV_GEN ALL DEPENDS ${SPIRV_OUT_FILES})
+add_dependencies(${WAVE_EXECUTABLE_NAME} SPIRV_GEN)

@@ -5,12 +5,12 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "IRendererContext.h"
+#include "RendererContext.h"
 #include "Window.h"
 
 namespace vkn
 {
-    class VkRendererContext final : public wv::IRendererContext
+    class VkRendererContext final : public wv::RendererContext
     {
     public:
         explicit VkRendererContext(wv::Window* window);

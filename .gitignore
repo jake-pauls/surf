@@ -12,6 +12,9 @@ build/*
 Testing/*
 compile_commands.json
 
+# SPIR-V
+**/Shaders/bin/**
+
 # OCaml
 surf/_build
 
@@ -28,9 +31,6 @@ setup.log
 
 # Local OPAM switch
 _opam/
-
-# Sample data
-data/
 
 # Bear
 .cache

@@ -5,7 +5,7 @@
 
 #include <SDL3/SDL.h>
 
-#include "IRendererContext.h"
+#include "RendererContext.h"
 
 namespace wv
 {
@@ -42,7 +42,7 @@ namespace wv
 		explicit Window(const WindowProperties& props = WindowProperties());
 
 		/// @brief Initializes the window in SDL, sets default settings from passed properties 
-		void Init(IRenderer::GraphicsAPI gapi);
+		void Init(Renderer::GraphicsAPI gapi);
 
 		/// @brief Render loop for SDL window 
 		void Render() const;
@@ -54,11 +54,11 @@ namespace wv
 		inline SDL_Window* GetSDLWindow() const { return m_Window; }
 
 		/// @brief Retrieves pointer to the SDL windows current renderer context 
-		inline IRendererContext* GetRendererContext() const { return m_RendererContext.get(); }
+		inline RendererContext* GetRendererContext() const { return m_RendererContext.get(); }
 
 	private:
 		WindowProperties m_WindowProperties;
 		SDL_Window* m_Window = nullptr;
-		Unique<IRendererContext> m_RendererContext = nullptr;
+		Unique<RendererContext> m_RendererContext = nullptr;
 	};
 }

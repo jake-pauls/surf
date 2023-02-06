@@ -9,3 +9,4 @@
 #include "Define.h"
 #include "Memory.h"
 #include "StringHelpers.h"
+#include "FileHelpers.h"

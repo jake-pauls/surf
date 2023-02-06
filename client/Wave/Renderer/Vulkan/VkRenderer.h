@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "IRenderer.h"
+#include "Renderer.h"
 #include "VkHardware.h"
 #include "VkSwapChain.h"
 
@@ -14,7 +14,7 @@ namespace wv
 namespace vkn
 {
 	/// @brief Implementation for Vulkan renderer
-	class VkRenderer final : public wv::IRenderer
+	class VkRenderer final : public wv::Renderer
 	{
 	public:
 		explicit VkRenderer(wv::Window* window);

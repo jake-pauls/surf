@@ -18,22 +18,12 @@ vkn::VkRenderer::VkRenderer(wv::Window* window)
 
 void vkn::VkRenderer::Init()
 {
-	// Initialize hardware harness first
-	m_VkHardware.Init();
-
-	// Create swap chains
-	m_VkSwapChain.Create();
+	core::Log(ELogType::Trace, "[VkRenderer] Initializing Vulkan renderer");
 }
 
 void vkn::VkRenderer::Teardown()
 {
 	core::Log(ELogType::Trace, "[VkRenderer] Tearing down Vulkan renderer");
-
-	// Destroy existing swap chains first
-	m_VkSwapChain.Destroy();
-
-	// Teardown hardware last
-	m_VkHardware.Teardown();
 }
 
 void vkn::VkRenderer::Clear() const

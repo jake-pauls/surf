@@ -1,18 +1,18 @@
-#include "IRendererContext.h"
+#include "RendererContext.h"
 
 #include "Vulkan/VkRendererContext.h"
 
-wv::Unique<wv::IRendererContext> wv::IRendererContext::CreateRendererContext(wv::Window* window, wv::IRenderer::GraphicsAPI api)
+wv::Unique<wv::RendererContext> wv::RendererContext::CreateRendererContext(wv::Window* window, wv::Renderer::GraphicsAPI api)
 {
 	switch (api)
 	{
-	case IRenderer::GraphicsAPI::None:
+	case Renderer::GraphicsAPI::None:
 		WAVE_ASSERT(false, "No rendering API selected");
 		return nullptr;
-	case IRenderer::GraphicsAPI::DirectX:
+	case Renderer::GraphicsAPI::DirectX:
 		WAVE_ASSERT(false, "DirectX is unimplemented");
 		return nullptr;
-	case IRenderer::GraphicsAPI::Vulkan:
+	case Renderer::GraphicsAPI::Vulkan:
 		return CreateUnique<vkn::VkRendererContext>(window);
 	}
 

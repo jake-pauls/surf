@@ -16,12 +16,12 @@ void wv::Application::Run()
 
 	// Create rendering context, for now it's Vulkan
 	// TODO: Determining this at runtime would be sick
-	using GAPI = IRenderer::GraphicsAPI;
+	using GAPI = Renderer::GraphicsAPI;
 	GAPI vk = GAPI::Vulkan;
 
 	// Initialize the window and it's corresponding graphics context
 	m_Window->Init(vk);
-	m_VkRenderer = IRenderer::CreateRendererWithGAPI(m_Window, vk);
+	m_VkRenderer = Renderer::CreateRendererWithGAPI(m_Window, vk);
 	m_VkRenderer->Init();
 
 	bool isRunning = true;

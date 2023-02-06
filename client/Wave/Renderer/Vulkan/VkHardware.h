@@ -32,9 +32,7 @@ namespace vkn
 
 	public:
 		explicit VkHardware(wv::Window* window);
-		~VkHardware() = default;
-
-		void Init();
+		~VkHardware();
 
 		void Teardown();
 
@@ -66,6 +64,16 @@ namespace vkn
 		/// @param device The VkPhysicalDevice to check
 		/// @return Retrieves a score for the device based on its available features and context
 		unsigned int GetDeviceScore(const VkPhysicalDevice& device) const;
+
+		/// @brief Debug function that overrides the validation layer error function
+		static VkBool32 VulkanDebugFunction(VkDebugReportFlagsEXT flags,
+			VkDebugReportObjectTypeEXT objectType,
+			uint64_t object,
+			size_t location,
+			int32_t code,
+			const char* layerPrefix,
+			const char* message,
+			void* userData);
 
 	private:
 		wv::Window* m_Window = nullptr;

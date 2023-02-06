@@ -9,11 +9,11 @@ wv::Window::Window(const WindowProperties& props)
 	WAVE_ASSERT(result >= 0, "Failed to initialize SDL context");
 }
 
-void wv::Window::Init(IRenderer::GraphicsAPI gapi)
+void wv::Window::Init(Renderer::GraphicsAPI gapi)
 {
 	WAVE_ASSERT(!m_Window, "Init() is being called on a window that has already been initialized");
 
-	m_RendererContext = IRendererContext::CreateRendererContext(this, gapi);
+	m_RendererContext = RendererContext::CreateRendererContext(this, gapi);
 	WAVE_ASSERT(m_RendererContext, "Failed to create renderer context");
 	m_RendererContext->Init();
 	

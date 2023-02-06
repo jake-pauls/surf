@@ -5,7 +5,8 @@ set(WAVE_EXECUTABLE_NAME wave)
 set(CORE_SOURCE_FILES
     Core/Log.cpp
     Core/Asserts.cpp
-    Core/StringHelpers.cpp)
+    Core/StringHelpers.cpp
+    Core/FileHelpers.cpp)
 
 set(CORE_HEADER_FILES
     wpch.h
@@ -13,7 +14,8 @@ set(CORE_HEADER_FILES
     Core/Asserts.h
     Core/Log.h
     Core/Memory.h
-    Core/StringHelpers.h)
+    Core/StringHelpers.h
+    Core/FileHelpers.h)
 
 # Engine Package
 set(ENGINE_SOURCE_FILES
@@ -27,12 +29,12 @@ set(ENGINE_HEADER_FILES
 
 # Renderer Package
 set(RENDERER_SOURCE_FILES
-    Renderer/IRenderer.cpp
-    Renderer/IRendererContext.cpp)
+    Renderer/Renderer.cpp
+    Renderer/RendererContext.cpp)
 
 set(RENDERER_HEADER_FILES
-    Renderer/IRenderer.h
-    Renderer/IRendererContext.h)
+    Renderer/Renderer.h
+    Renderer/RendererContext.h)
 
 # Renderer/Vulkan Package
 set(VKRENDERER_SOURCE_FILES
@@ -52,15 +54,19 @@ add_executable(${WAVE_EXECUTABLE_NAME}
     ${CORE_SOURCE_FILES} ${CORE_HEADER_FILES}
     ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES}
     ${RENDERER_SOURCE_FILES} ${RENDERER_HEADER_FILES}
-	${VKRENDERER_SOURCE_FILES} ${VKRENDERER_HEADER_FILES}
-    ${CODEGEN_FILES})
+	${VKRENDERER_SOURCE_FILES} ${VKRENDERER_HEADER_FILES})
+
+# Compile and add shader files
+add_subdirectory(Renderer/Shaders)
 
 # Groups for Visuals Studio filters
 source_group("Core" FILES ${CORE_SOURCE_FILES} ${CORE_HEADER_FILES})
 source_group("Engine" FILES ${ENGINE_SOURCE_FILES} ${ENGINE_HEADER_FILES})
 source_group("Renderer" FILES ${RENDERER_SOURCE_FILES} ${RENDERER_HEADER_FILES})
 source_group("Renderer/Vulkan" FILES ${VKRENDERER_SOURCE_FILES} ${VKRENDERER_HEADER_FILES})
-source_group("Codegen" FILES ${CODEGEN_FILES})
+
+# Source groups can only be added relative to the directory the target is created in? Nice CMake.
+source_group("Renderer/Shaders" REGULAR_EXPRESSION ".*\.glsl|.*\.hlsl")
 
 target_precompile_headers(${WAVE_EXECUTABLE_NAME} PRIVATE wpch.h)
 
@@ -68,7 +74,6 @@ target_include_directories(${WAVE_EXECUTABLE_NAME}
     PRIVATE Core
     PRIVATE Engine
 	PRIVATE Renderer
-    PRIVATE Codegen
     # Vendor
 	PRIVATE ${Vulkan_INCLUDE_DIR})
 

@@ -11,24 +11,19 @@
 vkn::VkHardware::VkHardware(wv::Window* window)
 	: m_Window(window)
 {
-}
-
-void vkn::VkHardware::Init()
-{
 	core::Log(ELogType::Trace, "[VkHardware] Initializing Vulkan hardware");
 
-	// Initialize validation layers
 	bool initializedValidationLayers = InitValidationLayers();
 	WAVE_ASSERT(initializedValidationLayers, "Unsuccessfully retrieved required validation layers");
 
-	// Create VkInstance
 	CreateInstance();
-
-	// Select a physical device
 	SelectPhysicalDevice();
-
-	// Initialize the logical device
 	CreateLogicalDevice();
+}
+
+vkn::VkHardware::~VkHardware()
+{
+	Teardown();
 }
 
 void vkn::VkHardware::Teardown()

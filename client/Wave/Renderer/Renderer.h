@@ -5,7 +5,7 @@ namespace wv
     class Window;
 
     /// @brief Abstract renderer with a particular API implementation
-    class IRenderer 
+    class Renderer 
     {
     public:
         /// @brief Represents available graphics backends
@@ -17,10 +17,10 @@ namespace wv
         };
 
     private:
-        const IRenderer& operator=(const IRenderer& other) = delete;
+        const Renderer& operator=(const Renderer& other) = delete;
 
     public:
-        virtual ~IRenderer() = default;
+        virtual ~Renderer() = default;
 
         virtual void Init() = 0;
 
@@ -32,6 +32,6 @@ namespace wv
 
 		/// @brief Creates a renderer containing the implementation for the selected rendering API
 		/// @return Unique pointer containing the constructed renderer 
-		static wv::Unique<IRenderer> CreateRendererWithGAPI(Window* window, IRenderer::GraphicsAPI gapi);
+		static wv::Unique<Renderer> CreateRendererWithGAPI(Window* window, Renderer::GraphicsAPI gapi);
     };
 }

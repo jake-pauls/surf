@@ -11,6 +11,12 @@ vkn::VkSwapChain::VkSwapChain(wv::Window* window, const VkHardware& hardware)
 	: m_Window(window)
 	, c_VkHardware(hardware)
 {
+	Create();
+}
+
+vkn::VkSwapChain::~VkSwapChain()
+{
+	Destroy();
 }
 
 void vkn::VkSwapChain::Create() 
@@ -68,14 +74,55 @@ void vkn::VkSwapChain::Create()
 	swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
 	VK_CALL(vkCreateSwapchainKHR(c_VkHardware.m_LogicalDevice, &swapChainCreateInfo, nullptr, &m_SwapChain));
+
+	// Retrieve initial swap chain images
+	VK_CALL(vkGetSwapchainImagesKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, &imageCount, nullptr));
+	m_SwapChainImages.resize(imageCount);
+	VK_CALL(vkGetSwapchainImagesKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, &imageCount, m_SwapChainImages.data()));
+
+	// Save current swap chain format and extent
+	m_SwapChainImageFormat = surfaceFormat.format;
+	m_SwapChainExtent = extent;
 }
 
 void vkn::VkSwapChain::Destroy()
 {
 	core::Log(ELogType::Trace, "[VkSwapChain] Destroying a swap chain");
 
+	// Remove explicitly create image views
+	for (auto imageView : m_SwapChainImageViews)
+	{
+		vkDestroyImageView(c_VkHardware.m_LogicalDevice, imageView, nullptr);
+	}
+
 	// Kill current swap chain
 	vkDestroySwapchainKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, nullptr);
+}
+
+void vkn::VkSwapChain::CreateImageViews()
+{
+	m_SwapChainImageViews.resize(m_SwapChainImages.size());
+	for (size_t i = 0; i < m_SwapChainImages.size(); ++i)
+	{
+		VkImageViewCreateInfo imageViewCreateInfo = VkImageViewCreateInfo();
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.image = m_SwapChainImages[i];
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.format = m_SwapChainImageFormat;
+
+		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+		VK_CALL(vkCreateImageView(c_VkHardware.m_LogicalDevice, &imageViewCreateInfo, nullptr, &m_SwapChainImageViews[i]));
+	}
 }
 
 VkSurfaceFormatKHR vkn::VkSwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const
