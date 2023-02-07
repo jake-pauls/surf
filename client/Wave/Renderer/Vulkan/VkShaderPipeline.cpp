@@ -1,6 +1,7 @@
 #include "VkShaderPipeline.h"
 
 #include "Window.h"
+#include "VkPass.h"
 #include "VkRenderer.h"
 #include "VkRendererContext.h"
 
@@ -8,13 +9,26 @@ vkn::VkShaderPipeline::VkShaderPipeline(const VkRenderer& renderer, const std::s
 	: wv::Shader(vertexShader, fragmentShader)
 	, c_VkRenderer(renderer)
 {
-	const VkHardware& vkHardware = c_VkRenderer.m_VkHardware;
-
 	core::Log(ELogType::Trace, "[VkShaderPipeline] Creating shader pipeline");
 
+	Create();
+}
+
+vkn::VkShaderPipeline::~VkShaderPipeline()
+{
+	core::Log(ELogType::Trace, "[VkShaderPipeline] Destroying shader pipeline");
+	
+	Destroy();
+}
+
+void vkn::VkShaderPipeline::Create()
+{
+	const VkHardware& vkHardware = c_VkRenderer.m_VkHardware;
+	const VkPass* vkRenderPass = c_VkRenderer.m_PassthroughPass;
+
 	// Load shaders
-	m_VertexShaderModule = LoadShaderModule(vertexShader);
-	m_FragmentShaderModule = LoadShaderModule(fragmentShader);
+	m_VertexShaderModule = LoadShaderModule(m_VertexShaderFile);
+	m_FragmentShaderModule = LoadShaderModule(m_FragmentShaderFile);
 
 	// Pipeline shader stages
 	VkPipelineShaderStageCreateInfo vertexShaderStageCreateInfo = VkPipelineShaderStageCreateInfo();
@@ -95,8 +109,8 @@ vkn::VkShaderPipeline::VkShaderPipeline(const VkRenderer& renderer, const std::s
 
 	VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo = VkPipelineColorBlendStateCreateInfo();
 	colorBlendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	colorBlendCreateInfo.logicOpEnable = VK_TRUE;
-	colorBlendCreateInfo.logicOp = VK_LOGIC_OP_AND; // TODO: This may have to be set to a bitwise method
+	colorBlendCreateInfo.logicOpEnable = VK_FALSE;
+	colorBlendCreateInfo.logicOp = VK_LOGIC_OP_COPY; // TODO: This may have to be set to a bitwise method
 	colorBlendCreateInfo.attachmentCount = 1;
 	colorBlendCreateInfo.pAttachments = &colorBlendAttachment;
 	colorBlendCreateInfo.blendConstants[0] = 0.0f;
@@ -108,8 +122,7 @@ vkn::VkShaderPipeline::VkShaderPipeline(const VkRenderer& renderer, const std::s
 	// This can be manually defined to create different viewport states
 	std::vector<VkDynamicState> dynamicStates = { 
 		VK_DYNAMIC_STATE_VIEWPORT, 
-		VK_DYNAMIC_STATE_SCISSOR,
-		VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT
+		VK_DYNAMIC_STATE_SCISSOR
 	};
 
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = VkPipelineDynamicStateCreateInfo();
@@ -117,6 +130,7 @@ vkn::VkShaderPipeline::VkShaderPipeline(const VkRenderer& renderer, const std::s
 	dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 	dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
 
+	// Pipeline layout
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = VkPipelineLayoutCreateInfo();
 	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutCreateInfo.setLayoutCount = 0;
@@ -126,16 +140,41 @@ vkn::VkShaderPipeline::VkShaderPipeline(const VkRenderer& renderer, const std::s
 
 	VK_CALL(vkCreatePipelineLayout(vkHardware.m_LogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
 
+	// Actual pipeline definition
+	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = VkGraphicsPipelineCreateInfo();
+	graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	graphicsPipelineCreateInfo.stageCount = 2;
+	graphicsPipelineCreateInfo.pStages = shaderStages;
+
+	graphicsPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
+	graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
+	graphicsPipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+	graphicsPipelineCreateInfo.pRasterizationState = &rasterizerCreateInfo;
+	graphicsPipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
+	graphicsPipelineCreateInfo.pDepthStencilState = nullptr;
+	graphicsPipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
+	graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
+	graphicsPipelineCreateInfo.layout = m_PipelineLayout;
+
+	// TODO: sus
+	graphicsPipelineCreateInfo.renderPass = vkRenderPass->m_RenderPass;
+
+	graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
+	graphicsPipelineCreateInfo.basePipelineIndex = -1;
+
+	VK_CALL(vkCreateGraphicsPipelines(vkHardware.m_LogicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_GraphicsPipeline));
+
 	// Cleanup shader modules once pipeline is created
 	vkDestroyShaderModule(vkHardware.m_LogicalDevice, m_FragmentShaderModule, nullptr);
 	vkDestroyShaderModule(vkHardware.m_LogicalDevice, m_VertexShaderModule, nullptr);
+
 }
 
-vkn::VkShaderPipeline::~VkShaderPipeline()
+void vkn::VkShaderPipeline::Destroy()
 {
-	core::Log(ELogType::Trace, "[VkShaderPipeline] Destroying shader pipeline");
-
 	const VkHardware& vkHardware = c_VkRenderer.m_VkHardware;
+
+	vkDestroyPipeline(vkHardware.m_LogicalDevice, m_GraphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(vkHardware.m_LogicalDevice, m_PipelineLayout, nullptr);
 }
 

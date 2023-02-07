@@ -2,7 +2,7 @@
 
 #include "Vulkan/VkRendererContext.h"
 
-wv::Unique<wv::RendererContext> wv::RendererContext::CreateRendererContext(wv::Window* window, wv::Renderer::GraphicsAPI api)
+core::Unique<wv::RendererContext> wv::RendererContext::CreateRendererContext(wv::Window* window, wv::Renderer::GraphicsAPI api)
 {
 	switch (api)
 	{
@@ -13,7 +13,7 @@ wv::Unique<wv::RendererContext> wv::RendererContext::CreateRendererContext(wv::W
 		WAVE_ASSERT(false, "DirectX is unimplemented");
 		return nullptr;
 	case Renderer::GraphicsAPI::Vulkan:
-		return CreateUnique<vkn::VkRendererContext>(window);
+		return core::CreateUnique<vkn::VkRendererContext>(window);
 	}
 
 	WAVE_ASSERT(false, "Unknown rendering API selected");

@@ -22,6 +22,6 @@ namespace wv
 
 		/// @brief Creates a context for a provided renderer to a window
 		/// @return Unique pointer containing the graphics context 
-		static Unique<RendererContext> CreateRendererContext(Window* window, Renderer::GraphicsAPI api);
+		static core::Unique<RendererContext> CreateRendererContext(Window* window, Renderer::GraphicsAPI api);
 	};
 }

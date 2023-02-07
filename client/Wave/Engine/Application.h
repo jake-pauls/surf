@@ -19,6 +19,6 @@ namespace wv
 
 	private:
 		Window* m_Window = nullptr;
-		Unique<Renderer> m_VkRenderer = nullptr;
+		core::Unique<Renderer> m_VkRenderer = nullptr;
 	};
 }

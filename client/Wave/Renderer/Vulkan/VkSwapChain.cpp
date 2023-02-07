@@ -11,18 +11,20 @@ vkn::VkSwapChain::VkSwapChain(wv::Window* window, const VkHardware& hardware)
 	: m_Window(window)
 	, c_VkHardware(hardware)
 {
+	core::Log(ELogType::Trace, "[VkSwapChain] Creating a swap chain");
+
 	Create();
 }
 
 vkn::VkSwapChain::~VkSwapChain()
 {
+	core::Log(ELogType::Trace, "[VkSwapChain] Destroying swap chain");
+
 	Destroy();
 }
 
 void vkn::VkSwapChain::Create() 
 {
-	core::Log(ELogType::Trace, "[VkSwapChain] Creating a swap chain");
-
 	// Validate swap chain with corresponding physical device before starting
 	SwapChainSupportDetails swapChainSupportDetails = QuerySwapChainSupport(c_VkHardware.m_PhysicalDevice);
 	WAVE_ASSERT(!swapChainSupportDetails.m_SurfaceFormats.empty() && !swapChainSupportDetails.m_PresentationModes.empty(), "Swap chain is not properly supported by this physical device");
@@ -87,8 +89,6 @@ void vkn::VkSwapChain::Create()
 
 void vkn::VkSwapChain::Destroy()
 {
-	core::Log(ELogType::Trace, "[VkSwapChain] Destroying a swap chain");
-
 	// Remove explicitly create image views
 	for (auto imageView : m_SwapChainImageViews)
 	{

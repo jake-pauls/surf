@@ -3,8 +3,10 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Renderer.h"
+#include "VkPass.h"
 #include "VkHardware.h"
 #include "VkSwapChain.h"
+#include "VkShaderPipeline.h"
 
 namespace wv
 {
@@ -13,11 +15,10 @@ namespace wv
 
 namespace vkn
 {
-	class VkShaderPipeline;
-
 	/// @brief Implementation for Vulkan renderer
 	class VkRenderer final : public wv::Renderer
 	{
+		friend class VkPass;
 		friend class VkShaderPipeline;
 
 	public:
@@ -37,5 +38,9 @@ namespace vkn
 
 		VkHardware m_VkHardware;
 		VkSwapChain m_VkSwapChain;
+
+		// Temp
+		VkPass* m_PassthroughPass = nullptr;
+		VkShaderPipeline* m_PassthroughPipeline = nullptr;
 	};
 }

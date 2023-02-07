@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace wv
+namespace core
 {
 	/// @brief Wrapper declaration for unique pointers 
 	/// @tparam T Type associated with the unique pointer 

@@ -59,6 +59,6 @@ namespace wv
 	private:
 		WindowProperties m_WindowProperties;
 		SDL_Window* m_Window = nullptr;
-		Unique<RendererContext> m_RendererContext = nullptr;
+		core::Unique<RendererContext> m_RendererContext = nullptr;
 	};
 }

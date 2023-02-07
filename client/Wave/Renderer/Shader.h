@@ -18,7 +18,7 @@ namespace wv
         virtual void Bind() = 0;
         virtual void Unbind() = 0;
 
-    private:
+    protected:
         const char* m_VertexShaderFile = nullptr;
         const char* m_FragmentShaderFile = nullptr;
     };

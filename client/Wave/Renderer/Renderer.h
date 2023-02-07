@@ -32,6 +32,6 @@ namespace wv
 
 		/// @brief Creates a renderer containing the implementation for the selected rendering API
 		/// @return Unique pointer containing the constructed renderer 
-		static wv::Unique<Renderer> CreateRendererWithGAPI(Window* window, Renderer::GraphicsAPI gapi);
+		static core::Unique<Renderer> CreateRendererWithGAPI(Window* window, Renderer::GraphicsAPI gapi);
     };
 }

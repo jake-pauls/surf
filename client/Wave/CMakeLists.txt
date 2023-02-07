@@ -52,14 +52,16 @@ set(VKRENDERER_SOURCE_FILES
 	VkHardware.cpp
 	VkRenderer.cpp
     VkRendererContext.cpp
-    VkShaderPipeline.cpp)
+    VkShaderPipeline.cpp
+    VkPass.cpp)
 
 set(VKRENDERER_HEADER_FILES
 	VkSwapChain.h
 	VkHardware.h
 	VkRenderer.h
     VkRendererContext.h
-    VkShaderPipeline.h)
+    VkShaderPipeline.h
+    VkPass.h)
 
 list(TRANSFORM VKRENDERER_SOURCE_FILES PREPEND "Renderer/Vulkan/")
 list(TRANSFORM VKRENDERER_HEADER_FILES PREPEND "Renderer/Vulkan/")

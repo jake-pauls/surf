@@ -11,6 +11,7 @@ namespace wv
 
 namespace vkn
 {
+	class VkPass;
 	class VkHardware;
 	class VkShaderPipeline;
 
@@ -25,6 +26,7 @@ namespace vkn
 	///		   Essentially a queue of images waiting to be on the screen
 	class VkSwapChain final
 	{
+		friend class VkPass;
 		friend class VkHardware;
 		friend class VkShaderPipeline;
 
@@ -33,7 +35,6 @@ namespace vkn
 		~VkSwapChain();
 
 		void Create();
-
 		void Destroy();
 
 	private:

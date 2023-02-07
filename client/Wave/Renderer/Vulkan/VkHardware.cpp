@@ -23,13 +23,13 @@ vkn::VkHardware::VkHardware(wv::Window* window)
 
 vkn::VkHardware::~VkHardware()
 {
+	core::Log(ELogType::Trace, "[VkHardware] Tearing down Vulkan hardware");
+
 	Teardown();
 }
 
 void vkn::VkHardware::Teardown()
 {
-	core::Log(ELogType::Trace, "[VkHardware] Tearing down Vulkan hardware");
-
 	// Destroy the logical device
 	vkDestroyDevice(m_LogicalDevice, nullptr);
 
