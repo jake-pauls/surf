@@ -15,9 +15,9 @@ void vkn::VkRenderer::Init()
 {
 	core::Log(ELogType::Trace, "[VkRenderer] Initializing Vulkan renderer");
 
-	std::string triangleVertexShader = (core::FileSystem::GetSPIRVDirectory() / "Triangle.vert.spv").string();
-	std::string triangleFragmentShader = (core::FileSystem::GetSPIRVDirectory() / "Triangle.frag.spv").string();
-	VkShaderPipeline triangleShaderPipeline = VkShaderPipeline(m_VkHardware, triangleVertexShader, triangleFragmentShader);
+	std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "Triangle.vert.spv").string();
+	std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "Triangle.frag.spv").string();
+	VkShaderPipeline triangleShaderPipeline = VkShaderPipeline(*this, triangleVertexShader, triangleFragmentShader);
 }
 
 void vkn::VkRenderer::Teardown()

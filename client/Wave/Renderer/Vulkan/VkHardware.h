@@ -67,16 +67,6 @@ namespace vkn
 		/// @return Retrieves a score for the device based on its available features and context
 		unsigned int GetDeviceScore(const VkPhysicalDevice& device) const;
 
-		/// @brief Debug function that overrides the validation layer error function
-		static VkBool32 VulkanDebugFunction(VkDebugReportFlagsEXT flags,
-			VkDebugReportObjectTypeEXT objectType,
-			uint64_t object,
-			size_t location,
-			int32_t code,
-			const char* layerPrefix,
-			const char* message,
-			void* userData);
-
 	private:
 		wv::Window* m_Window = nullptr;
 		VkHardware* m_VkHardware = nullptr;

@@ -1,4 +1,3 @@
-# Enable ctest for this project
 enable_testing()
 
 set(TEST_EXECUTABLE_NAME wave-tests)

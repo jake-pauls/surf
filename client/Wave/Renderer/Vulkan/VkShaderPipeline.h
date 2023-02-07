@@ -4,14 +4,18 @@
 
 namespace vkn
 {
+    class VkRenderer;
     class VkHardware;
+    class VkSwapChain;
 
     class VkShaderPipeline : public wv::Shader
     {
+        friend class VkRenderer;
         friend class VkHardware;
+        friend class VkSwapChain;
 
     public:
-        explicit VkShaderPipeline(const VkHardware& hardware, const std::string& vertexShader, const std::string& fragmentShader);
+        explicit VkShaderPipeline(const VkRenderer& renderer, const std::string& vertexShader, const std::string& fragmentShader);
         ~VkShaderPipeline() override;
 
         void Bind() override;
@@ -24,9 +28,11 @@ namespace vkn
         VkShaderModule LoadShaderModule(const std::string& shaderFileName);
 
     private:
-		const VkHardware& c_VkHardware;
+		const VkRenderer& c_VkRenderer;
 
         VkShaderModule m_VertexShaderModule = VK_NULL_HANDLE;
         VkShaderModule m_FragmentShaderModule = VK_NULL_HANDLE;
+
+        VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
     };
 }

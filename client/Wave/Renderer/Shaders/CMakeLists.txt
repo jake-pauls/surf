@@ -38,19 +38,20 @@ foreach (SHADER_FILE ${SHADER_FILES})
     cmake_path(GET SHADER_DIR FILENAME SHADER_DIR)
 
     # Set SPIR-V output info
+    # TODO: Change SPIR-V output directory?
     set(CURRENT_SHADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_DIR}/${SHADER_NAME}")
-    set(CURRENT_SPIRV_PATH "${CMAKE_CURRENT_SOURCE_DIR}/spv")
-    file(MAKE_DIRECTORY ${CURRENT_SPIRV_PATH})
+    set(SPIRV_OUTPUT_DIR "${CMAKE_BINARY_DIR}/client/Wave/Shaders")
 
     # Set Shader output info, append shader dir (ie: glsl, hlsl, cg, etc.) to prevent duplicates
     set(SHADER_OUT_NAME "${SHADER_NAME}.spv")
-    set(SHADER_OUTPUT "${CURRENT_SPIRV_PATH}/${SHADER_OUT_NAME}")
+    set(SHADER_OUTPUT "${SPIRV_OUTPUT_DIR}/${SHADER_OUT_NAME}")
     message(STATUS "[Shaders] (SPIR-V) Adding command to convert ${SHADER_NAME} to ${SHADER_OUT_NAME}")
 
     # Add a custom command to compile shaders to SPIR-V at build time
     # By default, shaders will only be generated if they a valid shader to SPIR-V compiler is found on the system 
     if (SHADER_DIR STREQUAL "glsl" AND GLSLC)
         add_custom_command(OUTPUT ${SHADER_OUTPUT}
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_OUTPUT_DIR}"
             COMMAND ${GLSLC} ${CURRENT_SHADER_PATH} -o ${SHADER_OUTPUT}
             DEPENDS ${CURRENT_SHADER_PATH}
             VERBATIM)

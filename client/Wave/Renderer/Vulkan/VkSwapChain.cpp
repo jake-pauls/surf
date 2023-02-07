@@ -161,9 +161,8 @@ VkExtent2D vkn::VkSwapChain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& ca
 	// Normally equivalent to the resolution of the window being drawn to in pixels
 	// Good source of errors if images are looking weird later
 	VkRendererContext* vkContext = dynamic_cast<VkRendererContext*>(m_Window->GetRendererContext());
-	std::pair<uint32_t, uint32_t> clientDimensions = vkContext->GetVulkanClientDimensions();
 
-	VkExtent2D actualExtent = { clientDimensions.first, clientDimensions.second };
+	VkExtent2D actualExtent = vkContext->GetVulkanClientExtent();
 	actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
 	actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 

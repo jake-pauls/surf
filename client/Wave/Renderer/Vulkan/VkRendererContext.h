@@ -32,7 +32,7 @@ namespace vkn
         void SetupSDLVulkanSurface(VkInstance instance, VkSurfaceKHR* surface) const;
 
         /// @brief Retrieves the Vulkan client dimensions for the current SDL windo
-        std::pair<uint32_t, uint32_t> GetVulkanClientDimensions() const;
+        VkExtent2D GetVulkanClientExtent() const;
 
     private:
         wv::Window* m_Window = nullptr;

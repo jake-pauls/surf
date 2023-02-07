@@ -41,11 +41,11 @@ void vkn::VkRendererContext::SetupSDLVulkanSurface(VkInstance instance, VkSurfac
 	SDL_Vulkan_CreateSurface(m_Window->GetSDLWindow(), instance, surface);
 }
 
-std::pair<uint32_t, uint32_t> vkn::VkRendererContext::GetVulkanClientDimensions() const
+VkExtent2D vkn::VkRendererContext::GetVulkanClientExtent() const
 {
 	int width, height;
 
 	SDL_Vulkan_GetDrawableSize(m_Window->GetSDLWindow(), &width, &height);
 
-	return std::make_pair(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+	return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }

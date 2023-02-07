@@ -12,6 +12,7 @@ namespace wv
 namespace vkn
 {
 	class VkHardware;
+	class VkShaderPipeline;
 
 	struct SwapChainSupportDetails
 	{
@@ -25,6 +26,7 @@ namespace vkn
 	class VkSwapChain final
 	{
 		friend class VkHardware;
+		friend class VkShaderPipeline;
 
 	public:
 		explicit VkSwapChain(wv::Window* window, const VkHardware& hardware);

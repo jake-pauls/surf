@@ -13,9 +13,13 @@ namespace wv
 
 namespace vkn
 {
+	class VkShaderPipeline;
+
 	/// @brief Implementation for Vulkan renderer
 	class VkRenderer final : public wv::Renderer
 	{
+		friend class VkShaderPipeline;
+
 	public:
 		explicit VkRenderer(wv::Window* window);
 		~VkRenderer() override = default;
