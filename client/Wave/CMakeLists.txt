@@ -48,6 +48,7 @@ list(TRANSFORM RENDERER_HEADER_FILES PREPEND "Renderer/")
 
 # Renderer/Vulkan Package
 set(VKRENDERER_SOURCE_FILES
+    VkInitializers.cpp
 	VkSwapChain.cpp
 	VkHardware.cpp
 	VkRenderer.cpp
@@ -56,6 +57,7 @@ set(VKRENDERER_SOURCE_FILES
     VkPass.cpp)
 
 set(VKRENDERER_HEADER_FILES
+    VkInitializers.h
 	VkSwapChain.h
 	VkHardware.h
 	VkRenderer.h

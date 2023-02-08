@@ -5,22 +5,25 @@
 namespace vkn
 {
     class VkRenderer;
-    class VkShaderPipeline;
+    class VkHardware;
+    class VkSwapChain;
 
     class VkPass
     {
         friend class VkRenderer;
-        friend class VkShaderPipeline;
+        friend class VkHardware;
+        friend class VkSwapChain;
 
     public:
-        explicit VkPass(const VkRenderer& renderer);
+        explicit VkPass(const VkDevice& device, const VkSwapChain& swapChain);
         ~VkPass();        
 
         void Create();
         void Destroy();
 
     private:
-        const VkRenderer& c_VkRenderer;
+        const VkDevice& c_LogicalDevice;
+        const VkSwapChain& c_VkSwapChain;
 
         VkRenderPass m_RenderPass = VK_NULL_HANDLE;
     };

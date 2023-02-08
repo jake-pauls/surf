@@ -14,7 +14,6 @@ namespace vkn
 	class VkPass;
 	class VkRenderer;
 	class VkHardware;
-	class VkShaderPipeline;
 
 	struct SwapChainSupportDetails
 	{
@@ -30,7 +29,6 @@ namespace vkn
 		friend class VkPass;
 		friend class VkRenderer;
 		friend class VkHardware;
-		friend class VkShaderPipeline;
 
 	public:
 		explicit VkSwapChain(wv::Window* window, const VkHardware& hardware);

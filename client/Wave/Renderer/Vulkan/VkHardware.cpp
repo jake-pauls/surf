@@ -6,6 +6,7 @@
 
 #include <SDL3/SDL_vulkan.h>
 
+#include "VkInitializers.h"
 #include "VkRendererContext.h"
 
 vkn::VkHardware::VkHardware(wv::Window* window)
@@ -17,9 +18,11 @@ vkn::VkHardware::VkHardware(wv::Window* window)
 	WAVE_ASSERT(initializedValidationLayers, "Unsuccessfully retrieved required validation layers");
 
 	CreateInstance();
+
 	SelectPhysicalDevice();
 	CreateLogicalDevice();
-	CreateCommandPool();
+
+	CreateCommands();
 }
 
 vkn::VkHardware::~VkHardware()
@@ -253,16 +256,15 @@ void vkn::VkHardware::CreateLogicalDevice()
 		core::Log(ELogType::Trace, "[VkHardware] Created graphics and presentation queues");
 }
 
-void vkn::VkHardware::CreateCommandPool()
+void vkn::VkHardware::CreateCommands()
 {
 	QueueFamily queueFamily = FindQueueFamilies(m_PhysicalDevice);
 
-	VkCommandPoolCreateInfo commandPoolCreateInfo = VkCommandPoolCreateInfo();
-	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	commandPoolCreateInfo.queueFamilyIndex = queueFamily.m_GraphicsFamily.value();
+	VkCommandPoolCreateInfo commandPoolInfo = vkn::InitCommandPoolCreateInfo(queueFamily.m_GraphicsFamily.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	VK_CALL(vkCreateCommandPool(m_LogicalDevice, &commandPoolInfo, nullptr, &m_CommandPool));
 
-	VK_CALL(vkCreateCommandPool(m_LogicalDevice, &commandPoolCreateInfo, nullptr, &m_CommandPool));
+	VkCommandBufferAllocateInfo commandBufferAllocateInfo = vkn::InitCommandBufferAllocateInfo(m_CommandPool, 1);
+	VK_CALL(vkAllocateCommandBuffers(m_LogicalDevice, &commandBufferAllocateInfo, &m_CommandBuffer));
 }
 
 vkn::QueueFamily vkn::VkHardware::FindQueueFamilies(const VkPhysicalDevice& device) const

@@ -50,14 +50,12 @@ namespace vkn
 
 		// Refactor
 		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers;
-		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
-
 		VkSemaphore m_ImageAvailableSemaphore = VK_NULL_HANDLE;
 		VkSemaphore m_RenderFinishedSemaphore = VK_NULL_HANDLE;
 		VkFence m_InFlightFence = VK_NULL_HANDLE;
 
 		// Temp
-		VkPass* m_PassthroughPass = nullptr;
-		VkShaderPipeline* m_PassthroughPipeline = nullptr;
+		VkPass* m_DefaultPass = nullptr;
+		VkShaderPipeline* m_DefaultPipeline = nullptr;
 	};
 }

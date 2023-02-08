@@ -43,7 +43,7 @@ foreach (SHADER_FILE ${SHADER_FILES})
     set(SPIRV_OUTPUT_DIR "${CMAKE_BINARY_DIR}/client/Wave/Shaders")
 
     # Set Shader output info, append shader dir (ie: glsl, hlsl, cg, etc.) to prevent duplicates
-    set(SHADER_OUT_NAME "${SHADER_NAME}.spv")
+    set(SHADER_OUT_NAME "${SHADER_NAME}.${SHADER_DIR}.spv")
     set(SHADER_OUTPUT "${SPIRV_OUTPUT_DIR}/${SHADER_OUT_NAME}")
     message(STATUS "[Shaders] (SPIR-V) Adding command to convert ${SHADER_NAME} to ${SHADER_OUT_NAME}")
 
@@ -56,7 +56,6 @@ foreach (SHADER_FILE ${SHADER_FILES})
             DEPENDS ${CURRENT_SHADER_PATH}
             VERBATIM)
     elseif (SHADER_DIR STREQUAL "hlsl" AND DXC)
-        set(SHADER_COMPILER ${DXC})
     endif()
 
     list(APPEND SPIRV_OUT_FILES ${SHADER_OUTPUT})

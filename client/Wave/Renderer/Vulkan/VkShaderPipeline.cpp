@@ -5,9 +5,15 @@
 #include "VkRenderer.h"
 #include "VkRendererContext.h"
 
-vkn::VkShaderPipeline::VkShaderPipeline(const VkRenderer& renderer, const std::string& vertexShader, const std::string& fragmentShader)
+vkn::VkShaderPipeline::VkShaderPipeline(
+	const VkDevice& device, 
+	const VkRenderPass& renderPass, 
+	const std::string& vertexShader, 
+	const std::string& fragmentShader
+) 
 	: wv::Shader(vertexShader, fragmentShader)
-	, c_VkRenderer(renderer)
+	, c_LogicalDevice(device)
+	, c_RenderPass(renderPass)
 {
 	core::Log(ELogType::Trace, "[VkShaderPipeline] Creating shader pipeline");
 
@@ -23,9 +29,6 @@ vkn::VkShaderPipeline::~VkShaderPipeline()
 
 void vkn::VkShaderPipeline::Create()
 {
-	const VkHardware& vkHardware = c_VkRenderer.m_VkHardware;
-	const VkPass* vkRenderPass = c_VkRenderer.m_PassthroughPass;
-
 	// Load shaders
 	m_VertexShaderModule = LoadShaderModule(m_VertexShaderFile);
 	m_FragmentShaderModule = LoadShaderModule(m_FragmentShaderFile);
@@ -138,7 +141,7 @@ void vkn::VkShaderPipeline::Create()
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
 	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-	VK_CALL(vkCreatePipelineLayout(vkHardware.m_LogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
+	VK_CALL(vkCreatePipelineLayout(c_LogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
 
 	// Actual pipeline definition
 	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = VkGraphicsPipelineCreateInfo();
@@ -157,25 +160,22 @@ void vkn::VkShaderPipeline::Create()
 	graphicsPipelineCreateInfo.layout = m_PipelineLayout;
 
 	// TODO: sus
-	graphicsPipelineCreateInfo.renderPass = vkRenderPass->m_RenderPass;
+	graphicsPipelineCreateInfo.renderPass = c_RenderPass;
 
 	graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	graphicsPipelineCreateInfo.basePipelineIndex = -1;
 
-	VK_CALL(vkCreateGraphicsPipelines(vkHardware.m_LogicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_GraphicsPipeline));
+	VK_CALL(vkCreateGraphicsPipelines(c_LogicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_GraphicsPipeline));
 
 	// Cleanup shader modules once pipeline is created
-	vkDestroyShaderModule(vkHardware.m_LogicalDevice, m_FragmentShaderModule, nullptr);
-	vkDestroyShaderModule(vkHardware.m_LogicalDevice, m_VertexShaderModule, nullptr);
-
+	vkDestroyShaderModule(c_LogicalDevice, m_FragmentShaderModule, nullptr);
+	vkDestroyShaderModule(c_LogicalDevice, m_VertexShaderModule, nullptr);
 }
 
 void vkn::VkShaderPipeline::Destroy()
 {
-	const VkHardware& vkHardware = c_VkRenderer.m_VkHardware;
-
-	vkDestroyPipeline(vkHardware.m_LogicalDevice, m_GraphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(vkHardware.m_LogicalDevice, m_PipelineLayout, nullptr);
+	vkDestroyPipeline(c_LogicalDevice, m_GraphicsPipeline, nullptr);
+	vkDestroyPipelineLayout(c_LogicalDevice, m_PipelineLayout, nullptr);
 }
 
 void vkn::VkShaderPipeline::Bind()
@@ -196,7 +196,7 @@ VkShaderModule vkn::VkShaderPipeline::LoadShaderModule(const std::string& shader
 	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(shaderBinaryData.data());
 
 	VkShaderModule vkShaderModule;
-	VK_CALL(vkCreateShaderModule(c_VkRenderer.m_VkHardware.m_LogicalDevice, &shaderModuleCreateInfo, nullptr, &vkShaderModule));
+	VK_CALL(vkCreateShaderModule(c_LogicalDevice, &shaderModuleCreateInfo, nullptr, &vkShaderModule));
 
 	return vkShaderModule;
 }

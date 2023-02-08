@@ -3,8 +3,9 @@
 #include "VkRenderer.h"
 #include "VkHardware.h"
 
-vkn::VkPass::VkPass(const VkRenderer& renderer)
-	: c_VkRenderer(renderer)
+vkn::VkPass::VkPass(const VkDevice& device, const VkSwapChain& swapChain)
+	: c_LogicalDevice(device)
+	, c_VkSwapChain(swapChain)
 {
 	core::Log(ELogType::Trace, "[VkPass] Creating a render pass");
 
@@ -20,11 +21,8 @@ vkn::VkPass::~VkPass()
 
 void vkn::VkPass::Create()
 {
-	const VkHardware& vkHardware = c_VkRenderer.m_VkHardware;
-	const VkSwapChain& vkSwapChain = c_VkRenderer.m_VkSwapChain;
-
 	VkAttachmentDescription colorAttachment = VkAttachmentDescription();
-	colorAttachment.format = vkSwapChain.m_SwapChainImageFormat;
+	colorAttachment.format = c_VkSwapChain.m_SwapChainImageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
 	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -62,10 +60,10 @@ void vkn::VkPass::Create()
 	renderPassCreateInfo.dependencyCount = 1;
 	renderPassCreateInfo.pDependencies = &subpassDependency;
 
-	VK_CALL(vkCreateRenderPass(vkHardware.m_LogicalDevice, &renderPassCreateInfo, nullptr, &m_RenderPass));
+	VK_CALL(vkCreateRenderPass(c_LogicalDevice, &renderPassCreateInfo, nullptr, &m_RenderPass));
 }
 
 void vkn::VkPass::Destroy()
 {
-	vkDestroyRenderPass(c_VkRenderer.m_VkHardware.m_LogicalDevice, m_RenderPass, nullptr);
+	vkDestroyRenderPass(c_LogicalDevice, m_RenderPass, nullptr);
 }
