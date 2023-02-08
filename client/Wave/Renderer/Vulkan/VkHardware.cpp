@@ -19,6 +19,7 @@ vkn::VkHardware::VkHardware(wv::Window* window)
 	CreateInstance();
 	SelectPhysicalDevice();
 	CreateLogicalDevice();
+	CreateCommandPool();
 }
 
 vkn::VkHardware::~VkHardware()
@@ -30,13 +31,14 @@ vkn::VkHardware::~VkHardware()
 
 void vkn::VkHardware::Teardown()
 {
-	// Destroy the logical device
+	vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
 	vkDestroyDevice(m_LogicalDevice, nullptr);
-
-	// Destroy the surface requested and allocated from SDL
 	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 
-	// Destroy the Vulkan instance, this should probably be destroyed last
+	auto pfnDestroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
+	if (pfnDestroyDebugMessenger)
+		pfnDestroyDebugMessenger(m_Instance, m_DebugMessenger, nullptr);
+
 	vkDestroyInstance(m_Instance, nullptr);
 }
 
@@ -48,7 +50,7 @@ void vkn::VkHardware::CreateInstance(bool listAvailableExtensions /* = false */)
 	VkRendererContext* vkContext = dynamic_cast<VkRendererContext*>(m_Window->GetRendererContext());
 
 	// Retrieve required SDL extensions from the renderer context
-	std::vector<const char*> contextExtensions = vkContext->GetVulkanContextExtensions();
+	std::vector<const char*> contextExtensions = vkContext->GetVulkanContextExtensions(true);
 
 	// Initialize the application info
 	VkApplicationInfo vkAppInfo = VkApplicationInfo();
@@ -60,23 +62,34 @@ void vkn::VkHardware::CreateInstance(bool listAvailableExtensions /* = false */)
 	vkAppInfo.apiVersion = VK_API_VERSION_1_3;
 
 	// Initialize the instance info
-	VkInstanceCreateInfo vkCreateInfo = VkInstanceCreateInfo();
-	vkCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	vkCreateInfo.pApplicationInfo = &vkAppInfo;
-	vkCreateInfo.enabledExtensionCount = static_cast<uint32_t>(contextExtensions.size());
-	vkCreateInfo.ppEnabledExtensionNames = contextExtensions.data();
+	VkInstanceCreateInfo vkInstanceCreateInfo = VkInstanceCreateInfo();
+	vkInstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	vkInstanceCreateInfo.pApplicationInfo = &vkAppInfo;
+	vkInstanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(contextExtensions.size());
+	vkInstanceCreateInfo.ppEnabledExtensionNames = contextExtensions.data();
 
 	core::Log(ELogType::Trace, "[VkHardware] Successfully loaded {} extension(s)", contextExtensions.size());
+	
+	VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = VkDebugUtilsMessengerCreateInfoEXT();
 
 	// Ensure that the instance contains validation layers if they exist
 	if (c_ValidationLayersEnabled)
 	{
-		vkCreateInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
-		vkCreateInfo.ppEnabledLayerNames = m_ValidationLayers.data();
+		// Initialize the debug messenger
+		debugMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		debugMessengerCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		debugMessengerCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+		debugMessengerCreateInfo.pfnUserCallback = VkDebugMessengerCallback;
+		debugMessengerCreateInfo.pUserData = nullptr;
+
+		vkInstanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugMessengerCreateInfo;
+
+		vkInstanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
+		vkInstanceCreateInfo.ppEnabledLayerNames = m_ValidationLayers.data();
 	}
 	else
 	{
-		vkCreateInfo.enabledLayerCount = 0;
+		vkInstanceCreateInfo.enabledLayerCount = 0;
 	}
 
 	if (listAvailableExtensions)
@@ -93,11 +106,20 @@ void vkn::VkHardware::CreateInstance(bool listAvailableExtensions /* = false */)
 		}
 	}
 
-	VK_CALL(vkCreateInstance(&vkCreateInfo, nullptr, &m_Instance));
+	VK_CALL(vkCreateInstance(&vkInstanceCreateInfo, nullptr, &m_Instance));
 	core::Log(ELogType::Trace, "[VkHardware] Created Vulkan instance");
 
 	// Setup the surface with SDL
 	vkContext->SetupSDLVulkanSurface(m_Instance, &m_Surface);
+
+	// Create debug messenger and attach it to newly created instance
+	if (c_ValidationLayersEnabled)
+	{
+		auto pfnCreateDebugMessenger = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
+		const auto result = pfnCreateDebugMessenger
+			? pfnCreateDebugMessenger(m_Instance, &debugMessengerCreateInfo, nullptr, &m_DebugMessenger)
+			: VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
 }
 
 bool vkn::VkHardware::InitValidationLayers() const
@@ -229,6 +251,18 @@ void vkn::VkHardware::CreateLogicalDevice()
 	vkGetDeviceQueue(m_LogicalDevice, queueFamily.m_PresentationFamily.value(), 0, &m_PresentationQueue);
 	if (m_GraphicsQueue && m_PresentationQueue)
 		core::Log(ELogType::Trace, "[VkHardware] Created graphics and presentation queues");
+}
+
+void vkn::VkHardware::CreateCommandPool()
+{
+	QueueFamily queueFamily = FindQueueFamilies(m_PhysicalDevice);
+
+	VkCommandPoolCreateInfo commandPoolCreateInfo = VkCommandPoolCreateInfo();
+	commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	commandPoolCreateInfo.queueFamilyIndex = queueFamily.m_GraphicsFamily.value();
+
+	VK_CALL(vkCreateCommandPool(m_LogicalDevice, &commandPoolCreateInfo, nullptr, &m_CommandPool));
 }
 
 vkn::QueueFamily vkn::VkHardware::FindQueueFamilies(const VkPhysicalDevice& device) const

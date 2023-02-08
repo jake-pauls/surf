@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <vulkan/vulkan.hpp>
 
 #include "Renderer.h"
@@ -19,6 +21,8 @@ namespace vkn
 	class VkRenderer final : public wv::Renderer
 	{
 		friend class VkPass;
+		friend class VkHardware;
+		friend class VkSwapChain;
 		friend class VkShaderPipeline;
 
 	public:
@@ -27,6 +31,8 @@ namespace vkn
 
 		void Init() override;
 
+		void Draw() override;
+
 		void Teardown() override;
 
 		void Clear() const override;
@@ -34,10 +40,21 @@ namespace vkn
 		void ClearColor() const override;
 
 	private:
+		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+	private:
 		wv::Window* m_Window = nullptr;
 
 		VkHardware m_VkHardware;
 		VkSwapChain m_VkSwapChain;
+
+		// Refactor
+		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers;
+		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
+
+		VkSemaphore m_ImageAvailableSemaphore = VK_NULL_HANDLE;
+		VkSemaphore m_RenderFinishedSemaphore = VK_NULL_HANDLE;
+		VkFence m_InFlightFence = VK_NULL_HANDLE;
 
 		// Temp
 		VkPass* m_PassthroughPass = nullptr;

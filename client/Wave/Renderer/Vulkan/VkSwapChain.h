@@ -12,6 +12,7 @@ namespace wv
 namespace vkn
 {
 	class VkPass;
+	class VkRenderer;
 	class VkHardware;
 	class VkShaderPipeline;
 
@@ -27,6 +28,7 @@ namespace vkn
 	class VkSwapChain final
 	{
 		friend class VkPass;
+		friend class VkRenderer;
 		friend class VkHardware;
 		friend class VkShaderPipeline;
 
@@ -38,9 +40,6 @@ namespace vkn
 		void Destroy();
 
 	private:
-		/// @brief Allocates image views created from default swap chain images
-		void CreateImageViews(); 
-
 		/// @brief Selects the swap surface format from a list of available formats
 		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
 

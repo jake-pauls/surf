@@ -11,6 +11,7 @@ namespace wv
 namespace vkn
 {
 	class VkPass;
+	class VkRenderer;
 	class VkSwapChain;
 	class VkShaderPipeline;
 
@@ -31,6 +32,7 @@ namespace vkn
 	class VkHardware final
 	{
 		friend class VkPass;
+		friend class VkRenderer;
 		friend class VkSwapChain;
 		friend class VkShaderPipeline;
 
@@ -39,6 +41,16 @@ namespace vkn
 		~VkHardware();
 
 		void Teardown();
+
+	private:
+		static VKAPI_ATTR VkBool32 VKAPI_CALL VkDebugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+			VkDebugUtilsMessageTypeFlagsEXT messageType,
+			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+			void* pUserData)
+		{
+			core::Log(ELogType::Error, "[VkDebugMessenger] {}", pCallbackData->pMessage);
+			return VK_FALSE;
+		}
 
 	private:
 		/// @brief Creates the Vulkan instance and loads required extensions from SDL
@@ -53,6 +65,9 @@ namespace vkn
 
 		/// @brief Initializes the logical device interfacing with Vulkan
 		void CreateLogicalDevice();
+
+		/// @brief Creates the command pool 
+		void CreateCommandPool();
 
 		/// @brief Logic to find graphics queue families 
 		/// @param device The VkPhysicalDevice to retrieve the queue families of
@@ -74,6 +89,7 @@ namespace vkn
 		VkHardware* m_VkHardware = nullptr;
 
 		VkInstance m_Instance = VK_NULL_HANDLE;
+		VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
 		VkSurfaceKHR m_Surface = VK_NULL_HANDLE;
 
 		VkPhysicalDevice m_PhysicalDevice = VK_NULL_HANDLE;
@@ -81,6 +97,8 @@ namespace vkn
 
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VkQueue m_PresentationQueue = VK_NULL_HANDLE;
+
+		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 
 		const std::vector<const char*> m_DeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 

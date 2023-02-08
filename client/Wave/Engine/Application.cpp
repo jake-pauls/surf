@@ -37,6 +37,8 @@ void wv::Application::Run()
 			if (event.type == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_Window->GetSDLWindow()))
 				isRunning = false;
 		}
+
+		m_VkRenderer->Draw();
 	}
 
 	Teardown();

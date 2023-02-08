@@ -20,8 +20,8 @@ namespace wv
 		const std::pair<uint32_t, uint32_t> MinDimensions;
 
 		WindowProperties(const std::string& title = "wave.",
-			const uint32_t width = 1250,
-			const uint32_t height = 725,
+			const uint32_t width = 800,
+			const uint32_t height = 600,
 			const uint32_t maxWidth = 3840,
 			const uint32_t maxHeight = 2160,
 			const uint32_t minWidth = 500,

@@ -85,22 +85,8 @@ void vkn::VkSwapChain::Create()
 	// Save current swap chain format and extent
 	m_SwapChainImageFormat = surfaceFormat.format;
 	m_SwapChainExtent = extent;
-}
 
-void vkn::VkSwapChain::Destroy()
-{
-	// Remove explicitly create image views
-	for (auto imageView : m_SwapChainImageViews)
-	{
-		vkDestroyImageView(c_VkHardware.m_LogicalDevice, imageView, nullptr);
-	}
-
-	// Kill current swap chain
-	vkDestroySwapchainKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, nullptr);
-}
-
-void vkn::VkSwapChain::CreateImageViews()
-{
+	// Create image views
 	m_SwapChainImageViews.resize(m_SwapChainImages.size());
 	for (size_t i = 0; i < m_SwapChainImages.size(); ++i)
 	{
@@ -123,6 +109,18 @@ void vkn::VkSwapChain::CreateImageViews()
 
 		VK_CALL(vkCreateImageView(c_VkHardware.m_LogicalDevice, &imageViewCreateInfo, nullptr, &m_SwapChainImageViews[i]));
 	}
+}
+
+void vkn::VkSwapChain::Destroy()
+{
+	// Remove explicitly create image views
+	for (auto imageView : m_SwapChainImageViews)
+	{
+		vkDestroyImageView(c_VkHardware.m_LogicalDevice, imageView, nullptr);
+	}
+
+	// Kill current swap chain
+	vkDestroySwapchainKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, nullptr);
 }
 
 VkSurfaceFormatKHR vkn::VkSwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const

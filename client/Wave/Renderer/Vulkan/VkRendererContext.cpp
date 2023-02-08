@@ -31,7 +31,9 @@ std::vector<const char*> vkn::VkRendererContext::GetVulkanContextExtensions(bool
 
 	// Ensure that the debug utils extension is included if validation layers are enabled
 	if (vLayerExtensions)
+	{
 		contextExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	}
 
 	return contextExtensions;
 }
