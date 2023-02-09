@@ -1,12 +1,13 @@
 # Shader Package
 set(SHADER_FILES 
-    glsl/Triangle.vert glsl/Triangle.frag)
+    glsl/Triangle.vert glsl/Triangle.frag
+    hlsl/Triangle.vert hlsl/Triangle.frag)
 
 # Add shaders to the source executable
 list(TRANSFORM SHADER_FILES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 target_sources(${WAVE_EXECUTABLE_NAME} PRIVATE ${SHADER_FILES})
 
-# Find shader compilers
+# Check for GLSLC
 message(STATUS)
 find_program(GLSLC glslc)
 if (GLSLC)
@@ -15,6 +16,7 @@ else()
     message(WARNING "[Shaders] Could not find GLSLC, GLSL will not be compiled to SPIR-V")
 endif()
 
+# Check for DXC (hlsl)
 find_program(DXC dxc)
 if (DXC)
     message(STATUS "[Shaders] Found DXC -> ${DXC}")
@@ -38,7 +40,6 @@ foreach (SHADER_FILE ${SHADER_FILES})
     cmake_path(GET SHADER_DIR FILENAME SHADER_DIR)
 
     # Set SPIR-V output info
-    # TODO: Change SPIR-V output directory?
     set(CURRENT_SHADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_DIR}/${SHADER_NAME}")
     set(SPIRV_OUTPUT_DIR "${CMAKE_BINARY_DIR}/client/Wave/Shaders")
 
@@ -48,7 +49,7 @@ foreach (SHADER_FILE ${SHADER_FILES})
     message(STATUS "[Shaders] (SPIR-V) Adding command to convert ${SHADER_NAME} to ${SHADER_OUT_NAME}")
 
     # Add a custom command to compile shaders to SPIR-V at build time
-    # By default, shaders will only be generated if they a valid shader to SPIR-V compiler is found on the system 
+    # By default, shaders will only be generated if a valid SPIR-V compiler is found on the system 
     if (SHADER_DIR STREQUAL "glsl" AND GLSLC)
         add_custom_command(OUTPUT ${SHADER_OUTPUT}
             COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_OUTPUT_DIR}"
@@ -56,6 +57,19 @@ foreach (SHADER_FILE ${SHADER_FILES})
             DEPENDS ${CURRENT_SHADER_PATH}
             VERBATIM)
     elseif (SHADER_DIR STREQUAL "hlsl" AND DXC)
+        # Check the shader extension in advance for hlsl compilation
+        if (SHADER_EXT STREQUAL ".vert")
+            set(IS_VERT TRUE)
+        elseif (SHADER_EXT STREQUAL ".frag")
+            set(IS_VERT FALSE)
+        endif()
+
+        add_custom_command(OUTPUT ${SHADER_OUTPUT}
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_OUTPUT_DIR}"
+            COMMAND ${DXC} -spirv -T $<IF:$<BOOL:${IS_VERT}>,vs_6_0,ps_6_0>   # Ensure the proper target is used for either vertex or pixel shaders
+                -E main ${CURRENT_SHADER_PATH} -Fo ${SHADER_OUTPUT}
+            DEPENDS ${CURRENT_SHADER_PATH}
+            VERBATIM)
     endif()
 
     list(APPEND SPIRV_OUT_FILES ${SHADER_OUTPUT})

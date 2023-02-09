@@ -11,6 +11,7 @@ CMakeCache.txt
 build/*
 Testing/*
 compile_commands.json
+compile_commands.events.json
 
 # SPIR-V
 **/Shaders/spv/**

@@ -20,8 +20,8 @@ void vkn::VkRenderer::Init()
 	// Pipeline
 	m_DefaultPass = new VkPass(m_VkHardware.m_LogicalDevice, m_VkSwapChain);
 
-	std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "Triangle.vert.glsl.spv").string();
-	std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "Triangle.frag.glsl.spv").string();
+	std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "Triangle.vert.hlsl.spv").string();
+	std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "Triangle.frag.hlsl.spv").string();
 	m_DefaultPipeline = new VkShaderPipeline(
 		m_VkHardware.m_LogicalDevice, 
 		m_DefaultPass->m_RenderPass, 

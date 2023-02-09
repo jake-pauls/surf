@@ -85,7 +85,7 @@ source_group("Renderer" FILES ${RENDERER_SOURCE_FILES} ${RENDERER_HEADER_FILES})
 source_group("Renderer/Vulkan" FILES ${VKRENDERER_SOURCE_FILES} ${VKRENDERER_HEADER_FILES})
 
 # Source groups can only be added relative to the directory the target is created in? Nice CMake.
-source_group("Renderer/Shaders" REGULAR_EXPRESSION ".*\.glsl|.*\.hlsl")
+source_group("Renderer/Shaders" REGULAR_EXPRESSION ".*\.vert|.*\.frag")
 
 target_precompile_headers(${WAVE_EXECUTABLE_NAME} PRIVATE wpch.h)
 
