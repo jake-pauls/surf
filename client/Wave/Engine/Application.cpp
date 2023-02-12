@@ -17,12 +17,12 @@ void wv::Application::Run()
 	// Create rendering context, for now it's Vulkan
 	// TODO: Determining this at runtime would be sick
 	using GAPI = Renderer::GraphicsAPI;
-	GAPI vk = GAPI::Vulkan;
+	GAPI gapi = GAPI::Vulkan;
 
 	// Initialize the window and it's corresponding graphics context
-	m_Window->Init(vk);
-	m_VkRenderer = Renderer::CreateRendererWithGAPI(m_Window, vk);
-	m_VkRenderer->Init();
+	m_Window->Init(gapi);
+	m_Renderer = Renderer::CreateRendererWithGAPI(m_Window, gapi);
+	m_Renderer->Init();
 
 	bool isRunning = true;
 	while (isRunning)
@@ -38,7 +38,13 @@ void wv::Application::Run()
 				isRunning = false;
 		}
 
-		m_VkRenderer->Draw();
+		// Wait events if the window is minimized
+		while (m_Window->IsMinimized())
+		{
+			SDL_WaitEvent(&event);
+		}
+
+		m_Renderer->Draw();
 	}
 
 	Teardown();
@@ -48,7 +54,7 @@ void wv::Application::Teardown() const
 {
 	core::Log(ELogType::Info, "[Application] Tearing down the wave");
 
-	m_VkRenderer->Teardown();
+	m_Renderer->Teardown();
 
 	m_Window->Teardown();
 }

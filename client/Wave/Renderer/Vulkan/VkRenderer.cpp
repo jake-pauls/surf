@@ -9,7 +9,6 @@
 vkn::VkRenderer::VkRenderer(wv::Window* window)
 	: m_Window(window)
 	, m_VkHardware(window)
-	, m_VkSwapChain(window, m_VkHardware)
 {
 }
 
@@ -17,8 +16,11 @@ void vkn::VkRenderer::Init()
 {
 	core::Log(ELogType::Trace, "[VkRenderer] Initializing Vulkan renderer");
 
+	// Swapchain
+	m_VkSwapChain = new VkSwapChain(m_Window, *this, m_VkHardware);
+
 	// Pipeline
-	m_DefaultPass = new VkPass(m_VkHardware.m_LogicalDevice, m_VkSwapChain);
+	m_DefaultPass = new VkPass(m_VkHardware.m_LogicalDevice, *m_VkSwapChain);
 
 	std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "Triangle.vert.hlsl.spv").string();
 	std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "Triangle.frag.hlsl.spv").string();
@@ -29,77 +31,87 @@ void vkn::VkRenderer::Init()
 		triangleFragmentShader
 	);
 
-	if (m_DefaultPass && m_DefaultPipeline)
-		core::Log(ELogType::Trace, "[VkRenderer] Successfully created first graphics pipeline");
-
-	// Framebuffer
-	{
-		const VkExtent2D& swapChainExtent = m_VkSwapChain.m_SwapChainExtent;
-		const std::vector<VkImageView>& swapChainImageViews = m_VkSwapChain.m_SwapChainImageViews;
-
-		m_VkSwapChainFramebuffers.resize(swapChainImageViews.size());
-
-		VkFramebufferCreateInfo framebufferCreateInfo = vkn::InitFramebufferCreateInfo(m_DefaultPass->m_RenderPass, swapChainExtent);
-		for (size_t i = 0; i < swapChainImageViews.size(); ++i)
-		{
-			framebufferCreateInfo.pAttachments = &swapChainImageViews[i];
-			VK_CALL(vkCreateFramebuffer(m_VkHardware.m_LogicalDevice, &framebufferCreateInfo, nullptr, &m_VkSwapChainFramebuffers[i]));
-		}
-	}
+	// Framebuffers (need to be initialized after initial renderpass)
+	m_VkSwapChain->CreateFramebuffers();
 
 	// Synchronization objects
 	{
+		m_ImageAvailableSemaphores.resize(c_MaxFramesInFlight);
+		m_RenderFinishedSemaphores.resize(c_MaxFramesInFlight);
+		m_InFlightFences.resize(c_MaxFramesInFlight);
+
 		VkSemaphoreCreateInfo semaphoreCreateInfo = vkn::InitSemaphoreCreateInfo();
 		VkFenceCreateInfo fenceCreateInfo = vkn::InitFenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
-		VK_CALL(vkCreateSemaphore(m_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphore));
-		VK_CALL(vkCreateSemaphore(m_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphore));
-		VK_CALL(vkCreateFence(m_VkHardware.m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFence));
+		for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+		{
+			VK_CALL(vkCreateSemaphore(m_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
+			VK_CALL(vkCreateSemaphore(m_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
+			VK_CALL(vkCreateFence(m_VkHardware.m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]));
+		}
 	}
 }
 
 void vkn::VkRenderer::Draw()
 {
-	const VkCommandBuffer& commandBuffer = m_VkHardware.m_CommandBuffer;
+	const std::vector<VkCommandBuffer>& commandBuffers = m_VkHardware.m_CommandBuffers;
 
-	VK_CALL(vkWaitForFences(m_VkHardware.m_LogicalDevice, 1, &m_InFlightFence, VK_TRUE, UINT64_MAX));
-	VK_CALL(vkResetFences(m_VkHardware.m_LogicalDevice, 1, &m_InFlightFence));
+	VK_CALL(vkWaitForFences(m_VkHardware.m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
 	
 	uint32_t imageIndex;
-	VK_CALL(vkAcquireNextImageKHR(m_VkHardware.m_LogicalDevice, m_VkSwapChain.m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex));
+	VkResult acquireImageResult = vkAcquireNextImageKHR(m_VkHardware.m_LogicalDevice, m_VkSwapChain->m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+	WAVE_ASSERT(acquireImageResult == VK_SUCCESS || acquireImageResult == VK_SUBOPTIMAL_KHR, "Failed to acquire next image from the swap chain");
+	if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		m_VkSwapChain->RecreateSwapchain();
+		return;
+	}
 
-	VK_CALL(vkResetCommandBuffer(commandBuffer, 0));
-	RecordCommandBuffer(commandBuffer, imageIndex);
+	// Only reset the fence if work is being submitted
+	VK_CALL(vkResetFences(m_VkHardware.m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame]));
+
+	VK_CALL(vkResetCommandBuffer(commandBuffers[m_CurrentFrame], 0));
+	RecordCommandBuffer(commandBuffers[m_CurrentFrame], imageIndex);
 
 	VkSubmitInfo submitInfo = VkSubmitInfo();
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore };
+	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame]};
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffers[m_CurrentFrame];
 
-	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore };
+	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame]};
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	VK_CALL(vkQueueSubmit(m_VkHardware.m_GraphicsQueue, 1, &submitInfo, m_InFlightFence));
+	VK_CALL(vkQueueSubmit(m_VkHardware.m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame]));
 
 	VkPresentInfoKHR presentationInfo = VkPresentInfoKHR();
 	presentationInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentationInfo.waitSemaphoreCount = 1;
 	presentationInfo.pWaitSemaphores = signalSemaphores;
 
-	VkSwapchainKHR swapChains[] = { m_VkSwapChain.m_SwapChain };
+	VkSwapchainKHR swapChains[] = { m_VkSwapChain->m_SwapChain };
 	presentationInfo.swapchainCount = 1;
 	presentationInfo.pSwapchains = swapChains;
 	presentationInfo.pImageIndices = &imageIndex;
 	presentationInfo.pResults = nullptr;
 
-	VK_CALL(vkQueuePresentKHR(m_VkHardware.m_PresentationQueue, &presentationInfo));
+	VkResult queuePresentResult = vkQueuePresentKHR(m_VkHardware.m_PresentationQueue, &presentationInfo);
+	WAVE_ASSERT(queuePresentResult == VK_SUCCESS || queuePresentResult == VK_SUBOPTIMAL_KHR, "Failed to present swap chain image");
+	if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR 
+		|| queuePresentResult == VK_SUBOPTIMAL_KHR 
+		|| m_FramebufferResized)
+	{
+		m_FramebufferResized = false;
+		m_VkSwapChain->RecreateSwapchain();
+	}
+
+	m_CurrentFrame = (m_CurrentFrame + 1) % c_MaxFramesInFlight;
 }
 
 void vkn::VkRenderer::Teardown()
@@ -109,15 +121,16 @@ void vkn::VkRenderer::Teardown()
 	// Wait for logical device to finish operations before tearing down
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware.m_LogicalDevice));
 
-	vkDestroySemaphore(m_VkHardware.m_LogicalDevice, m_ImageAvailableSemaphore, nullptr);
-	vkDestroySemaphore(m_VkHardware.m_LogicalDevice, m_RenderFinishedSemaphore, nullptr);
-	vkDestroyFence(m_VkHardware.m_LogicalDevice, m_InFlightFence, nullptr);
-
-	for (VkFramebuffer framebuffer : m_VkSwapChainFramebuffers)
-		vkDestroyFramebuffer(m_VkHardware.m_LogicalDevice, framebuffer, nullptr);
-
-	delete m_DefaultPass;
+	delete m_VkSwapChain;
 	delete m_DefaultPipeline;
+	delete m_DefaultPass;
+
+	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+	{
+		vkDestroySemaphore(m_VkHardware.m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
+		vkDestroySemaphore(m_VkHardware.m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
+		vkDestroyFence(m_VkHardware.m_LogicalDevice, m_InFlightFences[i], nullptr);
+	}
 }
 
 void vkn::VkRenderer::Clear() const
@@ -132,7 +145,7 @@ void vkn::VkRenderer::ClearColor() const
 
 void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
-	const VkExtent2D& swapChainExtent = m_VkSwapChain.m_SwapChainExtent;
+	const VkExtent2D& swapChainExtent = m_VkSwapChain->m_SwapChainExtent;
 
 	VkCommandBufferBeginInfo commandBufferInfo = vkn::InitCommandBufferBeginInfo();
 	VK_CALL(vkBeginCommandBuffer(commandBuffer, &commandBufferInfo));
@@ -140,9 +153,9 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 	VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo();
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = m_DefaultPass->m_RenderPass;
-	renderPassInfo.framebuffer = m_VkSwapChainFramebuffers[imageIndex];
+	renderPassInfo.framebuffer = m_VkSwapChain->m_VkSwapChainFramebuffers[imageIndex];
 	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = m_VkSwapChain.m_SwapChainExtent;
+	renderPassInfo.renderArea.extent = m_VkSwapChain->m_SwapChainExtent;
 
 	VkClearValue clearColor = {{{ 0.0f, 0.0f, 0.0f, 1.0f }}};
 	renderPassInfo.clearValueCount = 1;

@@ -56,6 +56,9 @@ namespace wv
 		/// @brief Retrieves pointer to the SDL windows current renderer context 
 		inline RendererContext* GetRendererContext() const { return m_RendererContext.get(); }
 
+		/// @brief Checks whether the current SDL window is minimized 
+		inline bool IsMinimized() const { return SDL_GetWindowFlags(m_Window) & SDL_WINDOW_MINIMIZED; }
+
 	private:
 		WindowProperties m_WindowProperties;
 		SDL_Window* m_Window = nullptr;

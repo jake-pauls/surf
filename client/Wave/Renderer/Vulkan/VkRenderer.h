@@ -46,16 +46,17 @@ namespace vkn
 		wv::Window* m_Window = nullptr;
 
 		VkHardware m_VkHardware;
-		VkSwapChain m_VkSwapChain;
-
-		// Refactor
-		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers;
-		VkSemaphore m_ImageAvailableSemaphore = VK_NULL_HANDLE;
-		VkSemaphore m_RenderFinishedSemaphore = VK_NULL_HANDLE;
-		VkFence m_InFlightFence = VK_NULL_HANDLE;
-
-		// Temp
+		VkSwapChain* m_VkSwapChain = nullptr;
 		VkPass* m_DefaultPass = nullptr;
 		VkShaderPipeline* m_DefaultPipeline = nullptr;
+
+		// Refactor
+		const int c_MaxFramesInFlight = 2;
+		uint32_t m_CurrentFrame = 0;
+		bool m_FramebufferResized = false;
+
+		std::vector<VkSemaphore> m_ImageAvailableSemaphores = {};
+		std::vector<VkSemaphore> m_RenderFinishedSemaphores = {};
+		std::vector<VkFence> m_InFlightFences = {};
 	};
 }

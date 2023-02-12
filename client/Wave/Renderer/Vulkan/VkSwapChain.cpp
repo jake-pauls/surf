@@ -4,16 +4,24 @@
 #include <algorithm>
 
 #include "Window.h"
+#include "VkRenderer.h"
 #include "VkHardware.h"
 #include "VkRendererContext.h"
+#include "VkInitializers.h"
 
-vkn::VkSwapChain::VkSwapChain(wv::Window* window, const VkHardware& hardware)
+vkn::VkSwapChain::VkSwapChain(
+	wv::Window* window, 
+	const VkRenderer& renderer, 
+	const VkHardware& hardware
+)
 	: m_Window(window)
+	, c_VkRenderer(renderer)
 	, c_VkHardware(hardware)
 {
 	core::Log(ELogType::Trace, "[VkSwapChain] Creating a swap chain");
 
-	Create();
+	CreateSwapchain();
+	CreateImageViews();
 }
 
 vkn::VkSwapChain::~VkSwapChain()
@@ -23,7 +31,21 @@ vkn::VkSwapChain::~VkSwapChain()
 	Destroy();
 }
 
-void vkn::VkSwapChain::Create() 
+void vkn::VkSwapChain::RecreateSwapchain()
+{
+	core::Log(ELogType::Warn, "Recreating a swapchain");
+
+	VK_CALL(vkDeviceWaitIdle(c_VkHardware.m_LogicalDevice));
+
+	// Cleanup swap chain before recreation
+	Destroy();
+
+	CreateSwapchain();
+	CreateImageViews();
+	CreateFramebuffers();
+}
+
+void vkn::VkSwapChain::CreateSwapchain() 
 {
 	// Validate swap chain with corresponding physical device before starting
 	SwapChainSupportDetails swapChainSupportDetails = QuerySwapChainSupport(c_VkHardware.m_PhysicalDevice);
@@ -71,7 +93,7 @@ void vkn::VkSwapChain::Create()
 	swapChainCreateInfo.presentMode = presentationMode;
 	swapChainCreateInfo.clipped = VK_TRUE;
 
-	// TODO: Learn about changing/rebuilding swap chains at runtime
+	// TODO: Learn about more elaborate methods for changing/rebuilding swap chains at runtime
 	//	     ex: Window resizing...
 	swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
@@ -85,7 +107,10 @@ void vkn::VkSwapChain::Create()
 	// Save current swap chain format and extent
 	m_SwapChainImageFormat = surfaceFormat.format;
 	m_SwapChainExtent = extent;
+}
 
+void vkn::VkSwapChain::CreateImageViews()
+{
 	// Create image views
 	m_SwapChainImageViews.resize(m_SwapChainImages.size());
 	for (size_t i = 0; i < m_SwapChainImages.size(); ++i)
@@ -111,9 +136,27 @@ void vkn::VkSwapChain::Create()
 	}
 }
 
+void vkn::VkSwapChain::CreateFramebuffers()
+{
+	const std::vector<VkImageView>& swapChainImageViews = m_SwapChainImageViews;
+
+	m_VkSwapChainFramebuffers.resize(swapChainImageViews.size());
+
+	VkFramebufferCreateInfo framebufferCreateInfo = vkn::InitFramebufferCreateInfo(c_VkRenderer.m_DefaultPass->m_RenderPass, m_SwapChainExtent);
+	for (size_t i = 0; i < swapChainImageViews.size(); ++i)
+	{
+		framebufferCreateInfo.pAttachments = &swapChainImageViews[i];
+		VK_CALL(vkCreateFramebuffer(c_VkHardware.m_LogicalDevice, &framebufferCreateInfo, nullptr, &m_VkSwapChainFramebuffers[i]));
+	}
+}
+
 void vkn::VkSwapChain::Destroy()
 {
-	// Remove explicitly create image views
+	for (VkFramebuffer framebuffer : m_VkSwapChainFramebuffers)
+	{
+		vkDestroyFramebuffer(c_VkHardware.m_LogicalDevice, framebuffer, nullptr);
+	}
+
 	for (auto imageView : m_SwapChainImageViews)
 	{
 		vkDestroyImageView(c_VkHardware.m_LogicalDevice, imageView, nullptr);

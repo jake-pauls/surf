@@ -85,7 +85,6 @@ namespace vkn
 
 	private:
 		wv::Window* m_Window = nullptr;
-		VkHardware* m_VkHardware = nullptr;
 
 		VkInstance m_Instance = VK_NULL_HANDLE;
 		VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
@@ -98,7 +97,7 @@ namespace vkn
 		VkQueue m_PresentationQueue = VK_NULL_HANDLE;
 
 		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
-		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
+		std::vector<VkCommandBuffer> m_CommandBuffers = {};
 
 		const std::vector<const char*> m_DeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 

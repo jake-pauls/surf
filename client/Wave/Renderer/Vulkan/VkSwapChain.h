@@ -29,12 +29,19 @@ namespace vkn
 		friend class VkPass;
 		friend class VkRenderer;
 		friend class VkHardware;
+		friend class VkRenderer;
 
 	public:
-		explicit VkSwapChain(wv::Window* window, const VkHardware& hardware);
+		explicit VkSwapChain(wv::Window* window, const VkRenderer& renderer, const VkHardware& hardware);
 		~VkSwapChain();
 
-		void Create();
+		void RecreateSwapchain();
+		void CreateFramebuffers();
+
+	private:
+		void CreateSwapchain();
+		void CreateImageViews();
+
 		void Destroy();
 
 	private:
@@ -56,11 +63,14 @@ namespace vkn
 
 	private:
 		wv::Window* m_Window = nullptr;
+		const VkRenderer& c_VkRenderer;
 		const VkHardware& c_VkHardware;
 
 		VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
 		std::vector<VkImage> m_SwapChainImages = {};
 		std::vector<VkImageView> m_SwapChainImageViews = {};
+
+		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers;
 
 		VkFormat m_SwapChainImageFormat = VK_FORMAT_UNDEFINED;
 		VkExtent2D m_SwapChainExtent = {};
