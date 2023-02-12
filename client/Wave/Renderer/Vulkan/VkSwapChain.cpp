@@ -163,6 +163,7 @@ void vkn::VkSwapChain::Destroy()
 	}
 
 	// Kill current swap chain
+	// TODO: Segfault here on Linux... possible vk spec issue?
 	vkDestroySwapchainKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, nullptr);
 }
 
