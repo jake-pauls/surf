@@ -60,7 +60,10 @@ void vkn::VkRenderer::Draw()
 	
 	uint32_t imageIndex;
 	VkResult acquireImageResult = vkAcquireNextImageKHR(m_VkHardware.m_LogicalDevice, m_VkSwapChain->m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
-	WAVE_ASSERT(acquireImageResult == VK_SUCCESS || acquireImageResult == VK_SUBOPTIMAL_KHR, "Failed to acquire next image from the swap chain");
+	WAVE_ASSERT(acquireImageResult == VK_SUCCESS 
+		|| acquireImageResult == VK_SUBOPTIMAL_KHR
+		|| acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR, "Failed to acquire next image from the swap chain");
+
 	if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		m_VkSwapChain->RecreateSwapchain();
@@ -102,7 +105,10 @@ void vkn::VkRenderer::Draw()
 	presentationInfo.pResults = nullptr;
 
 	VkResult queuePresentResult = vkQueuePresentKHR(m_VkHardware.m_PresentationQueue, &presentationInfo);
-	WAVE_ASSERT(queuePresentResult == VK_SUCCESS || queuePresentResult == VK_SUBOPTIMAL_KHR, "Failed to present swap chain image");
+	WAVE_ASSERT(queuePresentResult == VK_SUCCESS 
+		|| queuePresentResult == VK_SUBOPTIMAL_KHR
+		|| queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR, "Failed to present swap chain image");
+
 	if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR 
 		|| queuePresentResult == VK_SUBOPTIMAL_KHR 
 		|| m_FramebufferResized)

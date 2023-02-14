@@ -33,8 +33,6 @@ vkn::VkSwapChain::~VkSwapChain()
 
 void vkn::VkSwapChain::RecreateSwapchain()
 {
-	core::Log(ELogType::Warn, "Recreating a swapchain");
-
 	VK_CALL(vkDeviceWaitIdle(c_VkHardware.m_LogicalDevice));
 
 	// Cleanup swap chain before recreation
@@ -163,7 +161,6 @@ void vkn::VkSwapChain::Destroy()
 	}
 
 	// Kill current swap chain
-	// TODO: Segfault here on Linux... possible vk spec issue?
 	vkDestroySwapchainKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, nullptr);
 }
 
