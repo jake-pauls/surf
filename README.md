@@ -2,12 +2,12 @@
 <p align="center"><strike>Scripting</strike> <b>Surfing</b> the graphics pipeline.</p>
 
 ### Installation (Windows)
-Surfing is (kinda) easy.
+Surfing is (kinda) easy. Currently supported on Windows and Linux.
 
 #### Development Setup
 1. Install the [Vulkan SDK](https://vulkan.lunarg.com/sdk/home#windows)
 
-2. Ensure you have a valid shader compiler installed. The Vulkan SDK should come shipped with  a [glsl compiler](https://github.com/KhronosGroup/glslang) (`glslc`) if it was installed through the SDK. Alternatively, the [DirectX shader compiler](https://github.com/microsoft/DirectXShaderCompiler) (`dxc`) can be used to compile hlsl.
+2. Ensure you have a valid shader compiler installed. The Vulkan SDK should come shipped with  a [glsl compiler](https://github.com/KhronosGroup/glslang) (`glslc`) if it was installed through the LunarG website. Alternatively, the [DirectX shader compiler](https://github.com/microsoft/DirectXShaderCompiler) (`dxc`) can be used to compile hlsl.
 
 ```
 # or... on Arch Linux (might be similar repos for apt-get/dnf)

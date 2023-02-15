@@ -2,6 +2,10 @@
 
 #include <filesystem>
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 namespace core
 {
     using Path = std::filesystem::path;
@@ -14,9 +18,12 @@ namespace core
         static inline Path GetRootDirectory() 
         { 
 #if defined(WIN32)
-            return std::filesystem::current_path(); 
+            // TODO: MAX_PATH may not be long enough for long paths
+            char buffer[MAX_PATH];
+            GetModuleFileNameA(NULL, buffer, MAX_PATH);
+            return std::filesystem::path(buffer).parent_path();
 #elif defined(__linux__)
-            return std::filesystem::canonical("/proc/self/exe").parent_path();
+            return std::filesystem::canonical("/proc/self/exe");
 #endif
         }
 
