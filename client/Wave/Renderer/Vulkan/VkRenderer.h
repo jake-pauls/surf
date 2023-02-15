@@ -45,10 +45,10 @@ namespace vkn
 	private:
 		wv::Window* m_Window = nullptr;
 
-		VkHardware m_VkHardware;
+		VkHardware* m_VkHardware = nullptr;
 		VkSwapChain* m_VkSwapChain = nullptr;
 		VkPass* m_DefaultPass = nullptr;
-		VkShaderPipeline* m_DefaultPipeline = nullptr;
+		VkShaderPipeline* m_TrianglePipeline = nullptr;
 
 		// Refactor
 		const int c_MaxFramesInFlight = 2;

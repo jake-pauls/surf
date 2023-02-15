@@ -8,7 +8,6 @@
 
 vkn::VkRenderer::VkRenderer(wv::Window* window)
 	: m_Window(window)
-	, m_VkHardware(window)
 {
 }
 
@@ -16,20 +15,13 @@ void vkn::VkRenderer::Init()
 {
 	core::Log(ELogType::Trace, "[VkRenderer] Initializing Vulkan renderer");
 
-	// Swapchain
-	m_VkSwapChain = new VkSwapChain(m_Window, *this, m_VkHardware);
-
-	// Pipeline
-	m_DefaultPass = new VkPass(m_VkHardware.m_LogicalDevice, *m_VkSwapChain);
+	m_VkHardware = new VkHardware(m_Window);
+	m_VkSwapChain = new VkSwapChain(*this, *m_VkHardware, m_Window);
+	m_DefaultPass = new VkPass(m_VkHardware->m_LogicalDevice, *m_VkSwapChain);
 
 	std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "Triangle.vert.hlsl.spv").string();
 	std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "Triangle.frag.hlsl.spv").string();
-	m_DefaultPipeline = new VkShaderPipeline(
-		m_VkHardware.m_LogicalDevice, 
-		m_DefaultPass->m_RenderPass, 
-		triangleVertexShader, 
-		triangleFragmentShader
-	);
+	m_TrianglePipeline = new VkShaderPipeline(*this, m_VkHardware->m_LogicalDevice, triangleVertexShader, triangleFragmentShader);
 
 	// Framebuffers (need to be initialized after initial renderpass)
 	m_VkSwapChain->CreateFramebuffers();
@@ -45,21 +37,21 @@ void vkn::VkRenderer::Init()
 
 		for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
 		{
-			VK_CALL(vkCreateSemaphore(m_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
-			VK_CALL(vkCreateSemaphore(m_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
-			VK_CALL(vkCreateFence(m_VkHardware.m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]));
+			VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
+			VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
+			VK_CALL(vkCreateFence(m_VkHardware->m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]));
 		}
 	}
 }
 
 void vkn::VkRenderer::Draw()
 {
-	const std::vector<VkCommandBuffer>& commandBuffers = m_VkHardware.m_CommandBuffers;
+	const std::vector<VkCommandBuffer>& commandBuffers = m_VkHardware->m_CommandBuffers;
 
-	VK_CALL(vkWaitForFences(m_VkHardware.m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
+	VK_CALL(vkWaitForFences(m_VkHardware->m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
 	
 	uint32_t imageIndex;
-	VkResult acquireImageResult = vkAcquireNextImageKHR(m_VkHardware.m_LogicalDevice, m_VkSwapChain->m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
+	VkResult acquireImageResult = vkAcquireNextImageKHR(m_VkHardware->m_LogicalDevice, m_VkSwapChain->m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
 	WAVE_ASSERT(acquireImageResult == VK_SUCCESS 
 		|| acquireImageResult == VK_SUBOPTIMAL_KHR
 		|| acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR, "Failed to acquire next image from the swap chain");
@@ -71,7 +63,7 @@ void vkn::VkRenderer::Draw()
 	}
 
 	// Only reset the fence if work is being submitted
-	VK_CALL(vkResetFences(m_VkHardware.m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame]));
+	VK_CALL(vkResetFences(m_VkHardware->m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame]));
 
 	VK_CALL(vkResetCommandBuffer(commandBuffers[m_CurrentFrame], 0));
 	RecordCommandBuffer(commandBuffers[m_CurrentFrame], imageIndex);
@@ -91,7 +83,7 @@ void vkn::VkRenderer::Draw()
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	VK_CALL(vkQueueSubmit(m_VkHardware.m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame]));
+	VK_CALL(vkQueueSubmit(m_VkHardware->m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame]));
 
 	VkPresentInfoKHR presentationInfo = VkPresentInfoKHR();
 	presentationInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -104,7 +96,7 @@ void vkn::VkRenderer::Draw()
 	presentationInfo.pImageIndices = &imageIndex;
 	presentationInfo.pResults = nullptr;
 
-	VkResult queuePresentResult = vkQueuePresentKHR(m_VkHardware.m_PresentationQueue, &presentationInfo);
+	VkResult queuePresentResult = vkQueuePresentKHR(m_VkHardware->m_PresentationQueue, &presentationInfo);
 	WAVE_ASSERT(queuePresentResult == VK_SUCCESS 
 		|| queuePresentResult == VK_SUBOPTIMAL_KHR
 		|| queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR, "Failed to present swap chain image");
@@ -125,18 +117,22 @@ void vkn::VkRenderer::Teardown()
 	core::Log(ELogType::Trace, "[VkRenderer] Tearing down Vulkan renderer");
 
 	// Wait for logical device to finish operations before tearing down
-	VK_CALL(vkDeviceWaitIdle(m_VkHardware.m_LogicalDevice));
+	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
+	// TODO: Implement main destruction queue as opposed to relying on destructors?
 	delete m_VkSwapChain;
-	delete m_DefaultPipeline;
+	delete m_TrianglePipeline;
 	delete m_DefaultPass;
 
 	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
 	{
-		vkDestroySemaphore(m_VkHardware.m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
-		vkDestroySemaphore(m_VkHardware.m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
-		vkDestroyFence(m_VkHardware.m_LogicalDevice, m_InFlightFences[i], nullptr);
+		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
+		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
+		vkDestroyFence(m_VkHardware->m_LogicalDevice, m_InFlightFences[i], nullptr);
 	}
+
+	// Teardown hardware (devices/instance) last
+	delete m_VkHardware;
 }
 
 void vkn::VkRenderer::Clear() const
@@ -168,7 +164,7 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 	renderPassInfo.pClearValues = &clearColor;
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipeline->m_GraphicsPipeline);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TrianglePipeline->m_GraphicsPipeline);
 
 	VkViewport viewport = VkViewport();
 	viewport.x = 0.0f;

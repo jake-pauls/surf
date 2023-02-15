@@ -4,16 +4,18 @@
 #include "VkPass.h"
 #include "VkRenderer.h"
 #include "VkRendererContext.h"
+#include "VkInitializers.h"
 
 vkn::VkShaderPipeline::VkShaderPipeline(
-	const VkDevice& device, 
-	const VkRenderPass& renderPass, 
+	const VkRenderer& renderer,
+	const VkDevice& device,
 	const std::string& vertexShader, 
 	const std::string& fragmentShader
 ) 
 	: wv::Shader(vertexShader, fragmentShader)
+	, c_VkRenderer(renderer)
 	, c_LogicalDevice(device)
-	, c_RenderPass(renderPass)
+	, c_RenderPass(renderer.m_DefaultPass->m_RenderPass)
 {
 	core::Log(ELogType::Trace, "[VkShaderPipeline] Creating shader pipeline");
 
@@ -30,96 +32,36 @@ vkn::VkShaderPipeline::~VkShaderPipeline()
 void vkn::VkShaderPipeline::Create()
 {
 	// Load shaders
-	m_VertexShaderModule = LoadShaderModule(m_VertexShaderFile);
-	m_FragmentShaderModule = LoadShaderModule(m_FragmentShaderFile);
+	VkShaderModule vertexShaderModule = LoadShaderModule(m_VertexShaderFile);
+	VkShaderModule fragmentShaderModule = LoadShaderModule(m_FragmentShaderFile);
 
 	// Pipeline shader stages
-	VkPipelineShaderStageCreateInfo vertexShaderStageCreateInfo = VkPipelineShaderStageCreateInfo();
-	vertexShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertexShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertexShaderStageCreateInfo.module = m_VertexShaderModule;
-	vertexShaderStageCreateInfo.pName = "main";
-
-	VkPipelineShaderStageCreateInfo fragmentShaderStageCreateInfo = VkPipelineShaderStageCreateInfo();
-	fragmentShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fragmentShaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragmentShaderStageCreateInfo.module = m_FragmentShaderModule;
-	fragmentShaderStageCreateInfo.pName = "main";
-
-	VkPipelineShaderStageCreateInfo shaderStages[] = {
-		vertexShaderStageCreateInfo,
-		fragmentShaderStageCreateInfo
+	m_ShaderStages = {
+		vkn::InitPipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertexShaderModule),
+		vkn::InitPipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShaderModule)
 	};
 
 	// Vertex input
-	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = VkPipelineVertexInputStateCreateInfo();
-	vertexInputCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-	vertexInputCreateInfo.vertexBindingDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputCreateInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputCreateInfo.pVertexAttributeDescriptions = nullptr;
+	auto vertexInputCreateInfo = vkn::InitPipelineVertexInputStateCreateInfo();
 
 	// Input assembly
-	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = VkPipelineInputAssemblyStateCreateInfo();
-	inputAssemblyCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-	inputAssemblyCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-	inputAssemblyCreateInfo.primitiveRestartEnable = VK_FALSE;
+	auto inputAssemblyCreateInfo = vkn::InitPipelineInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+
+	// Rasterizer - turns geometry into the fragments that are colored by the fragment shader
+	auto rasterizerCreateInfo = vkn::InitPipelineRasertizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT);
+
+	// Mulisampling - can perform anti-aliasing (combining multiple fragment shader results into one pixel)
+	auto multisamplingCreateInfo = vkn::InitPipelineMultisampleStateCreateInfo();
+
+	// Color blending - fragment shader returns a color, that color has to be combined with a color in the framebuffer
+	auto colorBlendAttachment = vkn::InitPipelineColorBlendAttachmentState();
+	auto colorBlendCreateInfo = vkn::InitPipelineColorBlendStateCreateInfo(colorBlendAttachment);
 
 	// Viewport state
 	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = VkPipelineViewportStateCreateInfo();
 	viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportStateCreateInfo.viewportCount = 1;
 	viewportStateCreateInfo.scissorCount = 1;
-
-	// Rasterizer - turns geometry into the fragments that are colored by the fragment shader
-	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = VkPipelineRasterizationStateCreateInfo();
-	rasterizerCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-	rasterizerCreateInfo.depthClampEnable = VK_FALSE;
-	rasterizerCreateInfo.rasterizerDiscardEnable = VK_FALSE; // Set this to VK_TRUE to disable output to framebuffer
-	rasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_FILL; // This can change how fragments are generated for geometry
-	rasterizerCreateInfo.lineWidth = 1.0f;
-	rasterizerCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-	rasterizerCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-	rasterizerCreateInfo.depthBiasEnable = VK_FALSE;
-	rasterizerCreateInfo.depthBiasConstantFactor = 0.0f;
-	rasterizerCreateInfo.depthBiasClamp = 0.0f;
-	rasterizerCreateInfo.depthBiasSlopeFactor = 0.0f;
-
-	// Mulisampling - can perform anti-aliasing (combining multiple fragment shader results into one pixel)
-	VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo = VkPipelineMultisampleStateCreateInfo();
-	multisamplingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-	multisamplingCreateInfo.sampleShadingEnable = VK_FALSE;
-	multisamplingCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-	multisamplingCreateInfo.minSampleShading = 1.0f;
-	multisamplingCreateInfo.pSampleMask = nullptr;
-	multisamplingCreateInfo.alphaToCoverageEnable = VK_FALSE;
-	multisamplingCreateInfo.alphaToOneEnable = VK_FALSE;
-
-	// Depth and stencil testing could be done here
-
-	// Color blending - fragment shader returns a color, that color has to be combined with a color in the framebuffer
-	VkPipelineColorBlendAttachmentState colorBlendAttachment = VkPipelineColorBlendAttachmentState();
-	colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-
-	// This modifies the blend function, default is set to alpha blending
-	colorBlendAttachment.blendEnable = VK_TRUE;
-	colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
-
-	VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo = VkPipelineColorBlendStateCreateInfo();
-	colorBlendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-	colorBlendCreateInfo.logicOpEnable = VK_FALSE;
-	colorBlendCreateInfo.logicOp = VK_LOGIC_OP_COPY; // TODO: This may have to be set to a bitwise method
-	colorBlendCreateInfo.attachmentCount = 1;
-	colorBlendCreateInfo.pAttachments = &colorBlendAttachment;
-	colorBlendCreateInfo.blendConstants[0] = 0.0f;
-	colorBlendCreateInfo.blendConstants[1] = 0.0f;
-	colorBlendCreateInfo.blendConstants[2] = 0.0f;
-	colorBlendCreateInfo.blendConstants[3] = 0.0f;
 
 	// Setup dynamic states for viewport/scissor
 	// This can be manually defined to create different viewport states
@@ -134,21 +76,15 @@ void vkn::VkShaderPipeline::Create()
 	dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
 
 	// Pipeline layout
-	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = VkPipelineLayoutCreateInfo();
-	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutCreateInfo.setLayoutCount = 0;
-	pipelineLayoutCreateInfo.pSetLayouts = nullptr;
-	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+	auto pipelineLayoutCreateInfo = vkn::InitPipelineLayoutCreateInfo();
 
 	VK_CALL(vkCreatePipelineLayout(c_LogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
 
 	// Actual pipeline definition
 	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = VkGraphicsPipelineCreateInfo();
 	graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-	graphicsPipelineCreateInfo.stageCount = 2;
-	graphicsPipelineCreateInfo.pStages = shaderStages;
-
+	graphicsPipelineCreateInfo.stageCount = static_cast<uint32_t>(m_ShaderStages.size());
+	graphicsPipelineCreateInfo.pStages = m_ShaderStages.data();
 	graphicsPipelineCreateInfo.pVertexInputState = &vertexInputCreateInfo;
 	graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
 	graphicsPipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
@@ -158,18 +94,15 @@ void vkn::VkShaderPipeline::Create()
 	graphicsPipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
 	graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
 	graphicsPipelineCreateInfo.layout = m_PipelineLayout;
-
-	// TODO: sus
 	graphicsPipelineCreateInfo.renderPass = c_RenderPass;
-
 	graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	graphicsPipelineCreateInfo.basePipelineIndex = -1;
 
 	VK_CALL(vkCreateGraphicsPipelines(c_LogicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_GraphicsPipeline));
 
 	// Cleanup shader modules once pipeline is created
-	vkDestroyShaderModule(c_LogicalDevice, m_FragmentShaderModule, nullptr);
-	vkDestroyShaderModule(c_LogicalDevice, m_VertexShaderModule, nullptr);
+	vkDestroyShaderModule(c_LogicalDevice, fragmentShaderModule, nullptr);
+	vkDestroyShaderModule(c_LogicalDevice, vertexShaderModule, nullptr);
 }
 
 void vkn::VkShaderPipeline::Destroy()
@@ -180,10 +113,13 @@ void vkn::VkShaderPipeline::Destroy()
 
 void vkn::VkShaderPipeline::Bind()
 {
+	// TODO: Access command buffers and bind pipeline
+	WAVE_ASSERT(false, "Bind() is unimplemented for the Vulkan shader pipeline");
 }
 
 void vkn::VkShaderPipeline::Unbind()
 {
+	WAVE_ASSERT(false, "Unbind() is unimplemented for the Vulkan shader pipeline");
 }
 
 VkShaderModule vkn::VkShaderPipeline::LoadShaderModule(const std::string& shaderFileName)

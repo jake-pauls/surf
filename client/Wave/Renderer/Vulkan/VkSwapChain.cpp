@@ -10,9 +10,9 @@
 #include "VkInitializers.h"
 
 vkn::VkSwapChain::VkSwapChain(
-	wv::Window* window, 
-	const VkRenderer& renderer, 
-	const VkHardware& hardware
+	const VkRenderer& renderer,
+	const VkHardware& hardware,
+	wv::Window* window
 )
 	: m_Window(window)
 	, c_VkRenderer(renderer)
@@ -140,7 +140,7 @@ void vkn::VkSwapChain::CreateFramebuffers()
 
 	m_VkSwapChainFramebuffers.resize(swapChainImageViews.size());
 
-	VkFramebufferCreateInfo framebufferCreateInfo = vkn::InitFramebufferCreateInfo(c_VkRenderer.m_DefaultPass->m_RenderPass, m_SwapChainExtent);
+	auto framebufferCreateInfo = vkn::InitFramebufferCreateInfo(c_VkRenderer.m_DefaultPass->m_RenderPass, m_SwapChainExtent);
 	for (size_t i = 0; i < swapChainImageViews.size(); ++i)
 	{
 		framebufferCreateInfo.pAttachments = &swapChainImageViews[i];

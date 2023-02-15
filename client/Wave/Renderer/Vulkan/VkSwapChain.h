@@ -32,7 +32,7 @@ namespace vkn
 		friend class VkRenderer;
 
 	public:
-		explicit VkSwapChain(wv::Window* window, const VkRenderer& renderer, const VkHardware& hardware);
+		explicit VkSwapChain(const VkRenderer& renderer, const VkHardware& hardware, wv::Window* window);
 		~VkSwapChain();
 
 		void RecreateSwapchain();

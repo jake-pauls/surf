@@ -7,12 +7,14 @@ namespace vkn
     class VkRenderer;
     class VkHardware;
     class VkSwapChain;
+    class VkShaderPipeline;
 
     class VkPass
     {
         friend class VkRenderer;
         friend class VkHardware;
         friend class VkSwapChain;
+        friend class VkShaderPipeline;
 
     public:
         explicit VkPass(const VkDevice& device, const VkSwapChain& swapChain);
