@@ -1,6 +1,7 @@
 # Shader Package
 set(SHADER_FILES 
     glsl/Triangle.vert glsl/Triangle.frag
+    glsl/TriangleMesh.vert glsl/TriangleMesh.frag
     hlsl/Triangle.vert hlsl/Triangle.frag)
 
 # Add shaders to the source executable

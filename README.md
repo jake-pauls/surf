@@ -10,7 +10,7 @@ Surfing is (kinda) easy.
 2. Ensure you have a valid shader compiler installed. The Vulkan SDK should come shipped with  a [glsl compiler](https://github.com/KhronosGroup/glslang) (`glslc`) if it was installed through the SDK. Alternatively, the [DirectX shader compiler](https://github.com/microsoft/DirectXShaderCompiler) (`dxc`) can be used to compile hlsl.
 
 ```
-# or... on Arch!
+# or... on Arch Linux (might be similar repos for apt-get/dnf)
 $ sudo pacman -S shaderc
 $ sudo pacman -S directx-shader-compiler
 ```

@@ -38,7 +38,12 @@ namespace vkn
 	VkPipelineShaderStageCreateInfo InitPipelineShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule);
 
 	/// @brief Constructs a create info struct fo a vertex input state
-	VkPipelineVertexInputStateCreateInfo InitPipelineVertexInputStateCreateInfo();
+	VkPipelineVertexInputStateCreateInfo InitPipelineVertexInputStateCreateInfo(
+		const VkVertexInputBindingDescription* bindingDescriptions = VK_NULL_HANDLE, 
+		uint32_t bindingDescriptionCount = 0,
+		const VkVertexInputAttributeDescription* attributeDescriptions = VK_NULL_HANDLE,
+		uint32_t attributeDescriptionCount = 0
+	);
 
 	/// @brief Constructs a create info struct for an input assembly 
 	VkPipelineInputAssemblyStateCreateInfo InitPipelineInputAssemblyCreateInfo(VkPrimitiveTopology topology);

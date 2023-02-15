@@ -10,6 +10,10 @@ else()
 	message(WARNING "[Vendor] Failed to find the Vulkan SDK on the system! Do you have it installed?")
 endif()
 
+# VMA
+add_subdirectory(VulkanMemoryAllocator EXCLUDE_FROM_ALL)
+message(STATUS "[Vendor] Recursed and collected libraries from VulkanMemoryAllocator")
+
 # Catch2
 add_library(Catch2 INTERFACE)
 target_include_directories(Catch2 INTERFACE Catch2/single_include)
@@ -22,7 +26,7 @@ message(STATUS "[Vendor] Created library for submodule spdlog")
 
 # glm
 add_library(glm INTERFACE)
-target_include_directories(glm INTERFACE glm/glm)
+target_include_directories(glm INTERFACE glm)
 message(STATUS "[Vendor] Created library for submodule glm")
 
 # SDL

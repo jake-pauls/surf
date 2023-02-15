@@ -1,6 +1,7 @@
 #include "VkShaderPipeline.h"
 
 #include "Window.h"
+#include "VkMesh.h"
 #include "VkPass.h"
 #include "VkRenderer.h"
 #include "VkRendererContext.h"
@@ -41,8 +42,14 @@ void vkn::VkShaderPipeline::Create()
 		vkn::InitPipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShaderModule)
 	};
 
-	// Vertex input
-	auto vertexInputCreateInfo = vkn::InitPipelineVertexInputStateCreateInfo();
+	// Vertex attribute/binding descriptions
+	VkVertexInputDescription vertexInputDescription = VkVertex::GetVertexInputDescription();
+	auto vertexInputCreateInfo = vkn::InitPipelineVertexInputStateCreateInfo(
+		vertexInputDescription.m_Bindings.data(),
+		static_cast<uint32_t>(vertexInputDescription.m_Bindings.size()),
+		vertexInputDescription.m_Attributes.data(),
+		static_cast<uint32_t>(vertexInputDescription.m_Attributes.size())
+	);
 
 	// Input assembly
 	auto inputAssemblyCreateInfo = vkn::InitPipelineInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);

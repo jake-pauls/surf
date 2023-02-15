@@ -54,7 +54,8 @@ set(VKRENDERER_SOURCE_FILES
 	VkRenderer.cpp
     VkRendererContext.cpp
     VkShaderPipeline.cpp
-    VkPass.cpp)
+    VkPass.cpp
+    VkMesh.cpp)
 
 set(VKRENDERER_HEADER_FILES
     VkInitializers.h
@@ -63,7 +64,9 @@ set(VKRENDERER_HEADER_FILES
 	VkRenderer.h
     VkRendererContext.h
     VkShaderPipeline.h
-    VkPass.h)
+    VkPass.h
+    VkMesh.h
+    VkTypes.h)
 
 list(TRANSFORM VKRENDERER_SOURCE_FILES PREPEND "Renderer/Vulkan/")
 list(TRANSFORM VKRENDERER_HEADER_FILES PREPEND "Renderer/Vulkan/")
@@ -99,10 +102,12 @@ target_include_directories(${WAVE_EXECUTABLE_NAME}
 # Link the surf DSL API via it's alias, see api/CMakeLists.txt for more details
 target_link_libraries(${WAVE_EXECUTABLE_NAME}
     surf::api
-    SDL3::SDL3
     # Vendor
-    spdlog
-	${Vulkan_LIBRARY})
+    SDL3::SDL3
+	${Vulkan_LIBRARY}
+    VulkanMemoryAllocator
+    glm
+    spdlog)
 
 # Platform specific compiler flags
 if(MSVC)
@@ -118,3 +123,6 @@ if (WIN32)
         "${VENDOR_OUTPUT_DIR}/SDL/$<CONFIGURATION>/SDL3.dll"
         $<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>)
 endif()
+
+# Post-build: Create 'Vendor' directory for VS 
+set_target_properties(SDL3 VulkanMemoryAllocator PROPERTIES FOLDER Vendor)

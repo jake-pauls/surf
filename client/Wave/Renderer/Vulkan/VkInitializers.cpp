@@ -96,14 +96,24 @@ VkPipelineShaderStageCreateInfo vkn::InitPipelineShaderStageCreateInfo(VkShaderS
 	return info;
 }
 
-VkPipelineVertexInputStateCreateInfo vkn::InitPipelineVertexInputStateCreateInfo()
+VkPipelineVertexInputStateCreateInfo vkn::InitPipelineVertexInputStateCreateInfo(
+	const VkVertexInputBindingDescription* bindingDescriptions /* = VK_NULL_HANDLE */, 
+	uint32_t bindingDescriptionCount /* = 0 */,
+	const VkVertexInputAttributeDescription* attributeDescriptions /* = VK_NULL_HANDLE */,
+	uint32_t attributeDescriptionCount /* = 0 */
+)
 {
+
 	VkPipelineVertexInputStateCreateInfo info = VkPipelineVertexInputStateCreateInfo();
 	info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	info.pNext = nullptr;
 
-	info.vertexBindingDescriptionCount = 0;
-	info.vertexAttributeDescriptionCount = 0;
+	info.vertexBindingDescriptionCount = bindingDescriptionCount;
+	info.pVertexBindingDescriptions = bindingDescriptions;
+	info.vertexAttributeDescriptionCount = attributeDescriptionCount;
+	info.pVertexAttributeDescriptions = attributeDescriptions;
+
+	info.flags = 0;
 
 	return info;
 }

@@ -3,6 +3,7 @@
 
 ### Dependencies
 * [Vulkan](https://www.vulkan.org/)
+* [VMA](https://gpuopen.com/vulkan-memory-allocator/)
 * [SDL](https://www.libsdl.org/)
 * [spdlog](https://github.com/gabime/spdlog)
 * [Catch2](https://github.com/catchorg/Catch2)
