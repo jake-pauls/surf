@@ -2,6 +2,7 @@
 
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
+#include <glm/gtx/transform.hpp>
 
 #include "VkPass.h"
 #include "VkHardware.h"
@@ -28,8 +29,8 @@ void vkn::VkRenderer::Init()
 
 	// Shader generation
 	{
-		std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.vert.hlsl.spv").string();
-		std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.frag.hlsl.spv").string();
+		std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.vert.glsl.spv").string();
+		std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.frag.glsl.spv").string();
 		m_TrianglePipeline = new VkShaderPipeline(*this, m_VkHardware->m_LogicalDevice, triangleVertexShader, triangleFragmentShader);
 	}
 
@@ -140,7 +141,7 @@ void vkn::VkRenderer::Teardown()
 	// Wait for logical device to finish operations before tearing down
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
-	// TODO: Abstract mesh services into VkMeshLoader?
+	// TODO: Abstract mesh loading
 	vmaDestroyBuffer(m_Allocator, m_TriangleMesh.m_VertexBuffer.m_Buffer, m_TriangleMesh.m_VertexBuffer.m_Allocation);
 	vmaDestroyAllocator(m_Allocator);
 
@@ -214,6 +215,27 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 	VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_TriangleMesh.m_VertexBuffer.m_Buffer, &offset);
 
+	///////// MVP/Uniform Testing
+	//glm::vec3 cameraPosition = { 0.0f, 0.0f, -1.0f };
+	//glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
+	//glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), 1700.0f / 900.0f, 0.1f, 1000.0f); 
+	//projectionMatrix[1][1] *= -1;
+	//glm::mat4 modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(m_CurrentFrame * 0.4f), glm::vec3(0, 1, 0));
+	//glm::mat4 mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+
+	glm::mat4 model = glm::mat4();
+	glm::mat4 view = glm::lookAt(
+		glm::vec3(0.0, 0.0, 2.0f),
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 0.0f, 1.0f)
+	);
+	glm::mat4 proj = glm::perspective(70.0f, 800.0f / 600.0f, 1.0f, 100.0f);
+	glm::mat4 mvp = proj * view * model;
+
+	MeshPushConstants constants;
+	constants.m_MvpMatrix = mvp;
+	vkCmdPushConstants(commandBuffer, m_TrianglePipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &constants);
+
 	// Draw geometry
 	vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_TriangleMesh.m_Vertices.size()), 1, 0, 0);
 
@@ -231,9 +253,9 @@ void vkn::VkRenderer::LoadMeshes()
 	m_TriangleMesh.m_Vertices[2].m_Position = {  0.0f, -1.0f, 0.0f };
 
 	// Vertex colors
-	m_TriangleMesh.m_Vertices[0].m_Color = { 0.0f, 1.0f, 0.0f };
+	m_TriangleMesh.m_Vertices[0].m_Color = { 1.0f, 0.0f, 0.0f };
 	m_TriangleMesh.m_Vertices[1].m_Color = { 0.0f, 1.0f, 0.0f };
-	m_TriangleMesh.m_Vertices[2].m_Color = { 0.0f, 1.0f, 0.0f };
+	m_TriangleMesh.m_Vertices[2].m_Color = { 0.0f, 0.0f, 1.0f };
 
 	UploadMesh(m_TriangleMesh);
 }

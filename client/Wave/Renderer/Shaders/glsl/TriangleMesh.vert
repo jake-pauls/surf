@@ -6,9 +6,15 @@ layout(location = 2) in vec3 in_Color;
 
 layout(location = 0) out vec3 o_FragColor;
 
+layout(push_constant) uniform constants 
+{
+    vec4 m_Data;
+    mat4 m_MvpMatrix;
+} u_PushConstants;
+
 void main()
 {
-    gl_Position = vec4(in_Position, 1.0);
+    gl_Position = u_PushConstants.m_MvpMatrix * vec4(in_Position, 1.0f);
 
     o_FragColor = in_Color;
 }

@@ -32,6 +32,7 @@ vkn::VkShaderPipeline::~VkShaderPipeline()
 
 void vkn::VkShaderPipeline::Create()
 {
+
 	// Load shaders
 	VkShaderModule vertexShaderModule = LoadShaderModule(m_VertexShaderFile);
 	VkShaderModule fragmentShaderModule = LoadShaderModule(m_FragmentShaderFile);
@@ -84,6 +85,15 @@ void vkn::VkShaderPipeline::Create()
 
 	// Pipeline layout
 	auto pipelineLayoutCreateInfo = vkn::InitPipelineLayoutCreateInfo();
+
+	// Initialize push constants (uniforms)
+	VkPushConstantRange push_constant;
+	push_constant.offset = 0;
+	push_constant.size = sizeof(MeshPushConstants);
+	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	pipelineLayoutCreateInfo.pPushConstantRanges = &push_constant;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 
 	VK_CALL(vkCreatePipelineLayout(c_LogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
 

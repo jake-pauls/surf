@@ -44,6 +44,7 @@ namespace vkn
 	private:
 		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
+		// TODO: Abstract mesh loading
 		void LoadMeshes();
 		void UploadMesh(VkMesh& mesh);
 
