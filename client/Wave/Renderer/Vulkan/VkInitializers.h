@@ -58,7 +58,7 @@ namespace vkn
 	VkPipelineColorBlendAttachmentState InitPipelineColorBlendAttachmentState();
 
 	/// @brief Constructs a create info struct for a color blend state
-	VkPipelineColorBlendStateCreateInfo InitPipelineColorBlendStateCreateInfo(VkPipelineColorBlendAttachmentState colorBlendAttachment);
+	VkPipelineColorBlendStateCreateInfo InitPipelineColorBlendStateCreateInfo(VkPipelineColorBlendAttachmentState* colorBlendAttachment);
 
 	/// @brief Constructs a create info struct for a pipeline layout
 	VkPipelineLayoutCreateInfo InitPipelineLayoutCreateInfo();

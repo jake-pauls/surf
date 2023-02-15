@@ -63,7 +63,7 @@ void vkn::VkShaderPipeline::Create()
 
 	// Color blending - fragment shader returns a color, that color has to be combined with a color in the framebuffer
 	auto colorBlendAttachment = vkn::InitPipelineColorBlendAttachmentState();
-	auto colorBlendCreateInfo = vkn::InitPipelineColorBlendStateCreateInfo(colorBlendAttachment);
+	auto colorBlendCreateInfo = vkn::InitPipelineColorBlendStateCreateInfo(&colorBlendAttachment);
 
 	// Viewport state
 	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = VkPipelineViewportStateCreateInfo();

@@ -191,7 +191,7 @@ VkPipelineColorBlendAttachmentState vkn::InitPipelineColorBlendAttachmentState()
 	return colorBlendAttachment;
 }
 
-VkPipelineColorBlendStateCreateInfo vkn::InitPipelineColorBlendStateCreateInfo(VkPipelineColorBlendAttachmentState colorBlendAttachment)
+VkPipelineColorBlendStateCreateInfo vkn::InitPipelineColorBlendStateCreateInfo(VkPipelineColorBlendAttachmentState* colorBlendAttachment)
 {
 	VkPipelineColorBlendStateCreateInfo info = VkPipelineColorBlendStateCreateInfo();
 
@@ -199,7 +199,7 @@ VkPipelineColorBlendStateCreateInfo vkn::InitPipelineColorBlendStateCreateInfo(V
 	info.logicOpEnable = VK_FALSE;
 	info.logicOp = VK_LOGIC_OP_COPY; 	
 	info.attachmentCount = 1;
-	info.pAttachments = &colorBlendAttachment;
+	info.pAttachments = colorBlendAttachment;
 
 	info.blendConstants[0] = 0.0f;
 	info.blendConstants[1] = 0.0f;
