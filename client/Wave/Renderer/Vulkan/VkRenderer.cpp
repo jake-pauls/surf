@@ -29,8 +29,8 @@ void vkn::VkRenderer::Init()
 
 	// Shader generation
 	{
-		std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.vert.glsl.spv").string();
-		std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.frag.glsl.spv").string();
+		std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.vert.hlsl.spv").string();
+		std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.frag.hlsl.spv").string();
 		m_TrianglePipeline = new VkShaderPipeline(*this, m_VkHardware->m_LogicalDevice, triangleVertexShader, triangleFragmentShader);
 	}
 
@@ -186,7 +186,7 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 	renderPassInfo.renderArea.extent = m_VkSwapChain->m_SwapChainExtent;
 
 	// Set clear color
-	VkClearValue clearColor = {{{ 0.0f, 0.0f, 0.0f, 1.0f }}};
+	VkClearValue clearColor = { {{ 0.0f, 0.0f, 0.0f, 1.0f }} };
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearColor;
 
@@ -215,25 +215,17 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 	VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_TriangleMesh.m_VertexBuffer.m_Buffer, &offset);
 
-	///////// MVP/Uniform Testing
-	//glm::vec3 cameraPosition = { 0.0f, 0.0f, -1.0f };
-	//glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
-	//glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), 1700.0f / 900.0f, 0.1f, 1000.0f); 
-	//projectionMatrix[1][1] *= -1;
-	//glm::mat4 modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(m_CurrentFrame * 0.4f), glm::vec3(0, 1, 0));
-	//glm::mat4 mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+	// MVP/Uniform Testing
+	glm::vec3 cameraPosition = { 0.0f, 0.0f, -2.0f };
+	glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
+	glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), viewport.width / viewport.height, 0.1f, 200.0f);
+	projectionMatrix[1][1] *= -1;
 
-	glm::mat4 model = glm::mat4();
-	glm::mat4 view = glm::lookAt(
-		glm::vec3(0.0, 0.0, 2.0f),
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 1.0f)
-	);
-	glm::mat4 proj = glm::perspective(70.0f, 800.0f / 600.0f, 1.0f, 100.0f);
-	glm::mat4 mvp = proj * view * model;
+	glm::mat4 modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(static_cast<float>(core::Timer::DeltaTime()) * 0.4f), glm::vec3(0, 1, 0));
+	glm::mat4 mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
 	MeshPushConstants constants;
-	constants.m_MvpMatrix = mvp;
+	constants.m_MvpMatrix = mvpMatrix;
 	vkCmdPushConstants(commandBuffer, m_TrianglePipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &constants);
 
 	// Draw geometry

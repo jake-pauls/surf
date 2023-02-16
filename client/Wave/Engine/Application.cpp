@@ -1,5 +1,7 @@
 #include "Application.h"
 
+#include "Time.h"
+
 wv::Application::Application()
 	: m_Window(new Window)
 {
@@ -27,6 +29,9 @@ void wv::Application::Run()
 	bool isRunning = true;
 	while (isRunning)
 	{
+		// Tick delta time
+		core::Timer::Tick();
+
 		// Handle polled events
 		SDL_Event event;
 		while (SDL_PollEvent(&event))

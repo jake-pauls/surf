@@ -87,13 +87,13 @@ void vkn::VkShaderPipeline::Create()
 	auto pipelineLayoutCreateInfo = vkn::InitPipelineLayoutCreateInfo();
 
 	// Initialize push constants (uniforms)
-	VkPushConstantRange push_constant;
-	push_constant.offset = 0;
-	push_constant.size = sizeof(MeshPushConstants);
-	push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	VkPushConstantRange pushConstant = VkPushConstantRange();
+	pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	pushConstant.size = sizeof(MeshPushConstants);
+	pushConstant.offset = 0;
 
-	pipelineLayoutCreateInfo.pPushConstantRanges = &push_constant;
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstant;
 
 	VK_CALL(vkCreatePipelineLayout(c_LogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
 

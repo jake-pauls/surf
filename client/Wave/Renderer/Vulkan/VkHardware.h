@@ -103,7 +103,10 @@ namespace vkn
 
 #ifdef _WAVE_DEBUG
 		const bool c_ValidationLayersEnabled = true;
-		const std::vector<const char*> m_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
+		const std::vector<const char*> m_ValidationLayers = { 
+			"VK_LAYER_KHRONOS_validation",	// Core Validation 
+			"VK_LAYER_LUNARG_monitor"		// Framerate Display on Win32
+		};
 #else
 		const bool c_ValidationLayersEnabled = false;
 		const std::vector<const char*> m_ValidationLayers = {};

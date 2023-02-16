@@ -6,7 +6,8 @@ set(CORE_SOURCE_FILES
     Log.cpp
     Asserts.cpp
     StringHelpers.cpp
-    FileHelpers.cpp)
+    FileHelpers.cpp
+    Timer.cpp)
 
 set(CORE_HEADER_FILES
     Define.h
@@ -15,7 +16,8 @@ set(CORE_HEADER_FILES
     Memory.h
     StringHelpers.h
     FileHelpers.h
-    FileSystem.h)
+    FileSystem.h
+    Timer.h)
 
 list(TRANSFORM CORE_SOURCE_FILES PREPEND "Core/")
 list(TRANSFORM CORE_HEADER_FILES PREPEND "Core/")

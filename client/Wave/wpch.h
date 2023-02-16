@@ -5,6 +5,7 @@
 
 /// Core
 #include "Log.h"
+#include "Timer.h"
 #include "Asserts.h"
 #include "Define.h"
 #include "Memory.h"
