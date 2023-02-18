@@ -14,20 +14,25 @@ build_dir = os.path.join(surf_dir, 'build')
 is_win32 = platform.system() == 'Windows'
 
 
-"""
-Simple logging function
-"""
-def log(msg):
+def log(msg: str) -> None:
+    """
+    Simple logging function
+    
+    Parameters
+    ----------
+    msg : str
+        Message to be logged
+    """
     print(f"[surf.py] {msg}")
 
 
-"""
-Simple build script for the project that drops the CMake build into a directory
-Build configuration can be passed either as 'Debug' or 'Release' 
+def main() -> None:
+    """
+    Simple build script for the project that drops the CMake build into a directory
+    Build configuration can be passed either as 'Debug' or 'Release' 
 
-ex: python surf.py debug
-"""
-def main():
+    ex: python surf.py debug
+    """
     # Check if a valid build configuration was passed
     # Argument is 'debug' by default 
     build_cfg = "debug"
@@ -66,7 +71,6 @@ def main():
         log("Use 'make' to run the project")
 
     log("surf!")
-
 
 
 if __name__ == '__main__':

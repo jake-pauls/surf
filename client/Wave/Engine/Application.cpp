@@ -1,6 +1,6 @@
 #include "Application.h"
 
-#include "Time.h"
+#include "Timer.h"
 
 wv::Application::Application()
 	: m_Window(new Window)

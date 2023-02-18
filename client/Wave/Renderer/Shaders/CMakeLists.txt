@@ -43,7 +43,7 @@ foreach (SHADER_FILE ${SHADER_FILES})
 
     # Set SPIR-V output info
     set(CURRENT_SHADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${SHADER_DIR}/${SHADER_NAME}")
-    set(SPIRV_OUTPUT_DIR "${CMAKE_BINARY_DIR}/client/Wave/")
+    set(SPIRV_OUTPUT_DIR "${CMAKE_BINARY_DIR}/client/Wave")
 
     # Set Shader output info, append shader dir (ie: glsl, hlsl, cg, etc.) to prevent duplicates
     set(SHADER_OUT_NAME "${SHADER_NAME}.${SHADER_DIR}.spv")
@@ -53,7 +53,7 @@ foreach (SHADER_FILE ${SHADER_FILES})
     # By default, shaders will only be generated if a valid SPIR-V compiler is found on the system 
     if (SHADER_DIR STREQUAL "glsl" AND GLSLC)
         add_custom_command(OUTPUT "${SPIRV_OUTPUT_DIR}/$<CONFIG>/Shaders/${SHADER_OUT_NAME}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_OUTPUT_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_OUTPUT_DIR}/$<CONFIG>/Shaders"
             COMMAND ${GLSLC} ${CURRENT_SHADER_PATH} -o "${SPIRV_OUTPUT_DIR}/$<CONFIG>/Shaders/${SHADER_OUT_NAME}"
             DEPENDS ${CURRENT_SHADER_PATH}
             VERBATIM)
@@ -66,7 +66,7 @@ foreach (SHADER_FILE ${SHADER_FILES})
         endif()
 
         add_custom_command(OUTPUT "${SPIRV_OUTPUT_DIR}/$<CONFIG>/Shaders/${SHADER_OUT_NAME}"
-            COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_OUTPUT_DIR}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_OUTPUT_DIR}/$<CONFIG>/Shaders"
             COMMAND ${DXC} -spirv -T $<IF:$<BOOL:${IS_VERT}>,vs_6_0,ps_6_0>   # Ensure the proper target is used for either vertex or pixel shaders
                 -E main ${CURRENT_SHADER_PATH} -Fo "${SPIRV_OUTPUT_DIR}/$<CONFIG>/Shaders/${SHADER_OUT_NAME}"
             DEPENDS ${CURRENT_SHADER_PATH}

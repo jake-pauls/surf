@@ -80,6 +80,11 @@ add_executable(${WAVE_EXECUTABLE_NAME} wpch.h
     ${RENDERER_SOURCE_FILES} ${RENDERER_HEADER_FILES}
 	${VKRENDERER_SOURCE_FILES} ${VKRENDERER_HEADER_FILES})
 
+# Place executable in the config directory on unix platforms 
+if (UNIX)
+    set_target_properties(${WAVE_EXECUTABLE_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/")
+endif()
+
 # Compile and add shader files
 add_subdirectory(Renderer/Shaders)
 

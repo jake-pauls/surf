@@ -23,7 +23,7 @@ namespace core
             GetModuleFileNameA(NULL, buffer, MAX_PATH);
             return std::filesystem::path(buffer).parent_path();
 #elif defined(__linux__)
-            return std::filesystem::canonical("/proc/self/exe");
+            return std::filesystem::canonical("/proc/self/exe").parent_path();
 #endif
         }
 
