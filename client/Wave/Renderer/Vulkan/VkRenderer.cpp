@@ -13,6 +13,7 @@
 vkn::VkRenderer::VkRenderer(wv::Window* window)
 	: m_Window(window)
 	, m_TriangleMesh()
+	, m_SuzanneMesh()
 {
 }
 
@@ -23,28 +24,29 @@ void vkn::VkRenderer::Init()
 	// Default hardware
 	{
 		m_VkHardware = new VkHardware(m_Window);
+
+		// Memory allocation
+		{
+			VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo();
+			allocatorCreateInfo.physicalDevice = m_VkHardware->m_PhysicalDevice;
+			allocatorCreateInfo.device = m_VkHardware->m_LogicalDevice;
+			allocatorCreateInfo.instance = m_VkHardware->m_Instance;
+			VK_CALL(vmaCreateAllocator(&allocatorCreateInfo, &m_VmaAllocator));
+		}
+
 		m_VkSwapChain = new VkSwapChain(*this, *m_VkHardware, m_Window);
 		m_DefaultPass = new VkPass(m_VkHardware->m_LogicalDevice, *m_VkSwapChain);
 	}
 
 	// Shader generation
 	{
-		std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.vert.hlsl.spv").string();
-		std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.frag.hlsl.spv").string();
+		std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.vert.glsl.spv").string();
+		std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.frag.glsl.spv").string();
 		m_TrianglePipeline = new VkShaderPipeline(*this, m_VkHardware->m_LogicalDevice, triangleVertexShader, triangleFragmentShader);
 	}
 
 	// Framebuffers (need to be initialized after initial renderpass)
 	m_VkSwapChain->CreateFramebuffers();
-
-	// Memory allocation
-	{
-		VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo();
-		allocatorCreateInfo.physicalDevice = m_VkHardware->m_PhysicalDevice;
-		allocatorCreateInfo.device = m_VkHardware->m_LogicalDevice;
-		allocatorCreateInfo.instance = m_VkHardware->m_Instance;
-		VK_CALL(vmaCreateAllocator(&allocatorCreateInfo, &m_Allocator));
-	}
 
 	// Synchronization objects
 	{
@@ -142,8 +144,8 @@ void vkn::VkRenderer::Teardown()
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
 	// TODO: Abstract mesh loading
-	vmaDestroyBuffer(m_Allocator, m_TriangleMesh.m_VertexBuffer.m_Buffer, m_TriangleMesh.m_VertexBuffer.m_Allocation);
-	vmaDestroyAllocator(m_Allocator);
+	//vmaDestroyBuffer(m_VmaAllocator, m_TriangleMesh.m_VertexBuffer.m_Buffer, m_TriangleMesh.m_VertexBuffer.m_Allocation);
+	vmaDestroyBuffer(m_VmaAllocator, m_SuzanneMesh.m_VertexBuffer.m_Buffer, m_SuzanneMesh.m_VertexBuffer.m_Allocation);
 
 	// TODO: Implement main destruction queue as opposed to relying on destructors?
 	delete m_VkSwapChain;
@@ -157,18 +159,23 @@ void vkn::VkRenderer::Teardown()
 		vkDestroyFence(m_VkHardware->m_LogicalDevice, m_InFlightFences[i], nullptr);
 	}
 
+	// Destroy vma allocator towards the end
+	vmaDestroyAllocator(m_VmaAllocator);
+
 	// Teardown hardware (devices/instance) last
 	delete m_VkHardware;
 }
 
 void vkn::VkRenderer::Clear() const
 {
-	// TODO
+	// TODO: Unimplemented
+	WAVE_ASSERT(false, "Clear() is unimplemented for the VulkanRenderer");
 }
 
 void vkn::VkRenderer::ClearColor() const
 {
-	// TODO
+	// TODO: Unimplemented
+	WAVE_ASSERT(false, "ClearColor() is unimplemented for the VulkanRenderer");
 }
 
 void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -178,17 +185,20 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 	VkCommandBufferBeginInfo commandBufferInfo = vkn::InitCommandBufferBeginInfo();
 	VK_CALL(vkBeginCommandBuffer(commandBuffer, &commandBufferInfo));
 
-	VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo();
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = m_DefaultPass->m_RenderPass;
-	renderPassInfo.framebuffer = m_VkSwapChain->m_VkSwapChainFramebuffers[imageIndex];
-	renderPassInfo.renderArea.offset = { 0, 0 };
-	renderPassInfo.renderArea.extent = m_VkSwapChain->m_SwapChainExtent;
+	VkRenderPassBeginInfo renderPassInfo = vkn::InitRenderPassBeginInfo(
+		m_DefaultPass->m_RenderPass, 
+		m_VkSwapChain->m_VkSwapChainFramebuffers[imageIndex],
+		swapChainExtent
+	);
 
-	// Set clear color
-	VkClearValue clearColor = { {{ 0.0f, 0.0f, 0.0f, 1.0f }} };
-	renderPassInfo.clearValueCount = 1;
-	renderPassInfo.pClearValues = &clearColor;
+	VkClearValue clearColor;
+	clearColor.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
+	VkClearValue depthClear;
+	depthClear.depthStencil.depth = 1.0f;
+	VkClearValue clearValues[] = { clearColor, depthClear };
+
+	renderPassInfo.pClearValues = &clearValues[0];
+	renderPassInfo.clearValueCount = 2;
 
 	// Start render pass
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -213,23 +223,26 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 
 	// Bind geometry
 	VkDeviceSize offset = 0;
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_TriangleMesh.m_VertexBuffer.m_Buffer, &offset);
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_SuzanneMesh.m_VertexBuffer.m_Buffer, &offset);
 
 	// MVP/Uniform Testing
-	glm::vec3 cameraPosition = { 0.0f, 0.0f, -2.0f };
+	glm::vec3 cameraPosition = { 1.0f, -1.0f, -8.0f };
 	glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
 	glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), viewport.width / viewport.height, 0.1f, 200.0f);
 	projectionMatrix[1][1] *= -1;
 
-	glm::mat4 modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(static_cast<float>(core::Timer::DeltaTime()) * 0.4f), glm::vec3(0, 1, 0));
+	glm::mat4 modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f));
+	modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(core::Timer::DeltaTime() * 0.02f), glm::vec3(0, 1, 0));
+
 	glm::mat4 mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
 
-	MeshPushConstants constants;
+	// Submit push constants (uniforms)
+	VkMeshPushConstants constants;
 	constants.m_MvpMatrix = mvpMatrix;
-	vkCmdPushConstants(commandBuffer, m_TrianglePipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &constants);
+	vkCmdPushConstants(commandBuffer, m_TrianglePipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
 
 	// Draw geometry
-	vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_TriangleMesh.m_Vertices.size()), 1, 0, 0);
+	vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_SuzanneMesh.m_Vertices.size()), 1, 0, 0);
 
 	vkCmdEndRenderPass(commandBuffer);
 	VK_CALL(vkEndCommandBuffer(commandBuffer));
@@ -249,7 +262,10 @@ void vkn::VkRenderer::LoadMeshes()
 	m_TriangleMesh.m_Vertices[1].m_Color = { 0.0f, 1.0f, 0.0f };
 	m_TriangleMesh.m_Vertices[2].m_Color = { 0.0f, 0.0f, 1.0f };
 
-	UploadMesh(m_TriangleMesh);
+	m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
+
+	//UploadMesh(m_TriangleMesh);
+	UploadMesh(m_SuzanneMesh);
 }
 
 void vkn::VkRenderer::UploadMesh(VkMesh& mesh)
@@ -262,7 +278,7 @@ void vkn::VkRenderer::UploadMesh(VkMesh& mesh)
 	// Data should be writeable by CPU and readable by GPU
 	VmaAllocationCreateInfo vmaAllocationCreateInfo = VmaAllocationCreateInfo();
 	vmaAllocationCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-	VK_CALL(vmaCreateBuffer(m_Allocator, 
+	VK_CALL(vmaCreateBuffer(m_VmaAllocator, 
 		&bufferCreateInfo, 
 		&vmaAllocationCreateInfo, 
 		&mesh.m_VertexBuffer.m_Buffer, 
@@ -270,7 +286,7 @@ void vkn::VkRenderer::UploadMesh(VkMesh& mesh)
 		nullptr));
 
 	void* meshData;
-	vmaMapMemory(m_Allocator, mesh.m_VertexBuffer.m_Allocation, &meshData);
+	vmaMapMemory(m_VmaAllocator, mesh.m_VertexBuffer.m_Allocation, &meshData);
 	memcpy(meshData, mesh.m_Vertices.data(), mesh.m_Vertices.size() * sizeof(VkVertex));
-	vmaUnmapMemory(m_Allocator, mesh.m_VertexBuffer.m_Allocation);
+	vmaUnmapMemory(m_VmaAllocator, mesh.m_VertexBuffer.m_Allocation);
 }

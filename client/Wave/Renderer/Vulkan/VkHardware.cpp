@@ -187,7 +187,6 @@ void vkn::VkHardware::SelectPhysicalDevice()
 	{
 		m_PhysicalDevice = candidateDevices.begin()->second;
 
-		// TODO: Abstract device into sepearte class and retrieve props/features inherently
 		VkPhysicalDeviceProperties vkPhysicalDeviceProps = VkPhysicalDeviceProperties();
 		vkGetPhysicalDeviceProperties(m_PhysicalDevice, &vkPhysicalDeviceProps);
 		VkPhysicalDeviceFeatures vkPhysicalDeviceFeatures = VkPhysicalDeviceFeatures();

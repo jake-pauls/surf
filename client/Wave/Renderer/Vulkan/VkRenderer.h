@@ -54,7 +54,7 @@ namespace vkn
 		// Default Hardware
 		VkHardware* m_VkHardware = nullptr;
 		VkSwapChain* m_VkSwapChain = nullptr;
-		VmaAllocator m_Allocator = nullptr;
+		VmaAllocator m_VmaAllocator = nullptr;
 
 		// Passes/Pipelines
 		VkPass* m_DefaultPass = nullptr;
@@ -62,6 +62,7 @@ namespace vkn
 
 		// Temp
 		VkMesh m_TriangleMesh;
+		VkMesh m_SuzanneMesh;
 
 		// Frame Management
 		const int c_MaxFramesInFlight = 2;

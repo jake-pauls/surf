@@ -4,6 +4,8 @@
 
 #include <vulkan/vulkan.h>
 
+#include "VkTypes.h"
+
 namespace wv
 {
 	class Window;
@@ -41,6 +43,7 @@ namespace vkn
 	private:
 		void CreateSwapchain();
 		void CreateImageViews();
+		void CreateDepthImage();
 
 		void Destroy();
 
@@ -69,10 +72,13 @@ namespace vkn
 		VkSwapchainKHR m_SwapChain = VK_NULL_HANDLE;
 		std::vector<VkImage> m_SwapChainImages = {};
 		std::vector<VkImageView> m_SwapChainImageViews = {};
-
-		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers;
+		std::vector<VkFramebuffer> m_VkSwapChainFramebuffers = {};
 
 		VkFormat m_SwapChainImageFormat = VK_FORMAT_UNDEFINED;
 		VkExtent2D m_SwapChainExtent = {};
+
+		VkFormat m_DepthFormat = {};
+		VmaAllocatedImage m_DepthImage = {};
+		VkImageView m_DepthImageView = VK_NULL_HANDLE;
 	};
 }

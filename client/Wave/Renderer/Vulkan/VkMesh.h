@@ -28,5 +28,13 @@ namespace vkn
 	{
 		std::vector<VkVertex> m_Vertices;
 		VmaAllocatedBuffer m_VertexBuffer;
+
+		bool LoadFromObj(const char* filename);
 	};
+
+    struct VkMeshPushConstants
+    {
+        glm::vec4 m_Data;
+        glm::mat4 m_MvpMatrix;
+    };
 }

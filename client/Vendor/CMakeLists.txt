@@ -32,3 +32,7 @@ message(STATUS "[Vendor] Created library for submodule glm")
 # SDL
 add_subdirectory(SDL EXCLUDE_FROM_ALL)
 message(STATUS "[Vendor] Recursed and collected libraries from SDL3")
+
+# tinyobjloader 
+add_subdirectory(tinyobjloader EXCLUDE_FROM_ALL)
+message(STATUS "[Vendor] Recursed and collected libraries from tinyobjloader")

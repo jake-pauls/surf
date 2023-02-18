@@ -31,7 +31,7 @@ namespace vkn
 	VkSemaphoreCreateInfo InitSemaphoreCreateInfo(VkSemaphoreCreateFlags flags = 0);
 
 	///
-	///	Pipeline
+	///	Pipeline / ShaderPipeline
 	/// 
 
 	/// @brief Constructs create info struct for a pipeline stage 
@@ -62,4 +62,23 @@ namespace vkn
 
 	/// @brief Constructs a create info struct for a pipeline layout
 	VkPipelineLayoutCreateInfo InitPipelineLayoutCreateInfo();
+
+	/// @brief Constructs a create info struct for pipeline depth testing information 
+	VkPipelineDepthStencilStateCreateInfo InitPipelineDepthStencilStateCreateInfo(bool useDepthTest, bool useDepthWrite, VkCompareOp compareOp);
+
+	///
+	/// Renderpass
+	/// 
+
+	VkRenderPassBeginInfo InitRenderPassBeginInfo(VkRenderPass renderPass, VkFramebuffer framebuffer, VkExtent2D extent);
+
+	///
+	///	Images
+	/// 
+
+	/// @brief Constructs a create info struct for an image 
+	VkImageCreateInfo InitImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent);
+
+	/// @brief Constructs a create info struct for an image view
+	VkImageViewCreateInfo InitImageViewCreateInfo(VkFormat format, VkImage image, VkImageAspectFlags flags);
 }

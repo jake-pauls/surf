@@ -9,12 +9,6 @@ namespace vkn
     class VkPass;
     class VkRenderer;
 
-    struct MeshPushConstants
-    {
-        glm::vec4 m_Data;
-        glm::mat4 m_MvpMatrix;
-    };
-
     class VkShaderPipeline : public wv::Shader
     {
         friend class VkPass;

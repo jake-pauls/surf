@@ -114,7 +114,8 @@ target_link_libraries(${WAVE_EXECUTABLE_NAME}
 	${Vulkan_LIBRARY}
     VulkanMemoryAllocator
     glm
-    spdlog)
+    spdlog
+    tinyobjloader)
 
 # Platform specific compiler flags
 if(MSVC)
@@ -131,5 +132,11 @@ if (WIN32)
         $<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>)
 endif()
 
+# Post-build: copy the assets folder into the build folder
+add_custom_command(TARGET ${WAVE_EXECUTABLE_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/Assets" "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Assets")
+
 # Post-build: Create 'Vendor' directory for VS 
-set_target_properties(SDL3 VulkanMemoryAllocator PROPERTIES FOLDER Vendor)
+set_target_properties(SDL3 VulkanMemoryAllocator  PROPERTIES FOLDER Vendor)

@@ -22,6 +22,7 @@ vkn::VkSwapChain::VkSwapChain(
 
 	CreateSwapchain();
 	CreateImageViews();
+	CreateDepthImage();
 }
 
 vkn::VkSwapChain::~VkSwapChain()
@@ -40,6 +41,7 @@ void vkn::VkSwapChain::RecreateSwapchain()
 
 	CreateSwapchain();
 	CreateImageViews();
+	CreateDepthImage();
 	CreateFramebuffers();
 }
 
@@ -91,8 +93,7 @@ void vkn::VkSwapChain::CreateSwapchain()
 	swapChainCreateInfo.presentMode = presentationMode;
 	swapChainCreateInfo.clipped = VK_TRUE;
 
-	// TODO: Learn about more elaborate methods for changing/rebuilding swap chains at runtime
-	//	     ex: Window resizing...
+	// TODO: Pass reference to old swap chain here when create a new one (ie: when framebuffer is resized)
 	swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
 	VK_CALL(vkCreateSwapchainKHR(c_VkHardware.m_LogicalDevice, &swapChainCreateInfo, nullptr, &m_SwapChain));
@@ -113,25 +114,36 @@ void vkn::VkSwapChain::CreateImageViews()
 	m_SwapChainImageViews.resize(m_SwapChainImages.size());
 	for (size_t i = 0; i < m_SwapChainImages.size(); ++i)
 	{
-		VkImageViewCreateInfo imageViewCreateInfo = VkImageViewCreateInfo();
-		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		imageViewCreateInfo.image = m_SwapChainImages[i];
-		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		imageViewCreateInfo.format = m_SwapChainImageFormat;
-
-		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-		imageViewCreateInfo.subresourceRange.levelCount = 1;
-		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-		imageViewCreateInfo.subresourceRange.layerCount = 1;
+		auto imageViewCreateInfo = vkn::InitImageViewCreateInfo(m_SwapChainImageFormat, m_SwapChainImages[i], VK_IMAGE_ASPECT_COLOR_BIT);
 
 		VK_CALL(vkCreateImageView(c_VkHardware.m_LogicalDevice, &imageViewCreateInfo, nullptr, &m_SwapChainImageViews[i]));
 	}
+}
+
+void vkn::VkSwapChain::CreateDepthImage()
+{
+	VkExtent3D depthImageExtent = {
+		m_SwapChainExtent.width,
+		m_SwapChainExtent.height,
+		1
+	};
+
+	m_DepthFormat = VK_FORMAT_D32_SFLOAT;
+
+	auto depthImageCreateInfo = vkn::InitImageCreateInfo(m_DepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImageExtent);
+
+	// Allocate depth image from GPU memory
+	VmaAllocationCreateInfo depthImageAllocationCreateInfo = VmaAllocationCreateInfo();
+	depthImageAllocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+	depthImageAllocationCreateInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+	// Allocate and create the image
+	VK_CALL(vmaCreateImage(c_VkRenderer.m_VmaAllocator, &depthImageCreateInfo, &depthImageAllocationCreateInfo, &m_DepthImage.m_Image, &m_DepthImage.m_Allocation, nullptr));
+
+	auto depthImageViewCreateInfo = vkn::InitImageViewCreateInfo(m_DepthFormat, m_DepthImage.m_Image, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+	// Create the image view
+	VK_CALL(vkCreateImageView(c_VkHardware.m_LogicalDevice, &depthImageViewCreateInfo, nullptr, &m_DepthImageView));
 }
 
 void vkn::VkSwapChain::CreateFramebuffers()
@@ -143,13 +155,22 @@ void vkn::VkSwapChain::CreateFramebuffers()
 	auto framebufferCreateInfo = vkn::InitFramebufferCreateInfo(c_VkRenderer.m_DefaultPass->m_RenderPass, m_SwapChainExtent);
 	for (size_t i = 0; i < swapChainImageViews.size(); ++i)
 	{
-		framebufferCreateInfo.pAttachments = &swapChainImageViews[i];
+		VkImageView attachments[2];
+		attachments[0] = m_SwapChainImageViews[i];
+		attachments[1] = m_DepthImageView;
+
+		framebufferCreateInfo.pAttachments = &attachments[0];
+		framebufferCreateInfo.attachmentCount = 2;
+
 		VK_CALL(vkCreateFramebuffer(c_VkHardware.m_LogicalDevice, &framebufferCreateInfo, nullptr, &m_VkSwapChainFramebuffers[i]));
 	}
 }
 
 void vkn::VkSwapChain::Destroy()
 {
+	vkDestroyImageView(c_VkHardware.m_LogicalDevice, m_DepthImageView, nullptr);
+	vmaDestroyImage(c_VkRenderer.m_VmaAllocator, m_DepthImage.m_Image, m_DepthImage.m_Allocation);
+
 	for (VkFramebuffer framebuffer : m_VkSwapChainFramebuffers)
 	{
 		vkDestroyFramebuffer(c_VkHardware.m_LogicalDevice, framebuffer, nullptr);

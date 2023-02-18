@@ -61,6 +61,9 @@ void vkn::VkShaderPipeline::Create()
 	// Mulisampling - can perform anti-aliasing (combining multiple fragment shader results into one pixel)
 	auto multisamplingCreateInfo = vkn::InitPipelineMultisampleStateCreateInfo();
 
+	// Depth stencil - sets up depth testing/sampling
+	auto depthStencilStateCreateInfo = vkn::InitPipelineDepthStencilStateCreateInfo(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+
 	// Color blending - fragment shader returns a color, that color has to be combined with a color in the framebuffer
 	auto colorBlendAttachment = vkn::InitPipelineColorBlendAttachmentState();
 	auto colorBlendCreateInfo = vkn::InitPipelineColorBlendStateCreateInfo(&colorBlendAttachment);
@@ -89,7 +92,7 @@ void vkn::VkShaderPipeline::Create()
 	// Initialize push constants (uniforms)
 	VkPushConstantRange pushConstant = VkPushConstantRange();
 	pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	pushConstant.size = sizeof(MeshPushConstants);
+	pushConstant.size = sizeof(VkMeshPushConstants);
 	pushConstant.offset = 0;
 
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
@@ -107,7 +110,7 @@ void vkn::VkShaderPipeline::Create()
 	graphicsPipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
 	graphicsPipelineCreateInfo.pRasterizationState = &rasterizerCreateInfo;
 	graphicsPipelineCreateInfo.pMultisampleState = &multisamplingCreateInfo;
-	graphicsPipelineCreateInfo.pDepthStencilState = nullptr;
+	graphicsPipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
 	graphicsPipelineCreateInfo.pColorBlendState = &colorBlendCreateInfo;
 	graphicsPipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
 	graphicsPipelineCreateInfo.layout = m_PipelineLayout;
@@ -131,12 +134,12 @@ void vkn::VkShaderPipeline::Destroy()
 void vkn::VkShaderPipeline::Bind()
 {
 	// TODO: Access command buffers and bind pipeline
-	WAVE_ASSERT(false, "Bind() is unimplemented for the Vulkan shader pipeline");
+	WAVE_ASSERT(false, "Bind() is unimplemented for the VulkanShaderPipeline");
 }
 
 void vkn::VkShaderPipeline::Unbind()
 {
-	WAVE_ASSERT(false, "Unbind() is unimplemented for the Vulkan shader pipeline");
+	WAVE_ASSERT(false, "Unbind() is unimplemented for the VulkanShaderPipeline");
 }
 
 VkShaderModule vkn::VkShaderPipeline::LoadShaderModule(const std::string& shaderFileName)

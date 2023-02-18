@@ -1,5 +1,9 @@
 #include "VkInitializers.h"
 
+///
+/// Commands
+/// 
+
 VkCommandPoolCreateInfo vkn::InitCommandPoolCreateInfo(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags /* = 0 */)
 {
 	VkCommandPoolCreateInfo info = VkCommandPoolCreateInfo();
@@ -56,6 +60,10 @@ VkFramebufferCreateInfo vkn::InitFramebufferCreateInfo(VkRenderPass renderPass, 
 	return info;
 }
 
+///
+/// Synchronization Objects
+/// 
+
 VkFenceCreateInfo vkn::InitFenceCreateInfo(VkFenceCreateFlags flags /* = 0 */)
 {
 	VkFenceCreateInfo info = VkFenceCreateInfo();
@@ -77,6 +85,10 @@ VkSemaphoreCreateInfo vkn::InitSemaphoreCreateInfo(VkSemaphoreCreateFlags flags 
 
 	return info;
 }
+
+///
+///	Pipeline
+/// 
 
 VkPipelineShaderStageCreateInfo vkn::InitPipelineShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule)
 {
@@ -141,9 +153,8 @@ VkPipelineRasterizationStateCreateInfo vkn::InitPipelineRasertizationStateCreate
 	info.polygonMode = polygonMode;				// This can change how fragments are generated for geometry
 	info.lineWidth = 1.0f;
 
-	// No backface culling
 	info.cullMode = cullMode;
-	info.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	info.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
 	// No depth bias
 	info.depthBiasEnable = VK_FALSE;
@@ -220,6 +231,95 @@ VkPipelineLayoutCreateInfo vkn::InitPipelineLayoutCreateInfo()
 	info.pSetLayouts = nullptr;
 	info.pushConstantRangeCount = 0;
 	info.pPushConstantRanges = nullptr;
+
+	return info;
+}
+
+VkPipelineDepthStencilStateCreateInfo vkn::InitPipelineDepthStencilStateCreateInfo(bool useDepthTest, bool useDepthWrite, VkCompareOp compareOp)
+{
+	VkPipelineDepthStencilStateCreateInfo info = VkPipelineDepthStencilStateCreateInfo();
+	info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	info.pNext = nullptr;
+	
+	info.depthTestEnable = useDepthTest ? VK_TRUE : VK_FALSE;
+	info.depthWriteEnable = useDepthWrite ? VK_TRUE : VK_FALSE;
+	info.depthCompareOp = useDepthTest ? compareOp : VK_COMPARE_OP_ALWAYS;
+
+	info.depthBoundsTestEnable = VK_FALSE;
+	info.minDepthBounds = 0.0f;
+	info.maxDepthBounds = 1.0f;
+	info.stencilTestEnable = VK_FALSE;
+
+	return info;
+}
+
+///  
+/// Renderpass
+///
+
+VkRenderPassBeginInfo vkn::InitRenderPassBeginInfo(VkRenderPass renderPass, VkFramebuffer framebuffer, VkExtent2D extent)
+{
+	VkRenderPassBeginInfo info = VkRenderPassBeginInfo();
+	info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	info.pNext = nullptr;
+
+	info.renderPass = renderPass;
+	info.framebuffer = framebuffer;
+	info.renderArea.extent = extent;
+
+	info.renderArea.offset = { 0, 0 };
+
+	return info;
+}
+
+///
+///	Images
+/// 
+
+VkImageCreateInfo vkn::InitImageCreateInfo(VkFormat format, VkImageUsageFlags usageFlags, VkExtent3D extent)
+{
+	VkImageCreateInfo info = VkImageCreateInfo();
+	info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	info.pNext = nullptr;
+
+	info.imageType = VK_IMAGE_TYPE_2D;
+
+	info.format = format;
+	info.extent = extent;
+
+	info.mipLevels = 1;
+	info.arrayLayers = 1;
+	info.samples = VK_SAMPLE_COUNT_1_BIT;
+	info.tiling = VK_IMAGE_TILING_OPTIMAL;
+	info.usage = usageFlags;
+
+	return info;
+}
+
+VkImageViewCreateInfo vkn::InitImageViewCreateInfo(
+	VkFormat format, 
+	VkImage image, 
+	VkImageAspectFlags aspectFlags
+)
+{
+	VkImageViewCreateInfo info = VkImageViewCreateInfo();
+	info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	info.pNext = nullptr;
+
+	info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	info.image = image;
+	info.format = format;
+
+	info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+	info.subresourceRange.aspectMask = aspectFlags;
+	info.subresourceRange.baseMipLevel = 0;
+	info.subresourceRange.levelCount = 1;
+	info.subresourceRange.baseArrayLayer = 0;
+	info.subresourceRange.layerCount = 1;
 
 	return info;
 }
