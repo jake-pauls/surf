@@ -1,5 +1,5 @@
 <p align="center">
-    <img src=".github/assets/surf-logo.png" alt="surf">
+    <img src=".github/assets/surf.png" alt="surf">
 </p>
 <p align="center">
     <b>Surfing</b> the graphics pipeline.
@@ -32,7 +32,7 @@ $ ./build/surf.sln
 $ sudo pacman -S vulkan-devel
 ```
 
-2. Ensure you have a valid shader compiler installed. Similar to Windows, either `glslc` or `dxc` can be used to compile glsl or hlsl respectively. 
+2. Ensure you have a valid shader compiler installed. Similar to Windows, either `glslc` or `dxc` can be used to compile glsl or hlsl respectively.
 ```
 # Arch Linux
 $ sudo pacman -S shaderc                 # glslc
