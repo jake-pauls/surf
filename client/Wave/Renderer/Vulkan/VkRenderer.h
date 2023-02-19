@@ -37,12 +37,20 @@ namespace vkn
 
 		void Teardown() override;
 
-		void Clear() const override;
+		inline void Clear() const override { WAVE_ASSERT(false, "Clear() is unimplemented for the VulkanRenderer"); }
 
-		void ClearColor() const override;
+	public:
+		inline VkCommandBuffer GetCurrentCommandBuffer() const { return m_CommandBuffers[m_CurrentFrameIndex]; };
 
 	private:
-		void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		void CreateCommandBuffers();
+
+		VkCommandBuffer BeginFrame();
+		void EndFrame();
+
+		void BeginRenderPass(VkCommandBuffer commandBuffer);
+		void DrawCommandBuffer(VkCommandBuffer commandBuffer);
+		void EndRenderPass(VkCommandBuffer commandBuffer);
 
 		// TODO: Abstract mesh loading
 		void LoadMeshes();
@@ -55,25 +63,21 @@ namespace vkn
 		VkHardware* m_VkHardware = nullptr;
 		VkSwapChain* m_VkSwapChain = nullptr;
 		VmaAllocator m_VmaAllocator = nullptr;
+		std::vector<VkCommandBuffer> m_CommandBuffers = {};
 
 		// Passes/Pipelines
 		VkPass* m_DefaultPass = nullptr;
-		VkShaderPipeline* m_TrianglePipeline = nullptr;
-
-		// Temp
-		VkMesh m_TriangleMesh;
-		VkMesh m_SuzanneMesh;
+		VkShaderPipeline* m_DefaultPipeline = nullptr;
 
 		// Frame Management
-		const int c_MaxFramesInFlight = 2;
-		uint32_t m_CurrentFrame = 0;
+		bool m_IsFrameStarted = false;
+		int m_CurrentFrameIndex = 0;
+		uint32_t m_CurrentImageIndex = 0;
 
-		// Detect Framebuffer Resizing
 		bool m_FramebufferResized = false;
 
-		// Synchronization
-		std::vector<VkSemaphore> m_ImageAvailableSemaphores = {};
-		std::vector<VkSemaphore> m_RenderFinishedSemaphores = {};
-		std::vector<VkFence> m_InFlightFences = {};
+		// Temp
+		VkMesh m_TriangleMesh = {};
+		VkMesh m_SuzanneMesh = {};
 	};
 }

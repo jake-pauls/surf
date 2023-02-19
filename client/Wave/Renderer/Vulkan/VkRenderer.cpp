@@ -12,8 +12,6 @@
 
 vkn::VkRenderer::VkRenderer(wv::Window* window)
 	: m_Window(window)
-	, m_TriangleMesh()
-	, m_SuzanneMesh()
 {
 }
 
@@ -24,116 +22,53 @@ void vkn::VkRenderer::Init()
 	// Default hardware
 	{
 		m_VkHardware = new VkHardware(m_Window);
+	}
 
-		// Memory allocation
-		{
-			VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo();
-			allocatorCreateInfo.physicalDevice = m_VkHardware->m_PhysicalDevice;
-			allocatorCreateInfo.device = m_VkHardware->m_LogicalDevice;
-			allocatorCreateInfo.instance = m_VkHardware->m_Instance;
-			VK_CALL(vmaCreateAllocator(&allocatorCreateInfo, &m_VmaAllocator));
-		}
+	// Memory allocation
+	{
+		VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo();
+		allocatorCreateInfo.physicalDevice = m_VkHardware->m_PhysicalDevice;
+		allocatorCreateInfo.device = m_VkHardware->m_LogicalDevice;
+		allocatorCreateInfo.instance = m_VkHardware->m_Instance;
+		VK_CALL(vmaCreateAllocator(&allocatorCreateInfo, &m_VmaAllocator));
+	}
 
+	// Swap chain and render passes
+	{
 		m_VkSwapChain = new VkSwapChain(*this, *m_VkHardware, m_Window);
 		m_DefaultPass = new VkPass(m_VkHardware->m_LogicalDevice, *m_VkSwapChain);
+
+		// Framebuffers (need to be initialized after initial renderpass)
+		m_VkSwapChain->CreateFramebuffers();
 	}
 
 	// Shader generation
 	{
-		std::string triangleVertexShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.vert.glsl.spv").string();
-		std::string triangleFragmentShader = (core::FileSystem::GetShaderDirectory() / "TriangleMesh.frag.glsl.spv").string();
-		m_TrianglePipeline = new VkShaderPipeline(*this, m_VkHardware->m_LogicalDevice, triangleVertexShader, triangleFragmentShader);
+		std::string triangleVertexShader = core::FileSystem::GetShaderPath("TriangleMesh.vert.glsl.spv").string();
+		std::string triangleFragmentShader = core::FileSystem::GetShaderPath("TriangleMesh.frag.glsl.spv").string();
+		m_DefaultPipeline = new VkShaderPipeline(*this, m_VkHardware->m_LogicalDevice, triangleVertexShader, triangleFragmentShader);
 	}
 
-	// Framebuffers (need to be initialized after initial renderpass)
-	m_VkSwapChain->CreateFramebuffers();
+	// Command buffer allocations
+	CreateCommandBuffers();
 
-	// Synchronization objects
-	{
-		m_ImageAvailableSemaphores.resize(c_MaxFramesInFlight);
-		m_RenderFinishedSemaphores.resize(c_MaxFramesInFlight);
-		m_InFlightFences.resize(c_MaxFramesInFlight);
-
-		VkSemaphoreCreateInfo semaphoreCreateInfo = vkn::InitSemaphoreCreateInfo();
-		VkFenceCreateInfo fenceCreateInfo = vkn::InitFenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
-
-		for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-		{
-			VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
-			VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
-			VK_CALL(vkCreateFence(m_VkHardware->m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]));
-		}
-	}
-
+	// Load 3D meshes
 	LoadMeshes();
 }
 
 void vkn::VkRenderer::Draw()
 {
-	const std::vector<VkCommandBuffer>& commandBuffers = m_VkHardware->m_CommandBuffers;
-
-	VK_CALL(vkWaitForFences(m_VkHardware->m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame], VK_TRUE, UINT64_MAX));
-	
-	uint32_t imageIndex;
-	VkResult acquireImageResult = vkAcquireNextImageKHR(m_VkHardware->m_LogicalDevice, m_VkSwapChain->m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &imageIndex);
-	WAVE_ASSERT(acquireImageResult == VK_SUCCESS 
-		|| acquireImageResult == VK_SUBOPTIMAL_KHR
-		|| acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR, "Failed to acquire next image from the swap chain");
-
-	if (acquireImageResult == VK_ERROR_OUT_OF_DATE_KHR)
-	{
-		m_VkSwapChain->RecreateSwapchain();
+	VkCommandBuffer commandBuffer = BeginFrame();
+	if (commandBuffer == VK_NULL_HANDLE) 
 		return;
-	}
 
-	// Only reset the fence if work is being submitted
-	VK_CALL(vkResetFences(m_VkHardware->m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrame]));
+	BeginRenderPass(commandBuffer);
 
-	VK_CALL(vkResetCommandBuffer(commandBuffers[m_CurrentFrame], 0));
-	RecordCommandBuffer(commandBuffers[m_CurrentFrame], imageIndex);
+	DrawCommandBuffer(commandBuffer);
 
-	VkSubmitInfo submitInfo = VkSubmitInfo();
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	EndRenderPass(commandBuffer);
 
-	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[m_CurrentFrame]};
-	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
-	submitInfo.pWaitDstStageMask = waitStages;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffers[m_CurrentFrame];
-
-	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[m_CurrentFrame]};
-	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
-
-	VK_CALL(vkQueueSubmit(m_VkHardware->m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[m_CurrentFrame]));
-
-	VkPresentInfoKHR presentationInfo = VkPresentInfoKHR();
-	presentationInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-	presentationInfo.waitSemaphoreCount = 1;
-	presentationInfo.pWaitSemaphores = signalSemaphores;
-
-	VkSwapchainKHR swapChains[] = { m_VkSwapChain->m_SwapChain };
-	presentationInfo.swapchainCount = 1;
-	presentationInfo.pSwapchains = swapChains;
-	presentationInfo.pImageIndices = &imageIndex;
-	presentationInfo.pResults = nullptr;
-
-	VkResult queuePresentResult = vkQueuePresentKHR(m_VkHardware->m_PresentationQueue, &presentationInfo);
-	WAVE_ASSERT(queuePresentResult == VK_SUCCESS 
-		|| queuePresentResult == VK_SUBOPTIMAL_KHR
-		|| queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR, "Failed to present swap chain image");
-
-	if (queuePresentResult == VK_ERROR_OUT_OF_DATE_KHR 
-		|| queuePresentResult == VK_SUBOPTIMAL_KHR 
-		|| m_FramebufferResized)
-	{
-		m_FramebufferResized = false;
-		m_VkSwapChain->RecreateSwapchain();
-	}
-
-	m_CurrentFrame = (m_CurrentFrame + 1) % c_MaxFramesInFlight;
+	EndFrame();
 }
 
 void vkn::VkRenderer::Teardown()
@@ -144,67 +79,94 @@ void vkn::VkRenderer::Teardown()
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
 	// TODO: Abstract mesh loading
-	//vmaDestroyBuffer(m_VmaAllocator, m_TriangleMesh.m_VertexBuffer.m_Buffer, m_TriangleMesh.m_VertexBuffer.m_Allocation);
 	vmaDestroyBuffer(m_VmaAllocator, m_SuzanneMesh.m_VertexBuffer.m_Buffer, m_SuzanneMesh.m_VertexBuffer.m_Allocation);
 
 	// TODO: Implement main destruction queue as opposed to relying on destructors?
 	delete m_VkSwapChain;
-	delete m_TrianglePipeline;
+	delete m_DefaultPipeline;
 	delete m_DefaultPass;
-
-	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-	{
-		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
-		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
-		vkDestroyFence(m_VkHardware->m_LogicalDevice, m_InFlightFences[i], nullptr);
-	}
 
 	// Destroy vma allocator towards the end
 	vmaDestroyAllocator(m_VmaAllocator);
+
+	// Free command buffers
+	vkFreeCommandBuffers(m_VkHardware->m_LogicalDevice, m_VkHardware->m_CommandPool, static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
+	m_CommandBuffers.clear();
 
 	// Teardown hardware (devices/instance) last
 	delete m_VkHardware;
 }
 
-void vkn::VkRenderer::Clear() const
+void vkn::VkRenderer::CreateCommandBuffers()
 {
-	// TODO: Unimplemented
-	WAVE_ASSERT(false, "Clear() is unimplemented for the VulkanRenderer");
+	m_CommandBuffers.resize(m_VkSwapChain->c_MaxFramesInFlight);
+
+	auto commandBufferAllocateInfo = vkn::InitCommandBufferAllocateInfo(m_VkHardware->m_CommandPool, 2);
+	VK_CALL(vkAllocateCommandBuffers(m_VkHardware->m_LogicalDevice, &commandBufferAllocateInfo, m_CommandBuffers.data()));
 }
 
-void vkn::VkRenderer::ClearColor() const
+VkCommandBuffer vkn::VkRenderer::BeginFrame()
 {
-	// TODO: Unimplemented
-	WAVE_ASSERT(false, "ClearColor() is unimplemented for the VulkanRenderer");
-}
+	WAVE_ASSERT(!m_IsFrameStarted, "Cannot call BeginFrame while another frame is in progress");
 
-void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
-{
-	const VkExtent2D& swapChainExtent = m_VkSwapChain->m_SwapChainExtent;
+	VkResult result = m_VkSwapChain->AcquireNextImage(&m_CurrentImageIndex);
+	WAVE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR, "Failed to acquire next image from the swap chain");
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		m_VkSwapChain->RecreateSwapchain();
+		return VK_NULL_HANDLE;
+	}
+
+	m_IsFrameStarted = true;
+
+	VkCommandBuffer commandBuffer = GetCurrentCommandBuffer();
+	VK_CALL(vkResetCommandBuffer(commandBuffer, 0));
 
 	VkCommandBufferBeginInfo commandBufferInfo = vkn::InitCommandBufferBeginInfo();
 	VK_CALL(vkBeginCommandBuffer(commandBuffer, &commandBufferInfo));
 
-	VkRenderPassBeginInfo renderPassInfo = vkn::InitRenderPassBeginInfo(
-		m_DefaultPass->m_RenderPass, 
-		m_VkSwapChain->m_VkSwapChainFramebuffers[imageIndex],
-		swapChainExtent
-	);
+	return commandBuffer;
+}
+
+void vkn::VkRenderer::EndFrame()
+{
+	WAVE_ASSERT(m_IsFrameStarted, "Cannot call BeginFrame without a frame in progress");
+
+	VkCommandBuffer commandBuffer = GetCurrentCommandBuffer();
+	VK_CALL(vkEndCommandBuffer(commandBuffer));
+
+	VkResult result = m_VkSwapChain->SubmitCommandBuffers(&commandBuffer, m_CurrentImageIndex);
+	WAVE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR, "Failed to present swap chain image");
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_FramebufferResized)
+	{
+		m_FramebufferResized = false;
+		m_VkSwapChain->RecreateSwapchain();
+	}
+
+	m_IsFrameStarted = false;
+	m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % m_VkSwapChain->c_MaxFramesInFlight;
+}
+
+void vkn::VkRenderer::BeginRenderPass(VkCommandBuffer commandBuffer)
+{
+	WAVE_ASSERT(m_IsFrameStarted, "Cannot begin render pass without a frame in progress");
+	WAVE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end render pass on a command buffer from a different frame");
+
+	const VkExtent2D& swapChainExtent = m_VkSwapChain->m_SwapChainExtent;
+	auto renderPassInfo = vkn::InitRenderPassBeginInfo(m_DefaultPass->m_RenderPass, m_VkSwapChain->m_VkSwapChainFramebuffers[m_CurrentImageIndex], swapChainExtent);
 
 	VkClearValue clearColor;
 	clearColor.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
 	VkClearValue depthClear;
 	depthClear.depthStencil.depth = 1.0f;
-	VkClearValue clearValues[] = { clearColor, depthClear };
 
+	VkClearValue clearValues[] = { clearColor, depthClear };
 	renderPassInfo.pClearValues = &clearValues[0];
 	renderPassInfo.clearValueCount = 2;
 
 	// Start render pass
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-	// Bind required pipeline
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_TrianglePipeline->m_GraphicsPipeline);
 
 	// Setup viewport/scissor
 	VkViewport viewport = VkViewport();
@@ -214,12 +176,19 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 	viewport.height = static_cast<float>(swapChainExtent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
 	VkRect2D scissor = VkRect2D();
 	scissor.offset = { 0, 0 };
 	scissor.extent = swapChainExtent;
+
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+}
+
+void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
+{
+	// Bind required pipeline
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipeline->m_GraphicsPipeline);
 
 	// Bind geometry
 	VkDeviceSize offset = 0;
@@ -228,7 +197,7 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 	// MVP/Uniform Testing
 	glm::vec3 cameraPosition = { 1.0f, -1.0f, -8.0f };
 	glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
-	glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), viewport.width / viewport.height, 0.1f, 200.0f);
+	glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), 800.0f / 600.0f, 0.1f, 200.0f);
 	projectionMatrix[1][1] *= -1;
 
 	glm::mat4 modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f));
@@ -239,13 +208,18 @@ void vkn::VkRenderer::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 	// Submit push constants (uniforms)
 	VkMeshPushConstants constants;
 	constants.m_MvpMatrix = mvpMatrix;
-	vkCmdPushConstants(commandBuffer, m_TrianglePipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
+	vkCmdPushConstants(commandBuffer, m_DefaultPipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
 
 	// Draw geometry
 	vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_SuzanneMesh.m_Vertices.size()), 1, 0, 0);
+}
+
+void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
+{
+	WAVE_ASSERT(m_IsFrameStarted, "Cannot end render pass without a frame in progress");
+	WAVE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot  render pass on a command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
-	VK_CALL(vkEndCommandBuffer(commandBuffer));
 }
 
 void vkn::VkRenderer::LoadMeshes()
@@ -264,7 +238,7 @@ void vkn::VkRenderer::LoadMeshes()
 
 	m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
 
-	//UploadMesh(m_TriangleMesh);
+	// UploadMesh(m_TriangleMesh);
 	UploadMesh(m_SuzanneMesh);
 }
 

@@ -66,7 +66,7 @@ namespace vkn
 		void CreateLogicalDevice();
 
 		/// @brief Creates the command pool and allocates a main command buffer
-		void CreateCommands();
+		void CreateCommandPool();
 
 		/// @brief Logic to find graphics queue families 
 		/// @param device The VkPhysicalDevice to retrieve the queue families of

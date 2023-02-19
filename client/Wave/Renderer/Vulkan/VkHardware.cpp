@@ -22,7 +22,7 @@ vkn::VkHardware::VkHardware(wv::Window* window)
 	SelectPhysicalDevice();
 	CreateLogicalDevice();
 
-	CreateCommands();
+	CreateCommandPool();
 }
 
 vkn::VkHardware::~VkHardware()
@@ -255,17 +255,13 @@ void vkn::VkHardware::CreateLogicalDevice()
 		core::Log(ELogType::Trace, "[VkHardware] Created graphics and presentation queues");
 }
 
-void vkn::VkHardware::CreateCommands()
+void vkn::VkHardware::CreateCommandPool()
 {
 	QueueFamily queueFamily = FindQueueFamilies(m_PhysicalDevice);
 
 	auto commandPoolInfo = vkn::InitCommandPoolCreateInfo(queueFamily.m_GraphicsFamily.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-	VK_CALL(vkCreateCommandPool(m_LogicalDevice, &commandPoolInfo, nullptr, &m_CommandPool));
 
-	// TODO: c_MaxFramesInFlight?
-	m_CommandBuffers.resize(2);
-	auto commandBufferAllocateInfo = vkn::InitCommandBufferAllocateInfo(m_CommandPool, 2);
-	VK_CALL(vkAllocateCommandBuffers(m_LogicalDevice, &commandBufferAllocateInfo, m_CommandBuffers.data()));
+	VK_CALL(vkCreateCommandPool(m_LogicalDevice, &commandPoolInfo, nullptr, &m_CommandPool));
 }
 
 vkn::QueueFamily vkn::VkHardware::FindQueueFamilies(const VkPhysicalDevice& device) const

@@ -1,5 +1,6 @@
 #include "VkMesh.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 vkn::VkVertexInputDescription vkn::VkVertex::GetVertexInputDescription()
@@ -68,9 +69,8 @@ bool vkn::VkMesh::LoadFromObj(const char* filename)
 	// Loop over each shape
 	for (size_t si = 0; si < shapes.size(); ++si)
 	{
-		size_t indexOffset = 0;
-
 		// Loop over each face/polygon
+		size_t indexOffset = 0;
 		for (size_t fi = 0; fi < shapes[si].mesh.num_face_vertices.size(); ++fi)
 		{
 			// Hardcoded: Loading triangles
@@ -79,35 +79,29 @@ bool vkn::VkMesh::LoadFromObj(const char* filename)
 			// Loop over each vertex in the face 
 			for (size_t vi = 0; vi < faceVertexCount; ++vi)
 			{
+				VkVertex vertex = VkVertex();
 				tinyobj::index_t idx = shapes[si].mesh.indices[indexOffset + vi];
 
-				VkVertex vertex = VkVertex();
-
-				tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index + 0];
-				tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index + 1];
-				tinyobj::real_t vz = attrib.vertices[3 * idx.vertex_index + 2];
-
-				vertex.m_Position.x = vx;
-				vertex.m_Position.y = vy;
-				vertex.m_Position.z = vz;
+				vertex.m_Position = { 
+					attrib.vertices[3 * idx.vertex_index + 0], 
+					attrib.vertices[3 * idx.vertex_index + 1],
+					attrib.vertices[3 * idx.vertex_index + 2]
+				};
 
 				if (idx.normal_index >= 0)
 				{
-					tinyobj::real_t nx = attrib.normals[3 * idx.normal_index + 0];
-					tinyobj::real_t ny = attrib.normals[3 * idx.normal_index + 1];
-					tinyobj::real_t nz = attrib.normals[3 * idx.normal_index + 2];
-
-					vertex.m_Normal.x = nx;
-					vertex.m_Normal.y = ny;
-					vertex.m_Normal.z = nz;
+					vertex.m_Normal = {
+						attrib.normals[3 * idx.normal_index + 0],
+						attrib.normals[3 * idx.normal_index + 1],
+						attrib.normals[3 * idx.normal_index + 2],
+					};
 				}
 
 				if (idx.texcoord_index >= 0)
 				{
+					// TODO: Add texture coordinates to the vertex definition
 					tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
 					tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
-					
-					// Add texture coordinates to the vertex definition
 				}
 
 				// Testing: Use the normals for color

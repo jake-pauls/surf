@@ -30,6 +30,11 @@ namespace core
         /// @brief Wrapper to retrieve path to the shader directory
         static inline Path GetShaderDirectory() { return GetRootDirectory() / "Shaders"; }
 
+        /// @brief Wrapper to retrieve a shader in the shader directory
+        /// @param filename Filename of the shader to retrieve
+        /// @return Standard path object to the retrieved file
+        static inline Path GetShaderPath(const char* filename) { return GetShaderDirectory() / filename; }
+
         /// @brief Wrapper to retrieve path to the assets directory
         static inline Path GetAssetsDirectory() { return GetRootDirectory() / "Assets"; }
 

@@ -23,6 +23,7 @@ vkn::VkSwapChain::VkSwapChain(
 	CreateSwapchain();
 	CreateImageViews();
 	CreateDepthImage();
+	CreateSyncObjects();
 }
 
 vkn::VkSwapChain::~VkSwapChain()
@@ -122,28 +123,36 @@ void vkn::VkSwapChain::CreateImageViews()
 
 void vkn::VkSwapChain::CreateDepthImage()
 {
-	VkExtent3D depthImageExtent = {
-		m_SwapChainExtent.width,
-		m_SwapChainExtent.height,
-		1
-	};
+	VkExtent3D depthImageExtent = { m_SwapChainExtent.width, m_SwapChainExtent.height, 1 };
 
 	m_DepthFormat = VK_FORMAT_D32_SFLOAT;
-
 	auto depthImageCreateInfo = vkn::InitImageCreateInfo(m_DepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImageExtent);
 
-	// Allocate depth image from GPU memory
 	VmaAllocationCreateInfo depthImageAllocationCreateInfo = VmaAllocationCreateInfo();
 	depthImageAllocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 	depthImageAllocationCreateInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	// Allocate and create the image
 	VK_CALL(vmaCreateImage(c_VkRenderer.m_VmaAllocator, &depthImageCreateInfo, &depthImageAllocationCreateInfo, &m_DepthImage.m_Image, &m_DepthImage.m_Allocation, nullptr));
 
 	auto depthImageViewCreateInfo = vkn::InitImageViewCreateInfo(m_DepthFormat, m_DepthImage.m_Image, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-	// Create the image view
 	VK_CALL(vkCreateImageView(c_VkHardware.m_LogicalDevice, &depthImageViewCreateInfo, nullptr, &m_DepthImageView));
+}
+
+void vkn::VkSwapChain::CreateSyncObjects()
+{
+	m_ImageAvailableSemaphores.resize(c_MaxFramesInFlight);
+	m_RenderFinishedSemaphores.resize(c_MaxFramesInFlight);
+	m_InFlightFences.resize(c_MaxFramesInFlight);
+
+	VkSemaphoreCreateInfo semaphoreCreateInfo = vkn::InitSemaphoreCreateInfo();
+	VkFenceCreateInfo fenceCreateInfo = vkn::InitFenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
+
+	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+	{
+		VK_CALL(vkCreateSemaphore(c_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
+		VK_CALL(vkCreateSemaphore(c_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
+		VK_CALL(vkCreateFence(c_VkHardware.m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]));
+	}
 }
 
 void vkn::VkSwapChain::CreateFramebuffers()
@@ -166,16 +175,66 @@ void vkn::VkSwapChain::CreateFramebuffers()
 	}
 }
 
+VkResult vkn::VkSwapChain::AcquireNextImage(uint32_t* imageIndex)
+{
+	int currentFrameIndex = c_VkRenderer.m_CurrentFrameIndex;
+
+	VK_CALL(vkWaitForFences(c_VkHardware.m_LogicalDevice, 1, &m_InFlightFences[currentFrameIndex], VK_TRUE, UINT64_MAX));
+
+	return vkAcquireNextImageKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[currentFrameIndex], VK_NULL_HANDLE, imageIndex);
+}
+
+VkResult vkn::VkSwapChain::SubmitCommandBuffers(const VkCommandBuffer* commandBuffers, uint32_t imageIndex)
+{
+	int currentFrameIndex = c_VkRenderer.m_CurrentFrameIndex;
+
+	VkSubmitInfo submitInfo = VkSubmitInfo();
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[currentFrameIndex] };
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = commandBuffers;
+
+	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[currentFrameIndex] };
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	// Only reset the fence if work is being submitted
+	VK_CALL(vkResetFences(c_VkHardware.m_LogicalDevice, 1, &m_InFlightFences[currentFrameIndex]));
+	VK_CALL(vkQueueSubmit(c_VkHardware.m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[currentFrameIndex]));
+
+	VkPresentInfoKHR presentationInfo = VkPresentInfoKHR();
+	presentationInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	presentationInfo.waitSemaphoreCount = 1;
+	presentationInfo.pWaitSemaphores = signalSemaphores;
+
+	VkSwapchainKHR swapChains[] = { m_SwapChain };
+	presentationInfo.swapchainCount = 1;
+	presentationInfo.pSwapchains = swapChains;
+	presentationInfo.pImageIndices = &imageIndex;
+	presentationInfo.pResults = nullptr;
+
+	return vkQueuePresentKHR(c_VkHardware.m_PresentationQueue, &presentationInfo);
+}
+
 void vkn::VkSwapChain::Destroy()
 {
+	// Depth image
 	vkDestroyImageView(c_VkHardware.m_LogicalDevice, m_DepthImageView, nullptr);
 	vmaDestroyImage(c_VkRenderer.m_VmaAllocator, m_DepthImage.m_Image, m_DepthImage.m_Allocation);
 
+	// Framebuffers
 	for (VkFramebuffer framebuffer : m_VkSwapChainFramebuffers)
 	{
 		vkDestroyFramebuffer(c_VkHardware.m_LogicalDevice, framebuffer, nullptr);
 	}
 
+	// Image views
 	for (auto imageView : m_SwapChainImageViews)
 	{
 		vkDestroyImageView(c_VkHardware.m_LogicalDevice, imageView, nullptr);
@@ -183,7 +242,19 @@ void vkn::VkSwapChain::Destroy()
 
 	// Kill current swap chain
 	vkDestroySwapchainKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, nullptr);
+
+	// Synchronization objects
+	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+	{
+		vkDestroySemaphore(c_VkHardware.m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
+		vkDestroySemaphore(c_VkHardware.m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
+		vkDestroyFence(c_VkHardware.m_LogicalDevice, m_InFlightFences[i], nullptr);
+	}
 }
+
+///
+/// Swap Chain Utilities
+///
 
 VkSurfaceFormatKHR vkn::VkSwapChain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const
 {
