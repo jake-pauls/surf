@@ -256,7 +256,7 @@ void vkn::VkRenderer::LoadMeshes()
 	m_TriangleMesh.m_Indices = { 0, 1, 3, 1, 2, 3 };
 	//m_TriangleModel = new VkModel(*m_VkHardware, m_TriangleMesh);
 
-	m_LoadedMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
+	m_LoadedMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
 	m_LoadedModel = new VkModel(*m_VkHardware, m_LoadedMesh);
 }
 

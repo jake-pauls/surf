@@ -97,7 +97,7 @@ void vkn::VkMesh::LoadFromObj(const char* filename)
 			}
 
 			// Testing: Use the normals for color
-			vertex.m_Color = glm::vec3{ 1.0f, 1.0f, 1.0f };
+			vertex.m_Color = vertex.m_Normal;
 
 			if (uniqueVertices.count(vertex) == 0)
 			{

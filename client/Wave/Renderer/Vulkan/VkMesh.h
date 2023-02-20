@@ -29,12 +29,6 @@ namespace vkn
 		}
 	};
 
-    struct VkMeshPushConstants
-    {
-        glm::vec4 m_Data;
-        glm::mat4 m_MvpMatrix;
-    };
-
 	struct VkMesh
 	{
 		std::vector<VkVertex> m_Vertices;
@@ -42,6 +36,12 @@ namespace vkn
 
 		void LoadFromObj(const char* filename);
 	};
+
+    struct VkMeshPushConstants
+    {
+        glm::vec4 m_Data;
+        glm::mat4 m_MvpMatrix;
+    };
 }
 
 namespace std

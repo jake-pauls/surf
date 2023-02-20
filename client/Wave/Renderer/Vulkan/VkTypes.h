@@ -20,9 +20,5 @@ namespace vkn
 		VkImage m_Image;
 		VmaAllocation m_Allocation;
 	};
-
-	void CreateBuffer(VmaAllocatedBuffer* buffer, 
-		size_t size, 
-		VkBufferUsageFlags usageFlags, 
-		VmaMemoryUsage memoryUsage);
 }
+
