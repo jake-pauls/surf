@@ -6,6 +6,7 @@
 
 #include <SDL3/SDL_vulkan.h>
 
+#include "VkTypes.h"
 #include "VkInitializers.h"
 #include "VkRendererContext.h"
 
@@ -23,6 +24,7 @@ vkn::VkHardware::VkHardware(wv::Window* window)
 	CreateLogicalDevice();
 
 	CreateCommandPool();
+	CreateVMAAllocator();
 }
 
 vkn::VkHardware::~VkHardware()
@@ -34,6 +36,8 @@ vkn::VkHardware::~VkHardware()
 
 void vkn::VkHardware::Teardown()
 {
+	vmaDestroyAllocator(m_VmaAllocator);
+
 	vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
 	vkDestroyDevice(m_LogicalDevice, nullptr);
 	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
@@ -264,6 +268,16 @@ void vkn::VkHardware::CreateCommandPool()
 	VK_CALL(vkCreateCommandPool(m_LogicalDevice, &commandPoolInfo, nullptr, &m_CommandPool));
 }
 
+void vkn::VkHardware::CreateVMAAllocator()
+{
+	VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo();
+	allocatorCreateInfo.physicalDevice = m_PhysicalDevice;
+	allocatorCreateInfo.device = m_LogicalDevice;
+	allocatorCreateInfo.instance = m_Instance;
+
+	VK_CALL(vmaCreateAllocator(&allocatorCreateInfo, &m_VmaAllocator));
+}
+
 vkn::QueueFamily vkn::VkHardware::FindQueueFamilies(const VkPhysicalDevice& device) const
 {
 	QueueFamily result;
@@ -371,4 +385,28 @@ unsigned int vkn::VkHardware::GetDeviceScore(const VkPhysicalDevice& device) con
 	WAVE_ASSERT(score > 0, "Returning score for unsuitable GPU, undefined behaviour may occur if this GPU is selected");
 
 	return score;
+}
+
+void vkn::VkHardware::CreateVMABuffer(VmaAllocatedBuffer& buffer, 
+	size_t size, 
+	VkBufferUsageFlags usageFlags, 
+	VmaMemoryUsage memoryUsage) const
+{
+	VkBufferCreateInfo bufferCreateInfo = VkBufferCreateInfo();
+	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferCreateInfo.pNext = nullptr;
+
+	bufferCreateInfo.size = size;
+	bufferCreateInfo.usage = usageFlags;
+
+	// Data should be writeable by CPU and readable by GPU
+	VmaAllocationCreateInfo vmaAllocationCreateInfo = VmaAllocationCreateInfo();
+	vmaAllocationCreateInfo.usage = memoryUsage;
+
+	VK_CALL(vmaCreateBuffer(m_VmaAllocator, 
+		&bufferCreateInfo, 
+		&vmaAllocationCreateInfo, 
+		&buffer.m_Buffer, 
+		&buffer.m_Allocation, 
+		nullptr));
 }

@@ -57,7 +57,8 @@ set(VKRENDERER_SOURCE_FILES
     VkRendererContext.cpp
     VkShaderPipeline.cpp
     VkPass.cpp
-    VkMesh.cpp)
+    VkMesh.cpp
+    VkModel.cpp)
 
 set(VKRENDERER_HEADER_FILES
     VkInitializers.h
@@ -68,6 +69,7 @@ set(VKRENDERER_HEADER_FILES
     VkShaderPipeline.h
     VkPass.h
     VkMesh.h
+    VkModel.h
     VkTypes.h)
 
 list(TRANSFORM VKRENDERER_SOURCE_FILES PREPEND "Renderer/Vulkan/")

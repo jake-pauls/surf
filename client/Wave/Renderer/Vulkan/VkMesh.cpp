@@ -46,7 +46,7 @@ vkn::VkVertexInputDescription vkn::VkVertex::GetVertexInputDescription()
 	return vertexInputDescription;
 }
 
-bool vkn::VkMesh::LoadFromObj(const char* filename)
+void vkn::VkMesh::LoadFromObj(const char* filename)
 {
 	tinyobj::ObjReader reader;
 	tinyobj::ObjReaderConfig readerConfig;
@@ -58,7 +58,7 @@ bool vkn::VkMesh::LoadFromObj(const char* filename)
 		if (!reader.Error().empty())
 			core::Log(ELogType::Error, "[tinyobj] {}", reader.Error());
 
-		return false;
+		return;
 	}
 
 	if (!reader.Warning().empty())
@@ -108,6 +108,4 @@ bool vkn::VkMesh::LoadFromObj(const char* filename)
 			m_Indices.push_back(uniqueVertices[vertex]);
 		}
 	}
-
-	return true;
 }

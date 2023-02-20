@@ -5,6 +5,7 @@
 #include <glm/gtx/transform.hpp>
 
 #include "VkPass.h"
+#include "VkModel.h"
 #include "VkHardware.h"
 #include "VkRendererContext.h"
 #include "VkShaderPipeline.h"
@@ -22,15 +23,6 @@ void vkn::VkRenderer::Init()
 	// Default hardware
 	{
 		m_VkHardware = new VkHardware(m_Window);
-	}
-
-	// Memory allocation
-	{
-		VmaAllocatorCreateInfo allocatorCreateInfo = VmaAllocatorCreateInfo();
-		allocatorCreateInfo.physicalDevice = m_VkHardware->m_PhysicalDevice;
-		allocatorCreateInfo.device = m_VkHardware->m_LogicalDevice;
-		allocatorCreateInfo.instance = m_VkHardware->m_Instance;
-		VK_CALL(vmaCreateAllocator(&allocatorCreateInfo, &m_VmaAllocator));
 	}
 
 	// Swap chain and render passes
@@ -95,14 +87,8 @@ void vkn::VkRenderer::Teardown()
 	// Wait for logical device to finish operations before tearing down
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
-	// TODO: Abstract mesh loading
-	vmaDestroyBuffer(m_VmaAllocator, m_SuzanneMesh.m_VertexBuffer.m_Buffer, m_SuzanneMesh.m_VertexBuffer.m_Allocation);
-	if (m_SuzanneMesh.HasIndexBuffer())
-		vmaDestroyBuffer(m_VmaAllocator, m_SuzanneMesh.m_IndexBuffer.m_Buffer, m_SuzanneMesh.m_IndexBuffer.m_Allocation);
-
-	//vmaDestroyBuffer(m_VmaAllocator, m_TriangleMesh.m_VertexBuffer.m_Buffer, m_TriangleMesh.m_VertexBuffer.m_Allocation);
-	//if (m_TriangleMesh.HasIndexBuffer())
-	//	vmaDestroyBuffer(m_VmaAllocator, m_TriangleMesh.m_IndexBuffer.m_Buffer, m_TriangleMesh.m_IndexBuffer.m_Allocation);
+	delete m_LoadedModel;
+	//delete m_TriangleModel
 
 	// TODO: Implement main destruction queue as opposed to relying on destructors?
 	delete m_VkSwapChain;
@@ -115,9 +101,6 @@ void vkn::VkRenderer::Teardown()
 		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
 		vkDestroyFence(m_VkHardware->m_LogicalDevice, m_InFlightFences[i], nullptr);
 	}
-
-	// Destroy vma allocator towards the end
-	vmaDestroyAllocator(m_VmaAllocator);
 
 	// Free command buffers
 	vkFreeCommandBuffers(m_VkHardware->m_LogicalDevice, m_VkHardware->m_CommandPool, static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
@@ -221,14 +204,8 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 	m_DefaultPipeline->Bind(commandBuffer);
 
 	// Bind geometry
-	VkDeviceSize offset = 0;
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_SuzanneMesh.m_VertexBuffer.m_Buffer, &offset);
-	if (m_SuzanneMesh.HasIndexBuffer())
-		vkCmdBindIndexBuffer(commandBuffer, m_SuzanneMesh.m_IndexBuffer.m_Buffer, 0, VK_INDEX_TYPE_UINT32);
-
-	//vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_TriangleMesh.m_VertexBuffer.m_Buffer, &offset);
-	//if (m_TriangleMesh.HasIndexBuffer())
-	//	vkCmdBindIndexBuffer(commandBuffer, m_TriangleMesh.m_IndexBuffer.m_Buffer, 0, VK_INDEX_TYPE_UINT32);
+	m_LoadedModel->Bind(commandBuffer);
+	// m_TriangleModel->Bind(commandBuffer);
 
 	// MVP/Uniform Testing
 	glm::vec3 cameraPosition = { 1.0f, -1.0f, -8.0f };
@@ -247,23 +224,8 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 	vkCmdPushConstants(commandBuffer, m_DefaultPipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
 
 	// Draw geometry
-	if (m_SuzanneMesh.HasIndexBuffer())
-	{
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_SuzanneMesh.m_Indices.size()), 1, 0, 0, 0);
-	}
-	else
-	{
-		vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_SuzanneMesh.m_Vertices.size()), 1, 0, 0);
-	}
-
-	//if (m_TriangleMesh.HasIndexBuffer())
-	//{
-	//	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_TriangleMesh.m_Indices.size()), 1, 0, 0, 0);
-	//}
-	//else
-	//{
-	//	vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_TriangleMesh.m_Vertices.size()), 1, 0, 0);
-	//}
+	m_LoadedModel->Draw(commandBuffer);
+	// m_TriangleModel->Draw(commandBuffer);
 }
 
 void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
@@ -292,61 +254,9 @@ void vkn::VkRenderer::LoadMeshes()
 
 	// Indices
 	m_TriangleMesh.m_Indices = { 0, 1, 3, 1, 2, 3 };
+	//m_TriangleModel = new VkModel(*m_VkHardware, m_TriangleMesh);
 
-	m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
-
-	//UploadMesh(m_TriangleMesh);
-	UploadMesh(m_SuzanneMesh);
+	m_LoadedMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
+	m_LoadedModel = new VkModel(*m_VkHardware, m_LoadedMesh);
 }
 
-void vkn::VkRenderer::UploadMesh(VkMesh& mesh) const
-{
-	const size_t vertexBufferSize = sizeof(mesh.m_Vertices[0]) * static_cast<uint32_t>(mesh.m_Vertices.size());
-	const size_t indexBufferSize = sizeof(mesh.m_Indices[0]) * static_cast<uint32_t>(mesh.m_Indices.size());
-
-	CreateBuffer(&mesh.m_VertexBuffer,
-		vertexBufferSize,
-		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-		VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-	void* meshData;
-	vmaMapMemory(m_VmaAllocator, mesh.m_VertexBuffer.m_Allocation, &meshData);
-	memcpy(meshData, mesh.m_Vertices.data(), vertexBufferSize);
-	vmaUnmapMemory(m_VmaAllocator, mesh.m_VertexBuffer.m_Allocation);
-
-	if (indexBufferSize != 0)
-	{
-		CreateBuffer(&mesh.m_IndexBuffer,
-			indexBufferSize,
-			VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-			VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-		vmaMapMemory(m_VmaAllocator, mesh.m_IndexBuffer.m_Allocation, &meshData);
-		memcpy(meshData, mesh.m_Indices.data(), indexBufferSize);
-		vmaUnmapMemory(m_VmaAllocator, mesh.m_IndexBuffer.m_Allocation);
-	}
-}
-
-void vkn::VkRenderer::CreateBuffer(VmaAllocatedBuffer* buffer, 
-	size_t size, 
-	VkBufferUsageFlags usageFlags, 
-	VmaMemoryUsage memoryUsage) const
-{
-	VkBufferCreateInfo bufferCreateInfo = VkBufferCreateInfo();
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.pNext = nullptr;
-
-	bufferCreateInfo.size = size;
-	bufferCreateInfo.usage = usageFlags;
-
-	// Data should be writeable by CPU and readable by GPU
-	VmaAllocationCreateInfo vmaAllocationCreateInfo = VmaAllocationCreateInfo();
-	vmaAllocationCreateInfo.usage = memoryUsage;
-
-	VK_CALL(vmaCreateBuffer(m_VmaAllocator, 
-		&bufferCreateInfo, 
-		&vmaAllocationCreateInfo, 
-		&buffer->m_Buffer, 
-		&buffer->m_Allocation, 
-		nullptr));
-}

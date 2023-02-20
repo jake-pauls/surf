@@ -3,6 +3,8 @@
 #include <vector>
 #include <optional>
 
+#include <vk_mem_alloc.h>
+
 namespace wv
 {
 	class Window;
@@ -10,8 +12,10 @@ namespace wv
 
 namespace vkn
 {
+	class VkModel;
 	class VkRenderer;
 	class VkSwapChain;
+	struct VmaAllocatedBuffer;
 
 	/// @brief Indices for various queue families available in Vulkan devices
 	struct QueueFamily 
@@ -29,6 +33,7 @@ namespace vkn
 
 	class VkHardware final
 	{
+		friend class VkModel;
 		friend class VkRenderer;
 		friend class VkSwapChain;
 
@@ -66,6 +71,9 @@ namespace vkn
 		/// @brief Creates the command pool and allocates a main command buffer
 		void CreateCommandPool();
 
+		/// @brief Creates the VMA allocator for buffer allocations
+		void CreateVMAAllocator();
+
 		/// @brief Logic to find graphics queue families 
 		/// @param device The VkPhysicalDevice to retrieve the queue families of
 		/// @return The corresponding queue family of the physical device
@@ -80,6 +88,16 @@ namespace vkn
 		/// @param device The VkPhysicalDevice to check
 		/// @return Retrieves a score for the device based on its available features and context
 		unsigned int GetDeviceScore(const VkPhysicalDevice& device) const;
+
+		/// @brief Allocates a buffer type using VMA
+		/// @param buffer Reference to a VmaAllocatedBuffer to allocate into
+		/// @param size Size of the buffer to allocate
+		/// @param usageFlags Corresponding Vulkan usage flags for the buffer
+		/// @param memoryUsage Corresponding VMA usage flags for the buffer
+		void CreateVMABuffer(VmaAllocatedBuffer& buffer,
+			size_t size,
+			VkBufferUsageFlags usageFlags,
+			VmaMemoryUsage memoryUsage) const;
 
 	private:
 		wv::Window* m_Window = nullptr;
@@ -96,6 +114,8 @@ namespace vkn
 
 		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_CommandBuffers = {};
+
+		VmaAllocator m_VmaAllocator = nullptr;
 
 		const std::vector<const char*> m_DeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 

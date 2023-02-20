@@ -131,7 +131,7 @@ void vkn::VkSwapChain::CreateDepthImage()
 	depthImageAllocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 	depthImageAllocationCreateInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-	VK_CALL(vmaCreateImage(c_VkRenderer.m_VmaAllocator, &depthImageCreateInfo, &depthImageAllocationCreateInfo, &m_DepthImage.m_Image, &m_DepthImage.m_Allocation, nullptr));
+	VK_CALL(vmaCreateImage(c_VkHardware.m_VmaAllocator, &depthImageCreateInfo, &depthImageAllocationCreateInfo, &m_DepthImage.m_Image, &m_DepthImage.m_Allocation, nullptr));
 
 	auto depthImageViewCreateInfo = vkn::InitImageViewCreateInfo(m_DepthFormat, m_DepthImage.m_Image, VK_IMAGE_ASPECT_DEPTH_BIT);
 	VK_CALL(vkCreateImageView(c_VkHardware.m_LogicalDevice, &depthImageViewCreateInfo, nullptr, &m_DepthImageView));
@@ -208,7 +208,7 @@ void vkn::VkSwapChain::Destroy()
 {
 	// Depth image
 	vkDestroyImageView(c_VkHardware.m_LogicalDevice, m_DepthImageView, nullptr);
-	vmaDestroyImage(c_VkRenderer.m_VmaAllocator, m_DepthImage.m_Image, m_DepthImage.m_Allocation);
+	vmaDestroyImage(c_VkHardware.m_VmaAllocator, m_DepthImage.m_Image, m_DepthImage.m_Allocation);
 
 	// Framebuffers
 	for (VkFramebuffer framebuffer : m_VkSwapChainFramebuffers)

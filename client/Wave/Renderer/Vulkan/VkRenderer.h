@@ -19,6 +19,8 @@ namespace wv
 
 namespace vkn
 {
+	class VkModel;
+
 	/// @brief Implementation for Vulkan renderer
 	class VkRenderer final : public wv::Renderer
 	{
@@ -54,13 +56,6 @@ namespace vkn
 
 		// TODO: Abstract mesh loading
 		void LoadMeshes();
-		void UploadMesh(VkMesh& mesh) const;
-
-		// TODO: Abstract Vulkan utilities
-		void CreateBuffer(VmaAllocatedBuffer* buffer, 
-			size_t size, 
-			VkBufferUsageFlags usageFlags, 
-			VmaMemoryUsage memoryUsage) const;
 
 	private:
 		wv::Window* m_Window = nullptr;
@@ -68,7 +63,6 @@ namespace vkn
 		// Default Hardware
 		VkHardware* m_VkHardware = nullptr;
 		VkSwapChain* m_VkSwapChain = nullptr;
-		VmaAllocator m_VmaAllocator = nullptr;
 		std::vector<VkCommandBuffer> m_CommandBuffers = {};
 
 		// Passes/Pipelines
@@ -87,7 +81,9 @@ namespace vkn
 		std::vector<VkFence> m_InFlightFences = {};
 
 		// Temp
+		VkModel* m_TriangleModel;
 		VkMesh m_TriangleMesh = {};
-		VkMesh m_SuzanneMesh = {};
+		VkModel* m_LoadedModel;
+		VkMesh m_LoadedMesh = {};
 	};
 }
