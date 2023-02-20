@@ -47,7 +47,6 @@ namespace vkn
 		void CreateSwapchain();
 		void CreateImageViews();
 		void CreateDepthImage();
-		void CreateSyncObjects();
 
 		void Destroy();
 
@@ -84,11 +83,5 @@ namespace vkn
 		VkFormat m_DepthFormat = {};
 		VmaAllocatedImage m_DepthImage = {};
 		VkImageView m_DepthImageView = VK_NULL_HANDLE;
-
-		// Synchronization
-		uint32_t c_MaxFramesInFlight = 2;
-		std::vector<VkSemaphore> m_ImageAvailableSemaphores = {};
-		std::vector<VkSemaphore> m_RenderFinishedSemaphores = {};
-		std::vector<VkFence> m_InFlightFences = {};
 	};
 }

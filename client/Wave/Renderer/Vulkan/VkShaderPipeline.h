@@ -15,21 +15,17 @@ namespace vkn
         friend class VkRenderer;
 
     public:
-        explicit VkShaderPipeline(
-            const VkRenderer& renderer,
+        explicit VkShaderPipeline(const VkRenderer& renderer,
             const VkDevice& device,
             const std::string& vertexShader, 
-            const std::string& fragmentShader
-        );
+            const std::string& fragmentShader);
 
         ~VkShaderPipeline() override;
 
         void Create();
         void Destroy();
 
-        void Bind();
-
-        void Unbind() override;
+        void Bind(VkCommandBuffer commandBuffer) const;
 
     private:
         /// @brief Helper function to load a shader module and its applicable create info into Vulkan

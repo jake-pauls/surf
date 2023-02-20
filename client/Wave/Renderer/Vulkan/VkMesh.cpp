@@ -1,5 +1,7 @@
 #include "VkMesh.h"
 
+#include <unordered_map>
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
@@ -49,6 +51,7 @@ bool vkn::VkMesh::LoadFromObj(const char* filename)
 	tinyobj::ObjReader reader;
 	tinyobj::ObjReaderConfig readerConfig;
 	readerConfig.mtl_search_path = core::FileSystem::GetAssetsDirectory().string();
+	readerConfig.triangulate = true;
 
 	if (!reader.ParseFromFile(filename, readerConfig))
 	{
@@ -61,56 +64,48 @@ bool vkn::VkMesh::LoadFromObj(const char* filename)
 	if (!reader.Warning().empty())
 		core::Log(ELogType::Warn, "[tinyobj] {}", reader.Warning());
 
+	m_Vertices.clear();
+	m_Indices.clear();
 
 	tinyobj::attrib_t attrib = reader.GetAttrib();
 	std::vector<tinyobj::shape_t> shapes = reader.GetShapes();
 	std::vector<tinyobj::material_t> materials = reader.GetMaterials();
 
-	// Loop over each shape
-	for (size_t si = 0; si < shapes.size(); ++si)
+	std::unordered_map<VkVertex, uint32_t> uniqueVertices{};
+	for (const auto& shape : shapes)
 	{
-		// Loop over each face/polygon
-		size_t indexOffset = 0;
-		for (size_t fi = 0; fi < shapes[si].mesh.num_face_vertices.size(); ++fi)
+		for (const auto& index : shape.mesh.indices)
 		{
-			// Hardcoded: Loading triangles
-			int faceVertexCount = shapes[si].mesh.num_face_vertices[fi];
-			
-			// Loop over each vertex in the face 
-			for (size_t vi = 0; vi < faceVertexCount; ++vi)
+			VkVertex vertex = VkVertex();
+
+			if (index.vertex_index >= 0)
 			{
-				VkVertex vertex = VkVertex();
-				tinyobj::index_t idx = shapes[si].mesh.indices[indexOffset + vi];
-
 				vertex.m_Position = { 
-					attrib.vertices[3 * idx.vertex_index + 0], 
-					attrib.vertices[3 * idx.vertex_index + 1],
-					attrib.vertices[3 * idx.vertex_index + 2]
+					attrib.vertices[3 * index.vertex_index + 0], 
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
 				};
+			}
 
-				if (idx.normal_index >= 0)
-				{
-					vertex.m_Normal = {
-						attrib.normals[3 * idx.normal_index + 0],
-						attrib.normals[3 * idx.normal_index + 1],
-						attrib.normals[3 * idx.normal_index + 2],
-					};
-				}
+			if (index.normal_index >= 0)
+			{
+				vertex.m_Normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+			}
 
-				if (idx.texcoord_index >= 0)
-				{
-					// TODO: Add texture coordinates to the vertex definition
-					tinyobj::real_t tx = attrib.texcoords[2 * idx.texcoord_index + 0];
-					tinyobj::real_t ty = attrib.texcoords[2 * idx.texcoord_index + 1];
-				}
+			// Testing: Use the normals for color
+			vertex.m_Color = glm::vec3{ 1.0f, 1.0f, 1.0f };
 
-				// Testing: Use the normals for color
-				vertex.m_Color = vertex.m_Normal; 
-
+			if (uniqueVertices.count(vertex) == 0)
+			{
+				uniqueVertices[vertex] = static_cast<uint32_t>(m_Vertices.size());
 				m_Vertices.push_back(vertex);
 			}
 
-			indexOffset += faceVertexCount;
+			m_Indices.push_back(uniqueVertices[vertex]);
 		}
 	}
 

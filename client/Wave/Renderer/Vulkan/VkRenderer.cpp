@@ -49,6 +49,23 @@ void vkn::VkRenderer::Init()
 		m_DefaultPipeline = new VkShaderPipeline(*this, m_VkHardware->m_LogicalDevice, triangleVertexShader, triangleFragmentShader);
 	}
 
+	// Sync objects
+	{
+		m_ImageAvailableSemaphores.resize(c_MaxFramesInFlight);
+		m_RenderFinishedSemaphores.resize(c_MaxFramesInFlight);
+		m_InFlightFences.resize(c_MaxFramesInFlight);
+
+		VkSemaphoreCreateInfo semaphoreCreateInfo = vkn::InitSemaphoreCreateInfo();
+		VkFenceCreateInfo fenceCreateInfo = vkn::InitFenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
+
+		for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+		{
+			VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
+			VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
+			VK_CALL(vkCreateFence(m_VkHardware->m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]));
+		}
+	}
+
 	// Command buffer allocations
 	CreateCommandBuffers();
 
@@ -80,11 +97,24 @@ void vkn::VkRenderer::Teardown()
 
 	// TODO: Abstract mesh loading
 	vmaDestroyBuffer(m_VmaAllocator, m_SuzanneMesh.m_VertexBuffer.m_Buffer, m_SuzanneMesh.m_VertexBuffer.m_Allocation);
+	if (m_SuzanneMesh.HasIndexBuffer())
+		vmaDestroyBuffer(m_VmaAllocator, m_SuzanneMesh.m_IndexBuffer.m_Buffer, m_SuzanneMesh.m_IndexBuffer.m_Allocation);
+
+	//vmaDestroyBuffer(m_VmaAllocator, m_TriangleMesh.m_VertexBuffer.m_Buffer, m_TriangleMesh.m_VertexBuffer.m_Allocation);
+	//if (m_TriangleMesh.HasIndexBuffer())
+	//	vmaDestroyBuffer(m_VmaAllocator, m_TriangleMesh.m_IndexBuffer.m_Buffer, m_TriangleMesh.m_IndexBuffer.m_Allocation);
 
 	// TODO: Implement main destruction queue as opposed to relying on destructors?
 	delete m_VkSwapChain;
 	delete m_DefaultPipeline;
 	delete m_DefaultPass;
+
+	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+	{
+		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
+		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
+		vkDestroyFence(m_VkHardware->m_LogicalDevice, m_InFlightFences[i], nullptr);
+	}
 
 	// Destroy vma allocator towards the end
 	vmaDestroyAllocator(m_VmaAllocator);
@@ -99,7 +129,7 @@ void vkn::VkRenderer::Teardown()
 
 void vkn::VkRenderer::CreateCommandBuffers()
 {
-	m_CommandBuffers.resize(m_VkSwapChain->c_MaxFramesInFlight);
+	m_CommandBuffers.resize(c_MaxFramesInFlight);
 
 	auto commandBufferAllocateInfo = vkn::InitCommandBufferAllocateInfo(m_VkHardware->m_CommandPool, 2);
 	VK_CALL(vkAllocateCommandBuffers(m_VkHardware->m_LogicalDevice, &commandBufferAllocateInfo, m_CommandBuffers.data()));
@@ -110,12 +140,15 @@ VkCommandBuffer vkn::VkRenderer::BeginFrame()
 	WAVE_ASSERT(!m_IsFrameStarted, "Cannot call BeginFrame while another frame is in progress");
 
 	VkResult result = m_VkSwapChain->AcquireNextImage(&m_CurrentImageIndex);
+
 	WAVE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR, "Failed to acquire next image from the swap chain");
 	if (result == VK_ERROR_OUT_OF_DATE_KHR)
 	{
 		m_VkSwapChain->RecreateSwapchain();
 		return VK_NULL_HANDLE;
 	}
+
+	VK_CALL(vkResetFences(m_VkHardware->m_LogicalDevice, 1, &m_InFlightFences[m_CurrentFrameIndex]));
 
 	m_IsFrameStarted = true;
 
@@ -138,14 +171,11 @@ void vkn::VkRenderer::EndFrame()
 	VkResult result = m_VkSwapChain->SubmitCommandBuffers(&commandBuffer, m_CurrentImageIndex);
 	WAVE_ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR, "Failed to present swap chain image");
 
-	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_FramebufferResized)
-	{
-		m_FramebufferResized = false;
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		m_VkSwapChain->RecreateSwapchain();
-	}
 
 	m_IsFrameStarted = false;
-	m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % m_VkSwapChain->c_MaxFramesInFlight;
+	m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % c_MaxFramesInFlight;
 }
 
 void vkn::VkRenderer::BeginRenderPass(VkCommandBuffer commandBuffer)
@@ -188,11 +218,17 @@ void vkn::VkRenderer::BeginRenderPass(VkCommandBuffer commandBuffer)
 void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 {
 	// Bind required pipeline
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipeline->m_GraphicsPipeline);
+	m_DefaultPipeline->Bind(commandBuffer);
 
 	// Bind geometry
 	VkDeviceSize offset = 0;
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_SuzanneMesh.m_VertexBuffer.m_Buffer, &offset);
+	if (m_SuzanneMesh.HasIndexBuffer())
+		vkCmdBindIndexBuffer(commandBuffer, m_SuzanneMesh.m_IndexBuffer.m_Buffer, 0, VK_INDEX_TYPE_UINT32);
+
+	//vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_TriangleMesh.m_VertexBuffer.m_Buffer, &offset);
+	//if (m_TriangleMesh.HasIndexBuffer())
+	//	vkCmdBindIndexBuffer(commandBuffer, m_TriangleMesh.m_IndexBuffer.m_Buffer, 0, VK_INDEX_TYPE_UINT32);
 
 	// MVP/Uniform Testing
 	glm::vec3 cameraPosition = { 1.0f, -1.0f, -8.0f };
@@ -200,7 +236,7 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 	glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), 800.0f / 600.0f, 0.1f, 200.0f);
 	projectionMatrix[1][1] *= -1;
 
-	glm::mat4 modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f));
+	glm::mat4 modelMatrix = glm::translate(glm::mat4(0.0f), glm::vec3(0.0f));
 	modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(core::Timer::DeltaTime() * 0.02f), glm::vec3(0, 1, 0));
 
 	glm::mat4 mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
@@ -211,56 +247,106 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 	vkCmdPushConstants(commandBuffer, m_DefaultPipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
 
 	// Draw geometry
-	vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_SuzanneMesh.m_Vertices.size()), 1, 0, 0);
+	if (m_SuzanneMesh.HasIndexBuffer())
+	{
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_SuzanneMesh.m_Indices.size()), 1, 0, 0, 0);
+	}
+	else
+	{
+		vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_SuzanneMesh.m_Vertices.size()), 1, 0, 0);
+	}
+
+	//if (m_TriangleMesh.HasIndexBuffer())
+	//{
+	//	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_TriangleMesh.m_Indices.size()), 1, 0, 0, 0);
+	//}
+	//else
+	//{
+	//	vkCmdDraw(commandBuffer, static_cast<uint32_t>(m_TriangleMesh.m_Vertices.size()), 1, 0, 0);
+	//}
 }
 
 void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
 {
 	WAVE_ASSERT(m_IsFrameStarted, "Cannot end render pass without a frame in progress");
-	WAVE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot  render pass on a command buffer from a different frame");
+	WAVE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot render pass on a command buffer from a different frame");
 
 	vkCmdEndRenderPass(commandBuffer);
 }
 
 void vkn::VkRenderer::LoadMeshes()
 {
-	m_TriangleMesh.m_Vertices.resize(3);
+	m_TriangleMesh.m_Vertices.resize(4);
 
 	// Vertex positions
 	m_TriangleMesh.m_Vertices[0].m_Position = {  1.0f,  1.0f, 0.0f };
-	m_TriangleMesh.m_Vertices[1].m_Position = { -1.0f,  1.0f, 0.0f };
-	m_TriangleMesh.m_Vertices[2].m_Position = {  0.0f, -1.0f, 0.0f };
+	m_TriangleMesh.m_Vertices[1].m_Position = {  1.0f, -1.0f, 0.0f };
+	m_TriangleMesh.m_Vertices[2].m_Position = { -1.0f, -1.0f, 0.0f };
+	m_TriangleMesh.m_Vertices[3].m_Position = { -1.0f,  1.0f, 0.0f };
 
 	// Vertex colors
 	m_TriangleMesh.m_Vertices[0].m_Color = { 1.0f, 0.0f, 0.0f };
 	m_TriangleMesh.m_Vertices[1].m_Color = { 0.0f, 1.0f, 0.0f };
 	m_TriangleMesh.m_Vertices[2].m_Color = { 0.0f, 0.0f, 1.0f };
+	m_TriangleMesh.m_Vertices[3].m_Color = { 1.0f, 0.0f, 0.0f };
 
-	m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
+	// Indices
+	m_TriangleMesh.m_Indices = { 0, 1, 3, 1, 2, 3 };
 
-	// UploadMesh(m_TriangleMesh);
+	m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
+
+	//UploadMesh(m_TriangleMesh);
 	UploadMesh(m_SuzanneMesh);
 }
 
-void vkn::VkRenderer::UploadMesh(VkMesh& mesh)
+void vkn::VkRenderer::UploadMesh(VkMesh& mesh) const
 {
-	VkBufferCreateInfo bufferCreateInfo = VkBufferCreateInfo();
-	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	bufferCreateInfo.size = mesh.m_Vertices.size() * sizeof(VkVertex);
-	bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	const size_t vertexBufferSize = sizeof(mesh.m_Vertices[0]) * static_cast<uint32_t>(mesh.m_Vertices.size());
+	const size_t indexBufferSize = sizeof(mesh.m_Indices[0]) * static_cast<uint32_t>(mesh.m_Indices.size());
 
-	// Data should be writeable by CPU and readable by GPU
-	VmaAllocationCreateInfo vmaAllocationCreateInfo = VmaAllocationCreateInfo();
-	vmaAllocationCreateInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-	VK_CALL(vmaCreateBuffer(m_VmaAllocator, 
-		&bufferCreateInfo, 
-		&vmaAllocationCreateInfo, 
-		&mesh.m_VertexBuffer.m_Buffer, 
-		&mesh.m_VertexBuffer.m_Allocation, 
-		nullptr));
+	CreateBuffer(&mesh.m_VertexBuffer,
+		vertexBufferSize,
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 	void* meshData;
 	vmaMapMemory(m_VmaAllocator, mesh.m_VertexBuffer.m_Allocation, &meshData);
-	memcpy(meshData, mesh.m_Vertices.data(), mesh.m_Vertices.size() * sizeof(VkVertex));
+	memcpy(meshData, mesh.m_Vertices.data(), vertexBufferSize);
 	vmaUnmapMemory(m_VmaAllocator, mesh.m_VertexBuffer.m_Allocation);
+
+	if (indexBufferSize != 0)
+	{
+		CreateBuffer(&mesh.m_IndexBuffer,
+			indexBufferSize,
+			VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+		vmaMapMemory(m_VmaAllocator, mesh.m_IndexBuffer.m_Allocation, &meshData);
+		memcpy(meshData, mesh.m_Indices.data(), indexBufferSize);
+		vmaUnmapMemory(m_VmaAllocator, mesh.m_IndexBuffer.m_Allocation);
+	}
+}
+
+void vkn::VkRenderer::CreateBuffer(VmaAllocatedBuffer* buffer, 
+	size_t size, 
+	VkBufferUsageFlags usageFlags, 
+	VmaMemoryUsage memoryUsage) const
+{
+	VkBufferCreateInfo bufferCreateInfo = VkBufferCreateInfo();
+	bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	bufferCreateInfo.pNext = nullptr;
+
+	bufferCreateInfo.size = size;
+	bufferCreateInfo.usage = usageFlags;
+
+	// Data should be writeable by CPU and readable by GPU
+	VmaAllocationCreateInfo vmaAllocationCreateInfo = VmaAllocationCreateInfo();
+	vmaAllocationCreateInfo.usage = memoryUsage;
+
+	VK_CALL(vmaCreateBuffer(m_VmaAllocator, 
+		&bufferCreateInfo, 
+		&vmaAllocationCreateInfo, 
+		&buffer->m_Buffer, 
+		&buffer->m_Allocation, 
+		nullptr));
 }

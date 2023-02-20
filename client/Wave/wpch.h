@@ -12,3 +12,4 @@
 #include "StringHelpers.h"
 #include "FileHelpers.h"
 #include "FileSystem.h"
+#include "HashHelpers.h"

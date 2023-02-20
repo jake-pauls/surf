@@ -40,12 +40,10 @@ namespace vkn
 
 	private:
 		/// @brief Debug messenger callback for triggered validation layers
-		static VKAPI_ATTR VkBool32 VKAPI_CALL VkDebugMessengerCallback(
-			VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		static VKAPI_ATTR VkBool32 VKAPI_CALL VkDebugMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 			VkDebugUtilsMessageTypeFlagsEXT messageType,
 			const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-			void* pUserData
-		)
+			void* pUserData)
 		{
 			core::Log(ELogType::Error, "[VkDebugMessenger] {}", pCallbackData->pMessage);
 			return VK_FALSE;

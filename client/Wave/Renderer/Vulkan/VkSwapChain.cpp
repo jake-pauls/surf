@@ -23,7 +23,6 @@ vkn::VkSwapChain::VkSwapChain(
 	CreateSwapchain();
 	CreateImageViews();
 	CreateDepthImage();
-	CreateSyncObjects();
 }
 
 vkn::VkSwapChain::~VkSwapChain()
@@ -138,23 +137,6 @@ void vkn::VkSwapChain::CreateDepthImage()
 	VK_CALL(vkCreateImageView(c_VkHardware.m_LogicalDevice, &depthImageViewCreateInfo, nullptr, &m_DepthImageView));
 }
 
-void vkn::VkSwapChain::CreateSyncObjects()
-{
-	m_ImageAvailableSemaphores.resize(c_MaxFramesInFlight);
-	m_RenderFinishedSemaphores.resize(c_MaxFramesInFlight);
-	m_InFlightFences.resize(c_MaxFramesInFlight);
-
-	VkSemaphoreCreateInfo semaphoreCreateInfo = vkn::InitSemaphoreCreateInfo();
-	VkFenceCreateInfo fenceCreateInfo = vkn::InitFenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
-
-	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-	{
-		VK_CALL(vkCreateSemaphore(c_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
-		VK_CALL(vkCreateSemaphore(c_VkHardware.m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
-		VK_CALL(vkCreateFence(c_VkHardware.m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]));
-	}
-}
-
 void vkn::VkSwapChain::CreateFramebuffers()
 {
 	const std::vector<VkImageView>& swapChainImageViews = m_SwapChainImageViews;
@@ -179,9 +161,9 @@ VkResult vkn::VkSwapChain::AcquireNextImage(uint32_t* imageIndex)
 {
 	int currentFrameIndex = c_VkRenderer.m_CurrentFrameIndex;
 
-	VK_CALL(vkWaitForFences(c_VkHardware.m_LogicalDevice, 1, &m_InFlightFences[currentFrameIndex], VK_TRUE, UINT64_MAX));
+	VK_CALL(vkWaitForFences(c_VkHardware.m_LogicalDevice, 1, &c_VkRenderer.m_InFlightFences[currentFrameIndex], VK_TRUE, UINT64_MAX));
 
-	return vkAcquireNextImageKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[currentFrameIndex], VK_NULL_HANDLE, imageIndex);
+	return vkAcquireNextImageKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, UINT64_MAX, c_VkRenderer.m_ImageAvailableSemaphores[currentFrameIndex], VK_NULL_HANDLE, imageIndex);
 }
 
 VkResult vkn::VkSwapChain::SubmitCommandBuffers(const VkCommandBuffer* commandBuffers, uint32_t imageIndex)
@@ -191,7 +173,7 @@ VkResult vkn::VkSwapChain::SubmitCommandBuffers(const VkCommandBuffer* commandBu
 	VkSubmitInfo submitInfo = VkSubmitInfo();
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphores[currentFrameIndex] };
+	VkSemaphore waitSemaphores[] = { c_VkRenderer.m_ImageAvailableSemaphores[currentFrameIndex] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
@@ -200,13 +182,13 @@ VkResult vkn::VkSwapChain::SubmitCommandBuffers(const VkCommandBuffer* commandBu
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = commandBuffers;
 
-	VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphores[currentFrameIndex] };
+	VkSemaphore signalSemaphores[] = { c_VkRenderer.m_RenderFinishedSemaphores[currentFrameIndex] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
 	// Only reset the fence if work is being submitted
-	VK_CALL(vkResetFences(c_VkHardware.m_LogicalDevice, 1, &m_InFlightFences[currentFrameIndex]));
-	VK_CALL(vkQueueSubmit(c_VkHardware.m_GraphicsQueue, 1, &submitInfo, m_InFlightFences[currentFrameIndex]));
+	VK_CALL(vkResetFences(c_VkHardware.m_LogicalDevice, 1, &c_VkRenderer.m_InFlightFences[currentFrameIndex]));
+	VK_CALL(vkQueueSubmit(c_VkHardware.m_GraphicsQueue, 1, &submitInfo, c_VkRenderer.m_InFlightFences[currentFrameIndex]));
 
 	VkPresentInfoKHR presentationInfo = VkPresentInfoKHR();
 	presentationInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -242,14 +224,6 @@ void vkn::VkSwapChain::Destroy()
 
 	// Kill current swap chain
 	vkDestroySwapchainKHR(c_VkHardware.m_LogicalDevice, m_SwapChain, nullptr);
-
-	// Synchronization objects
-	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-	{
-		vkDestroySemaphore(c_VkHardware.m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
-		vkDestroySemaphore(c_VkHardware.m_LogicalDevice, m_RenderFinishedSemaphores[i], nullptr);
-		vkDestroyFence(c_VkHardware.m_LogicalDevice, m_InFlightFences[i], nullptr);
-	}
 }
 
 ///

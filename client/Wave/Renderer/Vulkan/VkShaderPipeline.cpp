@@ -7,12 +7,10 @@
 #include "VkRendererContext.h"
 #include "VkInitializers.h"
 
-vkn::VkShaderPipeline::VkShaderPipeline(
-	const VkRenderer& renderer,
+vkn::VkShaderPipeline::VkShaderPipeline(const VkRenderer& renderer,
 	const VkDevice& device,
 	const std::string& vertexShader, 
-	const std::string& fragmentShader
-) 
+	const std::string& fragmentShader) 
 	: wv::Shader(vertexShader, fragmentShader)
 	, c_VkRenderer(renderer)
 	, c_LogicalDevice(device)
@@ -32,7 +30,6 @@ vkn::VkShaderPipeline::~VkShaderPipeline()
 
 void vkn::VkShaderPipeline::Create()
 {
-
 	// Load shaders
 	VkShaderModule vertexShaderModule = LoadShaderModule(m_VertexShaderFile);
 	VkShaderModule fragmentShaderModule = LoadShaderModule(m_FragmentShaderFile);
@@ -131,15 +128,9 @@ void vkn::VkShaderPipeline::Destroy()
 	vkDestroyPipelineLayout(c_LogicalDevice, m_PipelineLayout, nullptr);
 }
 
-void vkn::VkShaderPipeline::Bind()
+void vkn::VkShaderPipeline::Bind(VkCommandBuffer commandBuffer) const
 {
-	// TODO: Access command buffers and bind pipeline
-	WAVE_ASSERT(false, "Bind() is unimplemented for the VulkanShaderPipeline");
-}
-
-void vkn::VkShaderPipeline::Unbind()
-{
-	WAVE_ASSERT(false, "Unbind() is unimplemented for the VulkanShaderPipeline");
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 }
 
 VkShaderModule vkn::VkShaderPipeline::LoadShaderModule(const std::string& shaderFileName)

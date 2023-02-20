@@ -54,7 +54,13 @@ namespace vkn
 
 		// TODO: Abstract mesh loading
 		void LoadMeshes();
-		void UploadMesh(VkMesh& mesh);
+		void UploadMesh(VkMesh& mesh) const;
+
+		// TODO: Abstract Vulkan utilities
+		void CreateBuffer(VmaAllocatedBuffer* buffer, 
+			size_t size, 
+			VkBufferUsageFlags usageFlags, 
+			VmaMemoryUsage memoryUsage) const;
 
 	private:
 		wv::Window* m_Window = nullptr;
@@ -74,7 +80,11 @@ namespace vkn
 		int m_CurrentFrameIndex = 0;
 		uint32_t m_CurrentImageIndex = 0;
 
-		bool m_FramebufferResized = false;
+		// Synchronization
+		uint32_t c_MaxFramesInFlight = 2;
+		std::vector<VkSemaphore> m_ImageAvailableSemaphores = {};
+		std::vector<VkSemaphore> m_RenderFinishedSemaphores = {};
+		std::vector<VkFence> m_InFlightFences = {};
 
 		// Temp
 		VkMesh m_TriangleMesh = {};
