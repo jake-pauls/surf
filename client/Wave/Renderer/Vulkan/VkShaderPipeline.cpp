@@ -4,16 +4,17 @@
 #include "VkMesh.h"
 #include "VkPass.h"
 #include "VkRenderer.h"
+#include "VkHardware.h"
 #include "VkRendererContext.h"
 #include "VkInitializers.h"
 
 vkn::VkShaderPipeline::VkShaderPipeline(const VkRenderer& renderer,
-	const VkDevice& device,
+	const VkHardware& hardware,
 	const std::string& vertexShader, 
 	const std::string& fragmentShader) 
 	: wv::Shader(vertexShader, fragmentShader)
 	, c_VkRenderer(renderer)
-	, c_LogicalDevice(device)
+	, c_VkHardware(hardware)
 	, c_RenderPass(renderer.m_DefaultPass->m_RenderPass)
 {
 	core::Log(ELogType::Trace, "[VkShaderPipeline] Creating shader pipeline");
@@ -66,10 +67,7 @@ void vkn::VkShaderPipeline::Create()
 	auto colorBlendCreateInfo = vkn::InitPipelineColorBlendStateCreateInfo(&colorBlendAttachment);
 
 	// Viewport state
-	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = VkPipelineViewportStateCreateInfo();
-	viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-	viewportStateCreateInfo.viewportCount = 1;
-	viewportStateCreateInfo.scissorCount = 1;
+	auto viewportStateCreateInfo = vkn::InitPipelineViewportStateCreateInfo();
 
 	// Setup dynamic states for viewport/scissor
 	// This can be manually defined to create different viewport states
@@ -83,19 +81,28 @@ void vkn::VkShaderPipeline::Create()
 	dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 	dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
 
-	// Pipeline layout
+	// Initialize push constants 
+	auto pushConstantRange = vkn::InitPushConstantRange(sizeof(VkMeshPushConstants));
+
+	// Initialize descriptor sets/pools
+	std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }};
+	auto descriptorPoolCreateInfo = vkn::InitDescriptorPoolCreateInfo(static_cast<uint32_t>(descriptorPoolSizes.size()), descriptorPoolSizes.data(), 10);
+	VK_CALL(vkCreateDescriptorPool(c_VkHardware.m_LogicalDevice, &descriptorPoolCreateInfo, nullptr, &m_DescriptorPool));
+
+	auto uboLayoutBinding = vkn::InitDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+	auto descriptorSetLayoutCreateInfo = vkn::InitDescriptorSetLayoutCreateInfo(&uboLayoutBinding);
+	VK_CALL(vkCreateDescriptorSetLayout(c_VkHardware.m_LogicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &m_DescriptorSetLayout));
+
+	// Pipeline layout w/ push constants and descriptor sets
 	auto pipelineLayoutCreateInfo = vkn::InitPipelineLayoutCreateInfo();
 
-	// Initialize push constants (uniforms)
-	VkPushConstantRange pushConstant = VkPushConstantRange();
-	pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	pushConstant.size = sizeof(VkMeshPushConstants);
-	pushConstant.offset = 0;
-
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstant;
+	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
-	VK_CALL(vkCreatePipelineLayout(c_LogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
+	pipelineLayoutCreateInfo.setLayoutCount = 1;
+	pipelineLayoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
+
+	VK_CALL(vkCreatePipelineLayout(c_VkHardware.m_LogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
 
 	// Actual pipeline definition
 	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = VkGraphicsPipelineCreateInfo();
@@ -115,17 +122,20 @@ void vkn::VkShaderPipeline::Create()
 	graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	graphicsPipelineCreateInfo.basePipelineIndex = -1;
 
-	VK_CALL(vkCreateGraphicsPipelines(c_LogicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_GraphicsPipeline));
+	VK_CALL(vkCreateGraphicsPipelines(c_VkHardware.m_LogicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &m_GraphicsPipeline));
 
 	// Cleanup shader modules once pipeline is created
-	vkDestroyShaderModule(c_LogicalDevice, fragmentShaderModule, nullptr);
-	vkDestroyShaderModule(c_LogicalDevice, vertexShaderModule, nullptr);
+	vkDestroyShaderModule(c_VkHardware.m_LogicalDevice, fragmentShaderModule, nullptr);
+	vkDestroyShaderModule(c_VkHardware.m_LogicalDevice, vertexShaderModule, nullptr);
 }
 
 void vkn::VkShaderPipeline::Destroy()
 {
-	vkDestroyPipeline(c_LogicalDevice, m_GraphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(c_LogicalDevice, m_PipelineLayout, nullptr);
+	vkDestroyDescriptorSetLayout(c_VkHardware.m_LogicalDevice, m_DescriptorSetLayout, nullptr);
+	vkDestroyDescriptorPool(c_VkHardware.m_LogicalDevice, m_DescriptorPool, nullptr);
+
+	vkDestroyPipelineLayout(c_VkHardware.m_LogicalDevice, m_PipelineLayout, nullptr);
+	vkDestroyPipeline(c_VkHardware.m_LogicalDevice, m_GraphicsPipeline, nullptr);
 }
 
 void vkn::VkShaderPipeline::Bind(VkCommandBuffer commandBuffer) const
@@ -143,7 +153,7 @@ VkShaderModule vkn::VkShaderPipeline::LoadShaderModule(const std::string& shader
 	shaderModuleCreateInfo.pCode = reinterpret_cast<const uint32_t*>(shaderBinaryData.data());
 
 	VkShaderModule vkShaderModule;
-	VK_CALL(vkCreateShaderModule(c_LogicalDevice, &shaderModuleCreateInfo, nullptr, &vkShaderModule));
+	VK_CALL(vkCreateShaderModule(c_VkHardware.m_LogicalDevice, &shaderModuleCreateInfo, nullptr, &vkShaderModule));
 
 	return vkShaderModule;
 }

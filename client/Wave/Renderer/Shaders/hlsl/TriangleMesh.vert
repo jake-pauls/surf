@@ -11,22 +11,33 @@ struct VSOutput
     [[vk::location(0)]] float3 Color : COLOR0;
 };
 
-// Contains the required push constant data
-struct PushData 
+struct UniformBufferObject
 {
-	float3 m_Data;
-	row_major float4x4 m_MvpMatrix;
+    row_major float4x4 m_ViewMatrix;
+    row_major float4x4 m_ProjectionMatrix;
 };
 
-// Binds the push constant sent from Vulkan
+struct PushConstants 
+{
+	row_major float4x4 m_ModelMatrix;
+};
+
+[[vk::binding(0, 0)]]
+cbuffer u_UBO 
+{
+	UniformBufferObject u_UBO;
+}
+
 [[vk::push_constant]]
-PushData pcs;
+PushConstants u_PCS;
 
 VSOutput main(VSInput input)
 {
 	VSOutput output = (VSOutput) 0;
 
-	output.Position = mul(float4(input.Position, 1.0), pcs.m_MvpMatrix);
+	float4x4 cameraMatrix = mul(u_UBO.m_ViewMatrix, u_UBO.m_ProjectionMatrix);
+	float4x4 transformMatrix = mul(u_PCS.m_ModelMatrix, cameraMatrix);
+	output.Position = mul(float4(input.Position, 1.0), transformMatrix);
 	output.Color = input.Color;
 
 	return output;

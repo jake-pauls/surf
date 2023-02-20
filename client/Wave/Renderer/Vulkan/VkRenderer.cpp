@@ -36,9 +36,12 @@ void vkn::VkRenderer::Init()
 
 	// Shader generation
 	{
-		std::string triangleVertexShader = core::FileSystem::GetShaderPath("TriangleMesh.vert.glsl.spv").string();
-		std::string triangleFragmentShader = core::FileSystem::GetShaderPath("TriangleMesh.frag.glsl.spv").string();
-		m_DefaultPipeline = new VkShaderPipeline(*this, m_VkHardware->m_LogicalDevice, triangleVertexShader, triangleFragmentShader);
+		std::string triangleVertexShader = core::FileSystem::GetShaderPath("TriangleMesh.vert.hlsl.spv").string();
+		std::string triangleFragmentShader = core::FileSystem::GetShaderPath("TriangleMesh.frag.hlsl.spv").string();
+
+		m_DefaultPipeline = new VkShaderPipeline(*this, *m_VkHardware, triangleVertexShader, triangleFragmentShader);
+
+		CreateUniformBuffers();
 	}
 
 	// Sync objects
@@ -94,6 +97,11 @@ void vkn::VkRenderer::Teardown()
 	delete m_VkSwapChain;
 	delete m_DefaultPipeline;
 	delete m_DefaultPass;
+
+	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+	{
+		vmaDestroyBuffer(m_VkHardware->m_VmaAllocator, m_UniformBuffers[i].m_Buffer, m_UniformBuffers[i].m_Allocation);
+	}
 
 	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
 	{
@@ -200,13 +208,6 @@ void vkn::VkRenderer::BeginRenderPass(VkCommandBuffer commandBuffer)
 
 void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 {
-	// Bind required pipeline
-	m_DefaultPipeline->Bind(commandBuffer);
-
-	// Bind geometry
-	m_LoadedModel->Bind(commandBuffer);
-	// m_TriangleModel->Bind(commandBuffer);
-
 	// MVP/Uniform Testing
 	glm::vec3 cameraPosition = { 1.0f, -1.0f, -8.0f };
 	glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
@@ -216,12 +217,27 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 	glm::mat4 modelMatrix = glm::translate(glm::mat4(0.0f), glm::vec3(0.0f));
 	modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(core::Timer::DeltaTime() * 0.02f), glm::vec3(0, 1, 0));
 
-	glm::mat4 mvpMatrix = projectionMatrix * viewMatrix * modelMatrix;
+	// Bind required pipeline
+	m_DefaultPipeline->Bind(commandBuffer);
+
+	// Bind geometry
+	m_LoadedModel->Bind(commandBuffer);
+	// m_TriangleModel->Bind(commandBuffer);
 
 	// Submit push constants (uniforms)
 	VkMeshPushConstants constants;
-	constants.m_MvpMatrix = mvpMatrix;
+	constants.m_ModelMatrix = modelMatrix;
 	vkCmdPushConstants(commandBuffer, m_DefaultPipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
+
+	VkMeshUniformBufferObject uniform;
+	uniform.m_ProjectionMatrix = projectionMatrix;
+	uniform.m_ViewMatrix = viewMatrix;
+
+	void* data;
+	VK_CALL(vmaMapMemory(m_VkHardware->m_VmaAllocator, m_UniformBuffers[m_CurrentFrameIndex].m_Allocation, &data));
+	memcpy(data, &uniform, sizeof(VkMeshUniformBufferObject));
+	vmaUnmapMemory(m_VkHardware->m_VmaAllocator, m_UniformBuffers[m_CurrentFrameIndex].m_Allocation);
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipeline->m_PipelineLayout, 0, 1, &m_UniformBuffers[m_CurrentFrameIndex].m_Descriptor, 0, nullptr);
 
 	// Draw geometry
 	m_LoadedModel->Draw(commandBuffer);
@@ -260,3 +276,35 @@ void vkn::VkRenderer::LoadMeshes()
 	m_LoadedModel = new VkModel(*m_VkHardware, m_LoadedMesh);
 }
 
+void vkn::VkRenderer::CreateUniformBuffers()
+{
+	const size_t uniformBufferSize = sizeof(VkMeshUniformBufferObject);
+
+	m_UniformBuffers.resize(c_MaxFramesInFlight);
+
+	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+	{
+		m_VkHardware->CreateVMABuffer(m_UniformBuffers[i],
+			uniformBufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+		auto descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_DefaultPipeline->m_DescriptorPool, &m_DefaultPipeline->m_DescriptorSetLayout);
+
+		VK_CALL(vkAllocateDescriptorSets(m_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_UniformBuffers[i].m_Descriptor));
+
+		auto descriptorBufferInfo = vkn::InitDescriptorBufferInfo(m_UniformBuffers[i].m_Buffer, sizeof(VkMeshUniformBufferObject));
+
+		VkWriteDescriptorSet descriptorSetWrite = VkWriteDescriptorSet();
+		descriptorSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorSetWrite.pNext = nullptr;
+
+		descriptorSetWrite.dstBinding = 0;
+		descriptorSetWrite.dstSet = m_UniformBuffers[i].m_Descriptor;
+		descriptorSetWrite.descriptorCount = 1;
+		descriptorSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorSetWrite.pBufferInfo = &descriptorBufferInfo;
+
+		vkUpdateDescriptorSets(m_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
+	}
+}

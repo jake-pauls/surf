@@ -56,6 +56,7 @@ namespace vkn
 
 		// TODO: Abstract mesh loading
 		void LoadMeshes();
+		void CreateUniformBuffers();
 
 	private:
 		wv::Window* m_Window = nullptr;
@@ -81,6 +82,7 @@ namespace vkn
 		std::vector<VkFence> m_InFlightFences = {};
 
 		// Temp
+		std::vector<VmaAllocatedDescriptorSet> m_UniformBuffers = {};
 		VkModel* m_TriangleModel;
 		VkMesh m_TriangleMesh = {};
 		VkModel* m_LoadedModel;

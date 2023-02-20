@@ -202,7 +202,7 @@ VkPipelineColorBlendAttachmentState vkn::InitPipelineColorBlendAttachmentState()
 	return colorBlendAttachment;
 }
 
-VkPipelineColorBlendStateCreateInfo vkn::InitPipelineColorBlendStateCreateInfo(VkPipelineColorBlendAttachmentState* colorBlendAttachment)
+VkPipelineColorBlendStateCreateInfo vkn::InitPipelineColorBlendStateCreateInfo(const VkPipelineColorBlendAttachmentState* colorBlendAttachment)
 {
 	VkPipelineColorBlendStateCreateInfo info = VkPipelineColorBlendStateCreateInfo();
 
@@ -253,6 +253,104 @@ VkPipelineDepthStencilStateCreateInfo vkn::InitPipelineDepthStencilStateCreateIn
 	return info;
 }
 
+VkPipelineViewportStateCreateInfo vkn::InitPipelineViewportStateCreateInfo(int vieportCount /* = 1 */, int scissorCount /* = 1 */)
+{
+	VkPipelineViewportStateCreateInfo info = VkPipelineViewportStateCreateInfo();
+	info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	info.pNext = nullptr;
+
+	info.viewportCount = 1;
+	info.scissorCount = 1;
+
+	return info;
+}
+
+///
+///	Push Constants
+/// 
+
+VkPushConstantRange vkn::InitPushConstantRange(const uint32_t size)
+{
+	VkPushConstantRange range = VkPushConstantRange();
+	range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+	range.size = size;
+	range.offset = 0;
+	
+	return range;
+}
+
+///
+///	Descriptor Sets/Pools
+/// 
+
+VkDescriptorPoolCreateInfo vkn::InitDescriptorPoolCreateInfo(const uint32_t poolSizeCount, 
+	const VkDescriptorPoolSize* poolSizes,
+	int maxSets)
+{
+	VkDescriptorPoolCreateInfo info = VkDescriptorPoolCreateInfo();
+	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	info.flags = 0;
+
+	info.maxSets = maxSets;
+	info.poolSizeCount = poolSizeCount;
+	info.pPoolSizes = poolSizes;
+
+	return info;
+}
+
+VkDescriptorSetLayoutBinding vkn::InitDescriptorSetLayoutBinding(VkDescriptorType type, 
+	VkShaderStageFlags stageFlags,
+	int count /* = 1 */)
+{
+	VkDescriptorSetLayoutBinding binding = VkDescriptorSetLayoutBinding();
+	binding.binding = 0;
+
+	binding.descriptorType = type;
+	binding.stageFlags = stageFlags;
+	binding.descriptorCount = count;
+
+	return binding;
+}
+
+VkDescriptorSetLayoutCreateInfo vkn::InitDescriptorSetLayoutCreateInfo(const VkDescriptorSetLayoutBinding* binding, int count /* = 1 */)
+{
+	VkDescriptorSetLayoutCreateInfo info = VkDescriptorSetLayoutCreateInfo();
+	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	info.pNext = nullptr;
+
+	info.pBindings = binding;
+	info.bindingCount = count;
+
+	return info;
+}
+
+VkDescriptorSetAllocateInfo vkn::InitDescriptorSetAllocateInfo(const VkDescriptorPool& descriptorPool, 
+	const VkDescriptorSetLayout* descriptorSetLayouts, 
+	int count /* = 1 */)
+{
+	VkDescriptorSetAllocateInfo info = VkDescriptorSetAllocateInfo();
+	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	info.pNext = nullptr;
+
+	info.descriptorPool = descriptorPool;
+	info.pSetLayouts = descriptorSetLayouts;
+	info.descriptorSetCount = 1;
+
+	return info;
+}
+
+VkDescriptorBufferInfo vkn::InitDescriptorBufferInfo(VkBuffer& buffer, const uint32_t range)
+{
+	VkDescriptorBufferInfo info = VkDescriptorBufferInfo();
+
+	info.buffer = buffer;
+	info.offset = 0;
+	info.range = range;
+
+	return info;
+}
+
 ///  
 /// Renderpass
 ///
@@ -296,11 +394,9 @@ VkImageCreateInfo vkn::InitImageCreateInfo(VkFormat format, VkImageUsageFlags us
 	return info;
 }
 
-VkImageViewCreateInfo vkn::InitImageViewCreateInfo(
-	VkFormat format, 
+VkImageViewCreateInfo vkn::InitImageViewCreateInfo(VkFormat format, 
 	VkImage image, 
-	VkImageAspectFlags aspectFlags
-)
+	VkImageAspectFlags aspectFlags)
 {
 	VkImageViewCreateInfo info = VkImageViewCreateInfo();
 	info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;

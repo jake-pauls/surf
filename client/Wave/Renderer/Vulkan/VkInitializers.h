@@ -58,13 +58,42 @@ namespace vkn
 	VkPipelineColorBlendAttachmentState InitPipelineColorBlendAttachmentState();
 
 	/// @brief Constructs a create info struct for a color blend state
-	VkPipelineColorBlendStateCreateInfo InitPipelineColorBlendStateCreateInfo(VkPipelineColorBlendAttachmentState* colorBlendAttachment);
+	VkPipelineColorBlendStateCreateInfo InitPipelineColorBlendStateCreateInfo(const VkPipelineColorBlendAttachmentState* colorBlendAttachment);
 
 	/// @brief Constructs a create info struct for a pipeline layout
 	VkPipelineLayoutCreateInfo InitPipelineLayoutCreateInfo();
 
 	/// @brief Constructs a create info struct for pipeline depth testing information 
 	VkPipelineDepthStencilStateCreateInfo InitPipelineDepthStencilStateCreateInfo(bool useDepthTest, bool useDepthWrite, VkCompareOp compareOp);
+
+	/// @brief Constructs a create info struct for a pipeline's viewport state
+	VkPipelineViewportStateCreateInfo InitPipelineViewportStateCreateInfo(int vieportCount = 1, int scissorCount = 1);
+
+	///
+	///	Push Constants
+	/// 
+
+	/// @brief Constructs a push constant range struct
+	VkPushConstantRange InitPushConstantRange(const uint32_t size);
+
+	///
+	///	Descriptor Sets/Pools
+	/// 
+
+	/// @brief Constructs a create info struct for a descriptor pool 
+	VkDescriptorPoolCreateInfo InitDescriptorPoolCreateInfo(const uint32_t poolSizeCount, const VkDescriptorPoolSize* poolSizes, int maxSets);
+
+	/// @brief Constructs a layout binding for a descriptor set 
+	VkDescriptorSetLayoutBinding InitDescriptorSetLayoutBinding(VkDescriptorType type, VkShaderStageFlags stageFlags, int count = 1);
+
+	/// @brief Constructs a create info struct for a descriptor set layout 
+	VkDescriptorSetLayoutCreateInfo InitDescriptorSetLayoutCreateInfo(const VkDescriptorSetLayoutBinding* binding, int count = 1);
+
+	/// @brief Constructrs an info struct for descriptor set allocation
+	VkDescriptorSetAllocateInfo InitDescriptorSetAllocateInfo(const VkDescriptorPool& descriptorPool, const VkDescriptorSetLayout* descriptorSetLayouts, int count = 1);
+
+	/// @brief Constructs an info struct for a descriptor buffer
+	VkDescriptorBufferInfo InitDescriptorBufferInfo(VkBuffer& buffer, const uint32_t range);
 
 	///
 	/// Renderpass

@@ -14,6 +14,11 @@ namespace vkn
 		VmaAllocation m_Allocation;
 	};
 
+	struct VmaAllocatedDescriptorSet : VmaAllocatedBuffer
+	{
+		VkDescriptorSet m_Descriptor;
+	};
+
 	/// @brief Contains data for an image allocated using VMA
 	struct VmaAllocatedImage
 	{

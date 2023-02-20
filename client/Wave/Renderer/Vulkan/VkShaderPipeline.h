@@ -8,15 +8,17 @@ namespace vkn
 {
     class VkPass;
     class VkRenderer;
+    class VkHardware;
 
     class VkShaderPipeline : public wv::Shader
     {
         friend class VkPass;
         friend class VkRenderer;
+        friend class VkHardware;
 
     public:
         explicit VkShaderPipeline(const VkRenderer& renderer,
-            const VkDevice& device,
+            const VkHardware& hardware,
             const std::string& vertexShader, 
             const std::string& fragmentShader);
 
@@ -35,12 +37,15 @@ namespace vkn
 
     private:
         const VkRenderer& c_VkRenderer;
-        const VkDevice& c_LogicalDevice;
+        const VkHardware& c_VkHardware;
         const VkRenderPass& c_RenderPass;
 
         std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages = {};
 
         VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
         VkPipeline m_GraphicsPipeline = VK_NULL_HANDLE;
+
+        VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
+        VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
     };
 }

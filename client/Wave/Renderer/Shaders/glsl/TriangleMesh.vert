@@ -6,15 +6,21 @@ layout(location = 2) in vec3 in_Color;
 
 layout(location = 0) out vec3 o_FragColor;
 
-layout(push_constant) uniform PushData 
+layout(binding = 0) uniform UniformBufferObject
 {
-    vec4 m_Data;
-    mat4 m_MvpMatrix;
+    mat4 m_ViewMatrix;
+    mat4 m_ProjectionMatrix;
+} u_UBO;
+
+layout(push_constant) uniform PushConstants 
+{
+    mat4 m_ModelMatrix;
 } u_PCS;
 
 void main()
 {
-    gl_Position = u_PCS.m_MvpMatrix * vec4(in_Position, 1.0f);
+    mat4 transformMatrix = (u_UBO.m_ProjectionMatrix * u_UBO.m_ViewMatrix) * u_PCS.m_ModelMatrix;
+    gl_Position = transformMatrix * vec4(in_Position, 1.0f);
 
     o_FragColor = in_Color;
 }

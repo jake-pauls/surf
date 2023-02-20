@@ -15,6 +15,8 @@ namespace vkn
 	class VkModel;
 	class VkRenderer;
 	class VkSwapChain;
+	class VkShaderPipeline;
+
 	struct VmaAllocatedBuffer;
 
 	/// @brief Indices for various queue families available in Vulkan devices
@@ -36,6 +38,7 @@ namespace vkn
 		friend class VkModel;
 		friend class VkRenderer;
 		friend class VkSwapChain;
+		friend class VkShaderPipeline;
 
 	public:
 		explicit VkHardware(wv::Window* window);

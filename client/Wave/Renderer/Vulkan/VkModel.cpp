@@ -29,7 +29,7 @@ void vkn::VkModel::AllocateVertexBuffer()
 		VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 	void* meshData;
-	vmaMapMemory(c_VkHardware.m_VmaAllocator, m_VertexBuffer.m_Allocation, &meshData);
+	VK_CALL(vmaMapMemory(c_VkHardware.m_VmaAllocator, m_VertexBuffer.m_Allocation, &meshData));
 	memcpy(meshData, m_Mesh.m_Vertices.data(), vertexBufferSize);
 	vmaUnmapMemory(c_VkHardware.m_VmaAllocator, m_VertexBuffer.m_Allocation);
 }
@@ -46,7 +46,7 @@ void vkn::VkModel::AllocateIndexBuffer()
 			VMA_MEMORY_USAGE_CPU_TO_GPU);
 
 		void* meshData;
-		vmaMapMemory(c_VkHardware.m_VmaAllocator, m_IndexBuffer.m_Allocation, &meshData);
+		VK_CALL(vmaMapMemory(c_VkHardware.m_VmaAllocator, m_IndexBuffer.m_Allocation, &meshData));
 		memcpy(meshData, m_Mesh.m_Indices.data(), indexBufferSize);
 		vmaUnmapMemory(c_VkHardware.m_VmaAllocator, m_IndexBuffer.m_Allocation);
 	}

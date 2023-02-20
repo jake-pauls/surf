@@ -39,9 +39,14 @@ namespace vkn
 
     struct VkMeshPushConstants
     {
-        glm::vec4 m_Data;
-        glm::mat4 m_MvpMatrix;
+        glm::mat4 m_ModelMatrix;
     };
+
+	struct VkMeshUniformBufferObject
+	{
+		glm::mat4 m_ViewMatrix;
+		glm::mat4 m_ProjectionMatrix;
+	};
 }
 
 namespace std
