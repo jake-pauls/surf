@@ -60,6 +60,25 @@ VkFramebufferCreateInfo vkn::InitFramebufferCreateInfo(VkRenderPass renderPass, 
 	return info;
 }
 
+VkSubmitInfo vkn::InitSubmitInfo(const VkCommandBuffer* commandBuffers)
+{
+	VkSubmitInfo info = VkSubmitInfo();
+	info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	info.pNext = nullptr;
+
+	info.waitSemaphoreCount = 0;
+	info.pWaitSemaphores = nullptr;
+	info.pWaitDstStageMask = nullptr;
+
+	info.commandBufferCount = 1;
+	info.pCommandBuffers = commandBuffers;
+
+	info.signalSemaphoreCount = 0;
+	info.pSignalSemaphores = nullptr;
+
+	return info;
+}
+
 ///
 /// Synchronization Objects
 /// 

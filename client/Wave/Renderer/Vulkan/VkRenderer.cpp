@@ -3,6 +3,8 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 #include <glm/gtx/transform.hpp>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 #include "VkPass.h"
 #include "VkModel.h"
@@ -38,9 +40,9 @@ void vkn::VkRenderer::Init()
 	{
 		std::string triangleVertexShader = core::FileSystem::GetShaderPath("TriangleMesh.vert.hlsl.spv").string();
 		std::string triangleFragmentShader = core::FileSystem::GetShaderPath("TriangleMesh.frag.hlsl.spv").string();
-
 		m_DefaultPipeline = new VkShaderPipeline(*this, *m_VkHardware, triangleVertexShader, triangleFragmentShader);
 
+		// Uniform buffers need to be initialized after shader pipeline and descriptor sets are created
 		CreateUniformBuffers();
 	}
 
@@ -98,10 +100,14 @@ void vkn::VkRenderer::Teardown()
 	delete m_DefaultPipeline;
 	delete m_DefaultPass;
 
+	// TODO: Abstract uniform buffers somewhere?
 	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
 	{
 		vmaDestroyBuffer(m_VkHardware->m_VmaAllocator, m_UniformBuffers[i].m_Buffer, m_UniformBuffers[i].m_Allocation);
 	}
+
+	// TODO: Abstract texture loading/destruction
+	vmaDestroyImage(m_VkHardware->m_VmaAllocator, m_TestTexture.m_Image, m_TestTexture.m_Allocation);
 
 	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
 	{
@@ -208,10 +214,14 @@ void vkn::VkRenderer::BeginRenderPass(VkCommandBuffer commandBuffer)
 
 void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 {
+	const VkExtent2D extent = m_VkSwapChain->m_SwapChainExtent;
+
 	// MVP/Uniform Testing
 	glm::vec3 cameraPosition = { 1.0f, -1.0f, -8.0f };
 	glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
-	glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), 800.0f / 600.0f, 0.1f, 200.0f);
+	glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), 
+		static_cast<float>(extent.width) / static_cast<float>(extent.height), 
+		0.1f, 200.0f);
 	projectionMatrix[1][1] *= -1;
 
 	glm::mat4 modelMatrix = glm::translate(glm::mat4(0.0f), glm::vec3(0.0f));
@@ -224,11 +234,12 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 	m_LoadedModel->Bind(commandBuffer);
 	// m_TriangleModel->Bind(commandBuffer);
 
-	// Submit push constants (uniforms)
+	// Submit push constants (constant uniforms)
 	VkMeshPushConstants constants;
 	constants.m_ModelMatrix = modelMatrix;
 	vkCmdPushConstants(commandBuffer, m_DefaultPipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
 
+	// Submit uniforms through descriptor sets
 	VkMeshUniformBufferObject uniform;
 	uniform.m_ProjectionMatrix = projectionMatrix;
 	uniform.m_ViewMatrix = viewMatrix;
@@ -272,7 +283,7 @@ void vkn::VkRenderer::LoadMeshes()
 	m_TriangleMesh.m_Indices = { 0, 1, 3, 1, 2, 3 };
 	//m_TriangleModel = new VkModel(*m_VkHardware, m_TriangleMesh);
 
-	m_LoadedMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
+	m_LoadedMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
 	m_LoadedModel = new VkModel(*m_VkHardware, m_LoadedMesh);
 }
 
@@ -307,4 +318,47 @@ void vkn::VkRenderer::CreateUniformBuffers()
 
 		vkUpdateDescriptorSets(m_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
 	}
+}
+
+void vkn::VkRenderer::CreateTexture(const char* filename)
+{
+	int texWidth, texHeight, channels;
+	stbi_uc* pixels = stbi_load(filename, &texWidth, &texHeight, &channels, STBI_rgb_alpha);
+	WAVE_ASSERT(pixels, "Failed to load texture from provided image file");
+
+	VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+	VmaAllocatedBuffer stagingBuffer;
+	m_VkHardware->CreateVMABuffer(stagingBuffer,
+		imageSize,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VMA_MEMORY_USAGE_CPU_ONLY);
+
+	void* texData;
+	VK_CALL(vmaMapMemory(m_VkHardware->m_VmaAllocator, stagingBuffer.m_Allocation, &texData));
+	memcpy(texData, pixels, static_cast<size_t>(imageSize));
+	vmaUnmapMemory(m_VkHardware->m_VmaAllocator, stagingBuffer.m_Allocation);
+
+	stbi_image_free(pixels);
+
+	/// ----------------
+
+	VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+
+	VkExtent3D imageExtent;
+	imageExtent.width = static_cast<uint32_t>(texWidth);
+	imageExtent.height = static_cast<uint32_t>(texHeight);
+	imageExtent.depth = 1;
+	
+	auto newImageCreateInfo = vkn::InitImageCreateInfo(imageFormat, 
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageExtent);
+	newImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+
+	VmaAllocationCreateInfo newImageAllocationCreateInfo = VmaAllocationCreateInfo();
+	vmaCreateImage(m_VkHardware->m_VmaAllocator, &newImageCreateInfo, &newImageAllocationCreateInfo, &m_TestTexture.m_Image, &m_TestTexture.m_Allocation, nullptr);
+
+	/// ----------------
+
+	// Cleanup local resources
+	vmaDestroyBuffer(m_VkHardware->m_VmaAllocator, stagingBuffer.m_Buffer, stagingBuffer.m_Allocation);
 }

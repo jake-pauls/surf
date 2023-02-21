@@ -56,7 +56,7 @@ namespace std
 	{
 		size_t operator()(vkn::VkVertex const& vertex) const
 		{
-			size_t seed = 0;
+			size_t seed = 0; 
 			core::HashCombine(seed, vertex.m_Position, vertex.m_Normal, vertex.m_Color);
 			return seed;
 		}

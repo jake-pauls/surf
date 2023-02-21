@@ -170,17 +170,13 @@ VkResult vkn::VkSwapChain::SubmitCommandBuffers(const VkCommandBuffer* commandBu
 {
 	int currentFrameIndex = c_VkRenderer.m_CurrentFrameIndex;
 
-	VkSubmitInfo submitInfo = VkSubmitInfo();
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	auto submitInfo = vkn::InitSubmitInfo(commandBuffers);
 
 	VkSemaphore waitSemaphores[] = { c_VkRenderer.m_ImageAvailableSemaphores[currentFrameIndex] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
-
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = commandBuffers;
 
 	VkSemaphore signalSemaphores[] = { c_VkRenderer.m_RenderFinishedSemaphores[currentFrameIndex] };
 	submitInfo.signalSemaphoreCount = 1;

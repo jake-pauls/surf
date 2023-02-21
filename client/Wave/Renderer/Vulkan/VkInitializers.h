@@ -20,6 +20,9 @@ namespace vkn
 	/// @brief Constructs create info struct for a framebuffer
 	VkFramebufferCreateInfo InitFramebufferCreateInfo(VkRenderPass renderPass, VkExtent2D extent);
 
+	/// @brief Constructs an info struct for a command buffer submission
+	VkSubmitInfo InitSubmitInfo(const VkCommandBuffer* commandBuffers);
+
 	///
 	/// Synchronization Objects
 	/// 

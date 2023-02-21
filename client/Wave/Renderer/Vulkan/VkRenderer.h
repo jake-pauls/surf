@@ -54,9 +54,11 @@ namespace vkn
 		void DrawCommandBuffer(VkCommandBuffer commandBuffer);
 		void EndRenderPass(VkCommandBuffer commandBuffer);
 
+		void CreateUniformBuffers();
+
 		// TODO: Abstract mesh loading
 		void LoadMeshes();
-		void CreateUniformBuffers();
+		void CreateTexture(const char* filename);
 
 	private:
 		wv::Window* m_Window = nullptr;
@@ -83,9 +85,11 @@ namespace vkn
 
 		// Temp
 		std::vector<VmaAllocatedDescriptorSet> m_UniformBuffers = {};
-		VkModel* m_TriangleModel;
+		VkModel* m_TriangleModel = nullptr;
 		VkMesh m_TriangleMesh = {};
-		VkModel* m_LoadedModel;
+		VkModel* m_LoadedModel = nullptr;
 		VkMesh m_LoadedMesh = {};
+
+		VmaAllocatedImage m_TestTexture = {};
 	};
 }

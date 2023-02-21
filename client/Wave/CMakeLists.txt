@@ -116,6 +116,7 @@ target_link_libraries(${WAVE_EXECUTABLE_NAME}
 	${Vulkan_LIBRARY}
     VulkanMemoryAllocator
     glm
+    stb
     spdlog
     tinyobjloader)
 
