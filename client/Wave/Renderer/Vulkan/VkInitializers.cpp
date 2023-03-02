@@ -370,6 +370,58 @@ VkDescriptorBufferInfo vkn::InitDescriptorBufferInfo(VkBuffer& buffer, const uin
 	return info;
 }
 
+VkSamplerCreateInfo vkn::InitSamplerCreateInfo(VkFilter filters, VkSamplerAddressMode samplerAddressMode /* = VK_SAMPLER_ADDRESS_MODE_REPEAT */)
+{
+	VkSamplerCreateInfo info = VkSamplerCreateInfo();
+	info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	info.pNext = nullptr;
+
+	info.magFilter = filters;
+	info.minFilter = filters;
+	info.addressModeU = samplerAddressMode;
+	info.addressModeV = samplerAddressMode;
+	info.addressModeW = samplerAddressMode;
+
+	return info;
+}
+
+VkWriteDescriptorSet vkn::InitWriteDescriptorSetBuffer(VkDescriptorType type,
+	VkDescriptorSet set,
+	VkDescriptorBufferInfo* bufferInfo,
+	uint32_t binding)
+{
+	VkWriteDescriptorSet writeInfo = VkWriteDescriptorSet();
+	writeInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeInfo.pNext = nullptr;
+
+	writeInfo.descriptorCount = 1;
+	writeInfo.descriptorType = type;
+	writeInfo.dstSet = set;
+	writeInfo.pBufferInfo = bufferInfo;
+	writeInfo.dstBinding = binding;
+
+	return writeInfo;
+
+}
+
+VkWriteDescriptorSet vkn::InitWriteDescriptorSetImage(VkDescriptorType type, 
+	VkDescriptorSet set, 
+	VkDescriptorImageInfo* imageInfo, 
+	uint32_t binding)
+{
+	VkWriteDescriptorSet writeInfo = VkWriteDescriptorSet();
+	writeInfo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeInfo.pNext = nullptr;
+
+	writeInfo.descriptorCount = 1;
+	writeInfo.descriptorType = type;
+	writeInfo.dstSet = set;
+	writeInfo.dstBinding = binding;
+	writeInfo.pImageInfo = imageInfo;
+
+	return writeInfo;
+}
+
 ///  
 /// Renderpass
 ///

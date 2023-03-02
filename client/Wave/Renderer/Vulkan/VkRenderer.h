@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <functional>
 
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.h>
@@ -21,10 +22,18 @@ namespace vkn
 {
 	class VkModel;
 
+	struct RendererUploadContext
+	{
+		VkFence m_UploadFence;
+		VkCommandPool m_CommandPool;
+		VkCommandBuffer m_CommandBuffer;
+	};
+
 	/// @brief Implementation for Vulkan renderer
 	class VkRenderer final : public wv::Renderer
 	{
 		friend class VkPass;
+		friend class VkModel;
 		friend class VkHardware;
 		friend class VkSwapChain;
 		friend class VkShaderPipeline;
@@ -44,8 +53,21 @@ namespace vkn
 	public:
 		inline VkCommandBuffer GetCurrentCommandBuffer() const { return m_CommandBuffers[m_CurrentFrameIndex]; };
 
+		/// @brief Intermediate function that submits commands to the renderer, performing all required hardware/command preprocesing 
+		///		   before executing the passed command or set of commands
+		/// @param submitFunction Function using a command buffer to execute a rendering command
+		void SubmitToRenderer(std::function<void(VkCommandBuffer)>&& submitFunction) const;
+
 	private:
-		void CreateCommandBuffers();
+		/// @brief Creates required synchronization objects for the renderer
+		void CreateSyncObjects();
+
+		/// @brief Creates a set of command buffers and pools 
+		/// @note Runtime commands use c_MaxFramesInFlight to manage frames 
+		void CreateCommands();
+
+		/// @brief Creates uniform buffers and allocates their associating descriptor sets
+		void CreateUniformBuffers();
 
 		VkCommandBuffer BeginFrame();
 		void EndFrame();
@@ -54,18 +76,20 @@ namespace vkn
 		void DrawCommandBuffer(VkCommandBuffer commandBuffer);
 		void EndRenderPass(VkCommandBuffer commandBuffer);
 
-		void CreateUniformBuffers();
-
 		// TODO: Abstract mesh loading
 		void LoadMeshes();
-		void CreateTexture(const char* filename);
+		void CreateTexture(const std::string& filename);
 
 	private:
 		wv::Window* m_Window = nullptr;
 
+		RendererUploadContext m_UploadContext = {};
+
 		// Default Hardware
 		VkHardware* m_VkHardware = nullptr;
 		VkSwapChain* m_VkSwapChain = nullptr;
+
+		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 		std::vector<VkCommandBuffer> m_CommandBuffers = {};
 
 		// Passes/Pipelines
@@ -85,11 +109,9 @@ namespace vkn
 
 		// Temp
 		std::vector<VmaAllocatedDescriptorSet> m_UniformBuffers = {};
-		VkModel* m_TriangleModel = nullptr;
-		VkMesh m_TriangleMesh = {};
 		VkModel* m_LoadedModel = nullptr;
 		VkMesh m_LoadedMesh = {};
 
-		VmaAllocatedImage m_TestTexture = {};
+		VkTexture m_Texture = {};
 	};
 }

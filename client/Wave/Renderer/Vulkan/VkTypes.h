@@ -24,6 +24,7 @@ namespace vkn
 	{
 		VkImage m_Image;
 		VkImageView m_ImageView;
+		VkDescriptorSet m_Descriptor;
 	};
 }
 

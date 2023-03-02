@@ -19,11 +19,8 @@ vkn::VkHardware::VkHardware(wv::Window* window)
 	WAVE_ASSERT(initializedValidationLayers, "Unsuccessfully retrieved required validation layers");
 
 	CreateInstance();
-
 	SelectPhysicalDevice();
 	CreateLogicalDevice();
-
-	CreateCommandPool();
 	CreateVMAAllocator();
 }
 
@@ -38,7 +35,6 @@ void vkn::VkHardware::Teardown()
 {
 	vmaDestroyAllocator(m_VmaAllocator);
 
-	vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
 	vkDestroyDevice(m_LogicalDevice, nullptr);
 	vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 
@@ -257,15 +253,6 @@ void vkn::VkHardware::CreateLogicalDevice()
 	vkGetDeviceQueue(m_LogicalDevice, queueFamily.m_PresentationFamily.value(), 0, &m_PresentationQueue);
 	if (m_GraphicsQueue && m_PresentationQueue)
 		core::Log(ELogType::Trace, "[VkHardware] Created graphics and presentation queues");
-}
-
-void vkn::VkHardware::CreateCommandPool()
-{
-	QueueFamily queueFamily = FindQueueFamilies(m_PhysicalDevice);
-
-	auto commandPoolInfo = vkn::InitCommandPoolCreateInfo(queueFamily.m_GraphicsFamily.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-
-	VK_CALL(vkCreateCommandPool(m_LogicalDevice, &commandPoolInfo, nullptr, &m_CommandPool));
 }
 
 void vkn::VkHardware::CreateVMAAllocator()

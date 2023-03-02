@@ -38,10 +38,19 @@ vkn::VkVertexInputDescription vkn::VkVertex::GetVertexInputDescription()
 	colorAttribute.format = VK_FORMAT_R32G32B32_SFLOAT;
 	colorAttribute.offset = offsetof(VkVertex, m_Color);
 
+
+	// UV is stored in location 3
+	VkVertexInputAttributeDescription uvAttribute = VkVertexInputAttributeDescription();
+	uvAttribute.binding = 0;
+	uvAttribute.location = 3;
+	uvAttribute.format = VK_FORMAT_R32G32_SFLOAT;
+	uvAttribute.offset = offsetof(VkVertex, m_UV);
+
 	// Join attributes
 	vertexInputDescription.m_Attributes.push_back(positionAttribute);
 	vertexInputDescription.m_Attributes.push_back(normalAttribute);
 	vertexInputDescription.m_Attributes.push_back(colorAttribute);
+	vertexInputDescription.m_Attributes.push_back(uvAttribute);
 
 	return vertexInputDescription;
 }
@@ -93,6 +102,14 @@ void vkn::VkMesh::LoadFromObj(const char* filename)
 					attrib.normals[3 * index.normal_index + 0],
 					attrib.normals[3 * index.normal_index + 1],
 					attrib.normals[3 * index.normal_index + 2]
+				};
+			}
+
+			if (index.texcoord_index >= 0)
+			{
+				vertex.m_UV = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					(1 - attrib.texcoords[2 * index.texcoord_index + 1])
 				};
 			}
 

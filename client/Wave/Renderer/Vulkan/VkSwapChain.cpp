@@ -114,7 +114,7 @@ void vkn::VkSwapChain::CreateImageViews()
 	m_SwapChainImageViews.resize(m_SwapChainImages.size());
 	for (size_t i = 0; i < m_SwapChainImages.size(); ++i)
 	{
-		auto imageViewCreateInfo = vkn::InitImageViewCreateInfo(m_SwapChainImageFormat, m_SwapChainImages[i], VK_IMAGE_ASPECT_COLOR_BIT);
+		VkImageViewCreateInfo imageViewCreateInfo = vkn::InitImageViewCreateInfo(m_SwapChainImageFormat, m_SwapChainImages[i], VK_IMAGE_ASPECT_COLOR_BIT);
 
 		VK_CALL(vkCreateImageView(c_VkHardware.m_LogicalDevice, &imageViewCreateInfo, nullptr, &m_SwapChainImageViews[i]));
 	}
@@ -125,7 +125,7 @@ void vkn::VkSwapChain::CreateDepthImage()
 	VkExtent3D depthImageExtent = { m_SwapChainExtent.width, m_SwapChainExtent.height, 1 };
 
 	m_DepthFormat = VK_FORMAT_D32_SFLOAT;
-	auto depthImageCreateInfo = vkn::InitImageCreateInfo(m_DepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImageExtent);
+	VkImageCreateInfo depthImageCreateInfo = vkn::InitImageCreateInfo(m_DepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImageExtent);
 
 	VmaAllocationCreateInfo depthImageAllocationCreateInfo = VmaAllocationCreateInfo();
 	depthImageAllocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -143,7 +143,7 @@ void vkn::VkSwapChain::CreateFramebuffers()
 
 	m_VkSwapChainFramebuffers.resize(swapChainImageViews.size());
 
-	auto framebufferCreateInfo = vkn::InitFramebufferCreateInfo(c_VkRenderer.m_DefaultPass->m_RenderPass, m_SwapChainExtent);
+	VkFramebufferCreateInfo framebufferCreateInfo = vkn::InitFramebufferCreateInfo(c_VkRenderer.m_DefaultPass->m_RenderPass, m_SwapChainExtent);
 	for (size_t i = 0; i < swapChainImageViews.size(); ++i)
 	{
 		VkImageView attachments[2];
@@ -170,7 +170,7 @@ VkResult vkn::VkSwapChain::SubmitCommandBuffers(const VkCommandBuffer* commandBu
 {
 	int currentFrameIndex = c_VkRenderer.m_CurrentFrameIndex;
 
-	auto submitInfo = vkn::InitSubmitInfo(commandBuffers);
+	VkSubmitInfo submitInfo = vkn::InitSubmitInfo(commandBuffers);
 
 	VkSemaphore waitSemaphores[] = { c_VkRenderer.m_ImageAvailableSemaphores[currentFrameIndex] };
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -213,7 +213,7 @@ void vkn::VkSwapChain::Destroy()
 	}
 
 	// Image views
-	for (auto imageView : m_SwapChainImageViews)
+	for (VkImageView imageView : m_SwapChainImageViews)
 	{
 		vkDestroyImageView(c_VkHardware.m_LogicalDevice, imageView, nullptr);
 	}

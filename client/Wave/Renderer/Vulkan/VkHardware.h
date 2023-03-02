@@ -71,9 +71,6 @@ namespace vkn
 		/// @brief Initializes the logical device interfacing with Vulkan
 		void CreateLogicalDevice();
 
-		/// @brief Creates the command pool and allocates a main command buffer
-		void CreateCommandPool();
-
 		/// @brief Creates the VMA allocator for buffer allocations
 		void CreateVMAAllocator();
 
@@ -114,9 +111,6 @@ namespace vkn
 
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VkQueue m_PresentationQueue = VK_NULL_HANDLE;
-
-		VkCommandPool m_CommandPool = VK_NULL_HANDLE;
-		std::vector<VkCommandBuffer> m_CommandBuffers = {};
 
 		VmaAllocator m_VmaAllocator = nullptr;
 

@@ -98,6 +98,15 @@ namespace vkn
 	/// @brief Constructs an info struct for a descriptor buffer
 	VkDescriptorBufferInfo InitDescriptorBufferInfo(VkBuffer& buffer, const uint32_t range);
 
+	/// @brief Constructs an info struct for a texture sampler
+	VkSamplerCreateInfo InitSamplerCreateInfo(VkFilter filters, VkSamplerAddressMode samplerAddressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
+	/// @brief Constructs a set of write information for a buffer descriptor set
+	VkWriteDescriptorSet InitWriteDescriptorSetBuffer(VkDescriptorType type, VkDescriptorSet set, VkDescriptorBufferInfo* bufferInfo, uint32_t binding);
+
+	/// @brief Constructs a set of write information for an image/sampler descriptor set
+	VkWriteDescriptorSet InitWriteDescriptorSetImage(VkDescriptorType type, VkDescriptorSet set, VkDescriptorImageInfo* imageInfo, uint32_t binding);
+
 	///
 	/// Renderpass
 	/// 

@@ -41,33 +41,24 @@ void vkn::VkRenderer::Init()
 		std::string triangleVertexShader = core::FileSystem::GetShaderPath("TriangleMesh.vert.hlsl.spv").string();
 		std::string triangleFragmentShader = core::FileSystem::GetShaderPath("TriangleMesh.frag.hlsl.spv").string();
 		m_DefaultPipeline = new VkShaderPipeline(*this, *m_VkHardware, triangleVertexShader, triangleFragmentShader);
-
-		// Uniform buffers need to be initialized after shader pipeline and descriptor sets are created
-		CreateUniformBuffers();
 	}
 
-	// Sync objects
+	// Create command pools and sync objects
+	CreateCommands();
+	CreateSyncObjects();
+
+	// Load textures
 	{
-		m_ImageAvailableSemaphores.resize(c_MaxFramesInFlight);
-		m_RenderFinishedSemaphores.resize(c_MaxFramesInFlight);
-		m_InFlightFences.resize(c_MaxFramesInFlight);
-
-		VkSemaphoreCreateInfo semaphoreCreateInfo = vkn::InitSemaphoreCreateInfo();
-		VkFenceCreateInfo fenceCreateInfo = vkn::InitFenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
-
-		for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-		{
-			VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
-			VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
-			VK_CALL(vkCreateFence(m_VkHardware->m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]));
-		}
+		std::string texturePath = core::FileSystem::GetAssetPath("viking_room.png").string();
+		CreateTexture(texturePath);
+		VkImageViewCreateInfo textureInfo = vkn::InitImageViewCreateInfo(VK_FORMAT_R8G8B8A8_SRGB, m_Texture.m_Image.m_Image, VK_IMAGE_ASPECT_COLOR_BIT);
+		vkCreateImageView(m_VkHardware->m_LogicalDevice, &textureInfo, nullptr, &m_Texture.m_Image.m_ImageView);
 	}
-
-	// Command buffer allocations
-	CreateCommandBuffers();
 
 	// Load 3D meshes
 	LoadMeshes();
+
+	CreateUniformBuffers();
 }
 
 void vkn::VkRenderer::Draw()
@@ -93,9 +84,8 @@ void vkn::VkRenderer::Teardown()
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
 	delete m_LoadedModel;
-	//delete m_TriangleModel
 
-	// TODO: Implement main destruction queue as opposed to relying on destructors?
+	// TODO: Implement main destruction queue as opposed to relying on destructors
 	delete m_VkSwapChain;
 	delete m_DefaultPipeline;
 	delete m_DefaultPass;
@@ -107,8 +97,11 @@ void vkn::VkRenderer::Teardown()
 	}
 
 	// TODO: Abstract texture loading/destruction
-	vmaDestroyImage(m_VkHardware->m_VmaAllocator, m_TestTexture.m_Image, m_TestTexture.m_Allocation);
+	vkDestroySampler(m_VkHardware->m_LogicalDevice, m_Texture.m_Sampler, nullptr);
+	vkDestroyImageView(m_VkHardware->m_LogicalDevice, m_Texture.m_Image.m_ImageView, nullptr);
+	vmaDestroyImage(m_VkHardware->m_VmaAllocator, m_Texture.m_Image.m_Image, m_Texture.m_Image.m_Allocation);
 
+	// Sync objects
 	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
 	{
 		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
@@ -116,20 +109,126 @@ void vkn::VkRenderer::Teardown()
 		vkDestroyFence(m_VkHardware->m_LogicalDevice, m_InFlightFences[i], nullptr);
 	}
 
-	// Free command buffers
-	vkFreeCommandBuffers(m_VkHardware->m_LogicalDevice, m_VkHardware->m_CommandPool, static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
-	m_CommandBuffers.clear();
+	// Upload context
+	vkDestroyFence(m_VkHardware->m_LogicalDevice, m_UploadContext.m_UploadFence, nullptr);
+	vkFreeCommandBuffers(m_VkHardware->m_LogicalDevice, m_UploadContext.m_CommandPool, 1, &m_UploadContext.m_CommandBuffer);
+	vkDestroyCommandPool(m_VkHardware->m_LogicalDevice, m_UploadContext.m_CommandPool, nullptr);
 
-	// Teardown hardware (devices/instance) last
+	// Command buffers/pools
+	vkFreeCommandBuffers(m_VkHardware->m_LogicalDevice, m_CommandPool, static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
+	m_CommandBuffers.clear();
+	vkDestroyCommandPool(m_VkHardware->m_LogicalDevice, m_CommandPool, nullptr);
+
+	// Hardware
 	delete m_VkHardware;
 }
 
-void vkn::VkRenderer::CreateCommandBuffers()
+void vkn::VkRenderer::CreateSyncObjects()
 {
-	m_CommandBuffers.resize(c_MaxFramesInFlight);
+	//! Runtime
 
-	auto commandBufferAllocateInfo = vkn::InitCommandBufferAllocateInfo(m_VkHardware->m_CommandPool, 2);
+	m_ImageAvailableSemaphores.resize(c_MaxFramesInFlight);
+	m_RenderFinishedSemaphores.resize(c_MaxFramesInFlight);
+	m_InFlightFences.resize(c_MaxFramesInFlight);
+
+	VkSemaphoreCreateInfo semaphoreCreateInfo = vkn::InitSemaphoreCreateInfo();
+	VkFenceCreateInfo fenceCreateInfo = vkn::InitFenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
+
+	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+	{
+		VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
+		VK_CALL(vkCreateSemaphore(m_VkHardware->m_LogicalDevice, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
+		VK_CALL(vkCreateFence(m_VkHardware->m_LogicalDevice, &fenceCreateInfo, nullptr, &m_InFlightFences[i]));
+	}
+
+	//! Upload
+
+	VkFenceCreateInfo uploadFenceCreateInfo = vkn::InitFenceCreateInfo();
+	VK_CALL(vkCreateFence(m_VkHardware->m_LogicalDevice, &uploadFenceCreateInfo, nullptr, &m_UploadContext.m_UploadFence));
+}
+
+void vkn::VkRenderer::CreateCommands()
+{
+	//! Runtime
+
+	QueueFamily queueFamily = m_VkHardware->FindQueueFamilies(m_VkHardware->m_PhysicalDevice);
+	VkCommandPoolCreateInfo commandPoolInfo = vkn::InitCommandPoolCreateInfo(queueFamily.m_GraphicsFamily.value(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+	VK_CALL(vkCreateCommandPool(m_VkHardware->m_LogicalDevice, &commandPoolInfo, nullptr, &m_CommandPool));
+
+	m_CommandBuffers.resize(c_MaxFramesInFlight);
+	VkCommandBufferAllocateInfo commandBufferAllocateInfo = vkn::InitCommandBufferAllocateInfo(m_CommandPool, 2);
 	VK_CALL(vkAllocateCommandBuffers(m_VkHardware->m_LogicalDevice, &commandBufferAllocateInfo, m_CommandBuffers.data()));
+
+	//! Upload
+
+	VkCommandPoolCreateInfo uploadCommandPoolInfo = vkn::InitCommandPoolCreateInfo(queueFamily.m_GraphicsFamily.value());
+	VK_CALL(vkCreateCommandPool(m_VkHardware->m_LogicalDevice, &uploadCommandPoolInfo, nullptr, &m_UploadContext.m_CommandPool));
+
+	VkCommandBufferAllocateInfo uploadCommandBufferAllocateInfo = vkn::InitCommandBufferAllocateInfo(m_UploadContext.m_CommandPool);
+	VK_CALL(vkAllocateCommandBuffers(m_VkHardware->m_LogicalDevice, &uploadCommandBufferAllocateInfo, &m_UploadContext.m_CommandBuffer));
+}
+
+void vkn::VkRenderer::CreateUniformBuffers()
+{
+	//! UBO
+
+	const size_t uniformBufferSize = sizeof(VkMeshUniformBufferObject);
+
+	m_UniformBuffers.resize(c_MaxFramesInFlight);
+	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
+	{
+		m_VkHardware->CreateVMABuffer(m_UniformBuffers[i],
+			uniformBufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+		VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_DefaultPipeline->m_DescriptorPool, &m_DefaultPipeline->m_DescriptorSetLayout);
+
+		VK_CALL(vkAllocateDescriptorSets(m_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_UniformBuffers[i].m_Descriptor));
+
+		VkDescriptorBufferInfo descriptorBufferInfo = vkn::InitDescriptorBufferInfo(m_UniformBuffers[i].m_Buffer, sizeof(VkMeshUniformBufferObject));
+		VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, m_UniformBuffers[i].m_Descriptor, &descriptorBufferInfo, 0);
+		vkUpdateDescriptorSets(m_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
+	}
+
+	//! Sampler
+
+	m_Texture.m_Sampler = VkSampler();
+	VkSamplerCreateInfo samplerCreateInfo = vkn::InitSamplerCreateInfo(VK_FILTER_NEAREST);
+	vkCreateSampler(m_VkHardware->m_LogicalDevice, &samplerCreateInfo, nullptr, &m_Texture.m_Sampler);
+
+	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_DefaultPipeline->m_DescriptorPool, &m_DefaultPipeline->m_SingleTextureSetLayout);
+	VK_CALL(vkAllocateDescriptorSets(m_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_Texture.m_Image.m_Descriptor));
+
+	VkDescriptorImageInfo textureBufferInfo = VkDescriptorImageInfo();
+	textureBufferInfo.sampler = m_Texture.m_Sampler;
+	textureBufferInfo.imageView = m_Texture.m_Image.m_ImageView;
+	textureBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	
+	VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_Texture.m_Image.m_Descriptor, &textureBufferInfo, 0);
+	vkUpdateDescriptorSets(m_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
+}
+
+void vkn::VkRenderer::SubmitToRenderer(std::function<void(VkCommandBuffer)>&& submitFunction) const
+{
+	VkCommandBuffer commandBuffer = m_UploadContext.m_CommandBuffer;
+
+	VkCommandBufferBeginInfo commandBufferBeginInfo = vkn::InitCommandBufferBeginInfo(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+	VK_CALL(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
+
+	// Execute submitted function
+	submitFunction(commandBuffer);
+
+	VK_CALL(vkEndCommandBuffer(commandBuffer));
+
+	// Submit command buffer to the queue and execute it
+	// The upload context's fence will block until graphics commands finish executing
+	VkSubmitInfo submitInfo = vkn::InitSubmitInfo(&commandBuffer);
+	VK_CALL(vkQueueSubmit(m_VkHardware->m_GraphicsQueue, 1, &submitInfo, m_UploadContext.m_UploadFence));
+	
+	VK_CALL(vkWaitForFences(m_VkHardware->m_LogicalDevice, 1, &m_UploadContext.m_UploadFence, true, UINT64_MAX));
+	VK_CALL(vkResetFences(m_VkHardware->m_LogicalDevice, 1, &m_UploadContext.m_UploadFence));
+	VK_CALL(vkResetCommandPool(m_VkHardware->m_LogicalDevice, m_UploadContext.m_CommandPool, 0));
 }
 
 VkCommandBuffer vkn::VkRenderer::BeginFrame()
@@ -181,7 +280,7 @@ void vkn::VkRenderer::BeginRenderPass(VkCommandBuffer commandBuffer)
 	WAVE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot end render pass on a command buffer from a different frame");
 
 	const VkExtent2D& swapChainExtent = m_VkSwapChain->m_SwapChainExtent;
-	auto renderPassInfo = vkn::InitRenderPassBeginInfo(m_DefaultPass->m_RenderPass, m_VkSwapChain->m_VkSwapChainFramebuffers[m_CurrentImageIndex], swapChainExtent);
+	VkRenderPassBeginInfo renderPassInfo = vkn::InitRenderPassBeginInfo(m_DefaultPass->m_RenderPass, m_VkSwapChain->m_VkSwapChainFramebuffers[m_CurrentImageIndex], swapChainExtent);
 
 	VkClearValue clearColor;
 	clearColor.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }};
@@ -217,22 +316,21 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 	const VkExtent2D extent = m_VkSwapChain->m_SwapChainExtent;
 
 	// MVP/Uniform Testing
-	glm::vec3 cameraPosition = { 1.0f, -1.0f, -8.0f };
+	glm::vec3 cameraPosition = { 0.0f, 0.0f, -2.0f };
 	glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
-	glm::mat4 projectionMatrix = glm::perspective(glm::radians(70.0f), 
-		static_cast<float>(extent.width) / static_cast<float>(extent.height), 
-		0.1f, 200.0f);
+	glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height), 0.1f, 200.0f);
 	projectionMatrix[1][1] *= -1;
 
-	glm::mat4 modelMatrix = glm::translate(glm::mat4(0.0f), glm::vec3(0.0f));
-	modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(core::Timer::DeltaTime() * 0.02f), glm::vec3(0, 1, 0));
+	glm::mat4 modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(core::Timer::DeltaTime() * 0.02f), glm::vec3(1.0f, 0.0f, 0.0f));
 
 	// Bind required pipeline
 	m_DefaultPipeline->Bind(commandBuffer);
 
 	// Bind geometry
 	m_LoadedModel->Bind(commandBuffer);
-	// m_TriangleModel->Bind(commandBuffer);
+
+	// Bind texture descriptor set
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipeline->m_PipelineLayout, 1, 1, &m_Texture.m_Image.m_Descriptor, 0, nullptr);
 
 	// Submit push constants (constant uniforms)
 	VkMeshPushConstants constants;
@@ -252,7 +350,6 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 
 	// Draw geometry
 	m_LoadedModel->Draw(commandBuffer);
-	// m_TriangleModel->Draw(commandBuffer);
 }
 
 void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
@@ -265,65 +362,14 @@ void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
 
 void vkn::VkRenderer::LoadMeshes()
 {
-	m_TriangleMesh.m_Vertices.resize(4);
-
-	// Vertex positions
-	m_TriangleMesh.m_Vertices[0].m_Position = {  1.0f,  1.0f, 0.0f };
-	m_TriangleMesh.m_Vertices[1].m_Position = {  1.0f, -1.0f, 0.0f };
-	m_TriangleMesh.m_Vertices[2].m_Position = { -1.0f, -1.0f, 0.0f };
-	m_TriangleMesh.m_Vertices[3].m_Position = { -1.0f,  1.0f, 0.0f };
-
-	// Vertex colors
-	m_TriangleMesh.m_Vertices[0].m_Color = { 1.0f, 0.0f, 0.0f };
-	m_TriangleMesh.m_Vertices[1].m_Color = { 0.0f, 1.0f, 0.0f };
-	m_TriangleMesh.m_Vertices[2].m_Color = { 0.0f, 0.0f, 1.0f };
-	m_TriangleMesh.m_Vertices[3].m_Color = { 1.0f, 0.0f, 0.0f };
-
-	// Indices
-	m_TriangleMesh.m_Indices = { 0, 1, 3, 1, 2, 3 };
-	//m_TriangleModel = new VkModel(*m_VkHardware, m_TriangleMesh);
-
 	m_LoadedMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
-	m_LoadedModel = new VkModel(*m_VkHardware, m_LoadedMesh);
+	m_LoadedModel = new VkModel(*this, m_LoadedMesh);
 }
 
-void vkn::VkRenderer::CreateUniformBuffers()
-{
-	const size_t uniformBufferSize = sizeof(VkMeshUniformBufferObject);
-
-	m_UniformBuffers.resize(c_MaxFramesInFlight);
-
-	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-	{
-		m_VkHardware->CreateVMABuffer(m_UniformBuffers[i],
-			uniformBufferSize,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-		auto descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_DefaultPipeline->m_DescriptorPool, &m_DefaultPipeline->m_DescriptorSetLayout);
-
-		VK_CALL(vkAllocateDescriptorSets(m_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_UniformBuffers[i].m_Descriptor));
-
-		auto descriptorBufferInfo = vkn::InitDescriptorBufferInfo(m_UniformBuffers[i].m_Buffer, sizeof(VkMeshUniformBufferObject));
-
-		VkWriteDescriptorSet descriptorSetWrite = VkWriteDescriptorSet();
-		descriptorSetWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorSetWrite.pNext = nullptr;
-
-		descriptorSetWrite.dstBinding = 0;
-		descriptorSetWrite.dstSet = m_UniformBuffers[i].m_Descriptor;
-		descriptorSetWrite.descriptorCount = 1;
-		descriptorSetWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptorSetWrite.pBufferInfo = &descriptorBufferInfo;
-
-		vkUpdateDescriptorSets(m_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
-	}
-}
-
-void vkn::VkRenderer::CreateTexture(const char* filename)
+void vkn::VkRenderer::CreateTexture(const std::string& filename)
 {
 	int texWidth, texHeight, channels;
-	stbi_uc* pixels = stbi_load(filename, &texWidth, &texHeight, &channels, STBI_rgb_alpha);
+	stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &channels, STBI_rgb_alpha);
 	WAVE_ASSERT(pixels, "Failed to load texture from provided image file");
 
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -350,12 +396,61 @@ void vkn::VkRenderer::CreateTexture(const char* filename)
 	imageExtent.height = static_cast<uint32_t>(texHeight);
 	imageExtent.depth = 1;
 	
-	auto newImageCreateInfo = vkn::InitImageCreateInfo(imageFormat, 
-		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageExtent);
+	VkImageCreateInfo newImageCreateInfo = vkn::InitImageCreateInfo(imageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageExtent);
 	newImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 
 	VmaAllocationCreateInfo newImageAllocationCreateInfo = VmaAllocationCreateInfo();
-	vmaCreateImage(m_VkHardware->m_VmaAllocator, &newImageCreateInfo, &newImageAllocationCreateInfo, &m_TestTexture.m_Image, &m_TestTexture.m_Allocation, nullptr);
+	newImageAllocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+	// Allocate and create image
+	vmaCreateImage(m_VkHardware->m_VmaAllocator, &newImageCreateInfo, &newImageAllocationCreateInfo, &m_Texture.m_Image.m_Image, &m_Texture.m_Image.m_Allocation, nullptr);
+
+	/// ----------------
+
+	// Submit command to render image
+	SubmitToRenderer([=](VkCommandBuffer commandBuffer) 
+	{
+		VkImageSubresourceRange range;
+		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		range.baseMipLevel = 0;
+		range.levelCount = 1;
+		range.baseArrayLayer = 0;
+		range.layerCount = 1;
+
+		VkImageMemoryBarrier transferImageBarrier = VkImageMemoryBarrier();
+		transferImageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		transferImageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		transferImageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		transferImageBarrier.image = m_Texture.m_Image.m_Image;
+		transferImageBarrier.subresourceRange = range;
+		transferImageBarrier.srcAccessMask = 0;
+		transferImageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+		// Barrier the image into the transfer-receive layout
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &transferImageBarrier);
+
+		VkBufferImageCopy copyRegion = VkBufferImageCopy();
+		copyRegion.bufferOffset = 0;
+		copyRegion.bufferRowLength = 0;
+		copyRegion.bufferImageHeight = 0;
+		copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		copyRegion.imageSubresource.mipLevel = 0;
+		copyRegion.imageSubresource.baseArrayLayer = 0;
+		copyRegion.imageSubresource.layerCount = 1;
+		copyRegion.imageExtent = imageExtent;
+
+		// Copy the image into a staging buffer
+		vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.m_Buffer, m_Texture.m_Image.m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+		VkImageMemoryBarrier readableImageBarrier = transferImageBarrier;
+		readableImageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		readableImageBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		readableImageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		readableImageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		// Barrier the image into the shader layout
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &readableImageBarrier);
+	});
 
 	/// ----------------
 

@@ -5,14 +5,16 @@
 
 namespace vkn
 {
+	class VkRenderer;
 	class VkHardware;
 
 	class VkModel
 	{
+		friend class VkRenderer;
 		friend class VkHardware;
 
 	public:
-		VkModel(const VkHardware& hardware, const VkMesh& mesh);
+		VkModel(const VkRenderer& renderer, const VkMesh& mesh);
 		~VkModel();
 
 		VkModel(const VkModel& other) = delete;
@@ -29,6 +31,7 @@ namespace vkn
 		inline constexpr bool HasIndexBuffer() const { return !m_Mesh.m_Indices.empty() && m_IndexBuffer.m_Buffer && m_IndexBuffer.m_Allocation; }
 
 	private:
+		const VkRenderer& c_VkRenderer;
 		const VkHardware& c_VkHardware;
 		VkMesh m_Mesh;
 

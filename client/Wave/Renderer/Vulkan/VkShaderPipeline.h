@@ -45,7 +45,8 @@ namespace vkn
         VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
         VkPipeline m_GraphicsPipeline = VK_NULL_HANDLE;
 
-        VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
         VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
+        VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
+        VkDescriptorSetLayout m_SingleTextureSetLayout = VK_NULL_HANDLE;
     };
 }

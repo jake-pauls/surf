@@ -43,7 +43,7 @@ void vkn::VkShaderPipeline::Create()
 
 	// Vertex attribute/binding descriptions
 	VkVertexInputDescription vertexInputDescription = VkVertex::GetVertexInputDescription();
-	auto vertexInputCreateInfo = vkn::InitPipelineVertexInputStateCreateInfo(
+	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo = vkn::InitPipelineVertexInputStateCreateInfo(
 		vertexInputDescription.m_Bindings.data(),
 		static_cast<uint32_t>(vertexInputDescription.m_Bindings.size()),
 		vertexInputDescription.m_Attributes.data(),
@@ -51,23 +51,23 @@ void vkn::VkShaderPipeline::Create()
 	);
 
 	// Input assembly
-	auto inputAssemblyCreateInfo = vkn::InitPipelineInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = vkn::InitPipelineInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
 	// Rasterizer - turns geometry into the fragments that are colored by the fragment shader
-	auto rasterizerCreateInfo = vkn::InitPipelineRasertizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT);
+	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = vkn::InitPipelineRasertizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT);
 
 	// Mulisampling - can perform anti-aliasing (combining multiple fragment shader results into one pixel)
-	auto multisamplingCreateInfo = vkn::InitPipelineMultisampleStateCreateInfo();
+	VkPipelineMultisampleStateCreateInfo multisamplingCreateInfo = vkn::InitPipelineMultisampleStateCreateInfo();
 
 	// Depth stencil - sets up depth testing/sampling
-	auto depthStencilStateCreateInfo = vkn::InitPipelineDepthStencilStateCreateInfo(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+	VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = vkn::InitPipelineDepthStencilStateCreateInfo(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
 	// Color blending - fragment shader returns a color, that color has to be combined with a color in the framebuffer
-	auto colorBlendAttachment = vkn::InitPipelineColorBlendAttachmentState();
-	auto colorBlendCreateInfo = vkn::InitPipelineColorBlendStateCreateInfo(&colorBlendAttachment);
+	VkPipelineColorBlendAttachmentState colorBlendAttachment = vkn::InitPipelineColorBlendAttachmentState();
+	VkPipelineColorBlendStateCreateInfo colorBlendCreateInfo = vkn::InitPipelineColorBlendStateCreateInfo(&colorBlendAttachment);
 
 	// Viewport state
-	auto viewportStateCreateInfo = vkn::InitPipelineViewportStateCreateInfo();
+	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = vkn::InitPipelineViewportStateCreateInfo();
 
 	// Setup dynamic states for viewport/scissor
 	// This can be manually defined to create different viewport states
@@ -82,25 +82,34 @@ void vkn::VkShaderPipeline::Create()
 	dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
 
 	// Initialize push constants 
-	auto pushConstantRange = vkn::InitPushConstantRange(sizeof(VkMeshPushConstants));
+	VkPushConstantRange pushConstantRange = vkn::InitPushConstantRange(sizeof(VkMeshPushConstants));
 
 	// Initialize descriptor sets/pools
-	std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 }};
-	auto descriptorPoolCreateInfo = vkn::InitDescriptorPoolCreateInfo(static_cast<uint32_t>(descriptorPoolSizes.size()), descriptorPoolSizes.data(), 10);
+	std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10 },
+		//
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 }
+	};
+	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vkn::InitDescriptorPoolCreateInfo(static_cast<uint32_t>(descriptorPoolSizes.size()), descriptorPoolSizes.data(), 10);
 	VK_CALL(vkCreateDescriptorPool(c_VkHardware.m_LogicalDevice, &descriptorPoolCreateInfo, nullptr, &m_DescriptorPool));
 
-	auto uboLayoutBinding = vkn::InitDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
-	auto descriptorSetLayoutCreateInfo = vkn::InitDescriptorSetLayoutCreateInfo(&uboLayoutBinding);
+	// Create basic UBO
+	VkDescriptorSetLayoutBinding uboLayoutBinding = vkn::InitDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT);
+	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = vkn::InitDescriptorSetLayoutCreateInfo(&uboLayoutBinding);
 	VK_CALL(vkCreateDescriptorSetLayout(c_VkHardware.m_LogicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &m_DescriptorSetLayout));
 
-	// Pipeline layout w/ push constants and descriptor sets
-	auto pipelineLayoutCreateInfo = vkn::InitPipelineLayoutCreateInfo();
+	VkDescriptorSetLayoutBinding texUniformBinding = vkn::InitDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+	VkDescriptorSetLayoutCreateInfo texDescriptorSetLayoutCreateInfo = vkn::InitDescriptorSetLayoutCreateInfo(&texUniformBinding);
+	VK_CALL(vkCreateDescriptorSetLayout(c_VkHardware.m_LogicalDevice, &texDescriptorSetLayoutCreateInfo, nullptr, &m_SingleTextureSetLayout));
 
+	// Pipeline layout w/ push constants and descriptor sets
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = vkn::InitPipelineLayoutCreateInfo();
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
-	pipelineLayoutCreateInfo.setLayoutCount = 1;
-	pipelineLayoutCreateInfo.pSetLayouts = &m_DescriptorSetLayout;
+	VkDescriptorSetLayout setLayouts[] = { m_DescriptorSetLayout, m_SingleTextureSetLayout };
+	pipelineLayoutCreateInfo.setLayoutCount = 2;
+	pipelineLayoutCreateInfo.pSetLayouts = setLayouts;
 
 	VK_CALL(vkCreatePipelineLayout(c_VkHardware.m_LogicalDevice, &pipelineLayoutCreateInfo, nullptr, &m_PipelineLayout));
 
@@ -131,6 +140,7 @@ void vkn::VkShaderPipeline::Create()
 
 void vkn::VkShaderPipeline::Destroy()
 {
+	vkDestroyDescriptorSetLayout(c_VkHardware.m_LogicalDevice, m_SingleTextureSetLayout, nullptr);
 	vkDestroyDescriptorSetLayout(c_VkHardware.m_LogicalDevice, m_DescriptorSetLayout, nullptr);
 	vkDestroyDescriptorPool(c_VkHardware.m_LogicalDevice, m_DescriptorPool, nullptr);
 

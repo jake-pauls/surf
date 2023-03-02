@@ -6,6 +6,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 
+#include "VkTypes.h"
+
 namespace vkn
 {
 	struct VkVertexInputDescription
@@ -20,6 +22,7 @@ namespace vkn
 		glm::vec3 m_Position;
 		glm::vec3 m_Normal;
 		glm::vec3 m_Color;
+		glm::vec2 m_UV;
 
 		static VkVertexInputDescription GetVertexInputDescription();
 
@@ -35,6 +38,12 @@ namespace vkn
 		std::vector<uint32_t> m_Indices;
 
 		void LoadFromObj(const char* filename);
+	};
+
+	struct VkTexture
+	{
+		VmaAllocatedImage m_Image;
+		VkSampler m_Sampler;
 	};
 
     struct VkMeshPushConstants
