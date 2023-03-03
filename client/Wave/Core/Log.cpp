@@ -22,18 +22,18 @@ void core::InitializeLogging()
 		s_IsInitialized = true;
 
 		auto defaultSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-		defaultSink->set_level(spdlog::level::debug);
+		defaultSink->set_level(spdlog::level::trace);
 
 		std::vector<spdlog::sink_ptr> coreSinks { defaultSink };
 
 #ifdef _WIN32
 		auto vsOutputSink = std::make_shared<spdlog::sinks::msvc_sink_mt>();
-		vsOutputSink->set_level(spdlog::level::debug);
+		vsOutputSink->set_level(spdlog::level::trace);
 		coreSinks.push_back(vsOutputSink);
 #endif
 
 		s_CoreLogger = std::make_shared<spdlog::logger>("debug", coreSinks.begin(), coreSinks.end());
-		s_CoreLogger->set_level(spdlog::level::debug);
+		s_CoreLogger->set_level(spdlog::level::trace);
 		s_CoreLogger->set_pattern(s_CoreLogPattern);
 		spdlog::set_default_logger(s_CoreLogger);
 	}
@@ -59,6 +59,9 @@ void core::Log(const ELogType type, const char* message)
 
 	switch (type)
 	{
+	case ELogType::Trace:
+		s_CoreLogger->trace(message);
+		break;
 	case ELogType::Debug:
 		s_CoreLogger->debug(message);
 		break;

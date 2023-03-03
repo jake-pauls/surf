@@ -1,0 +1,2 @@
+# Remove Vulkan as a vendored path
+client/Vendor/Vulkan/** linguist-vendored

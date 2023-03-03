@@ -3,7 +3,6 @@ project(surf
     VERSION 0.0.1
     LANGUAGES CXX C)
 
-
 # C17
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -11,6 +10,9 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # C++ 20
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Enable folders across CMake project
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Set output directory
 set(SURF_OUTPUT_DIR ${CMAKE_SOURCE_DIR}/build)
