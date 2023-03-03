@@ -11,6 +11,10 @@ CMakeCache.txt
 build/*
 Testing/*
 compile_commands.json
+compile_commands.events.json
+
+# SPIR-V
+**/Shaders/spv/**
 
 # OCaml
 surf/_build
@@ -29,5 +33,5 @@ setup.log
 # Local OPAM switch
 _opam/
 
-# Sample data
-data/
+# Bear
+.cache

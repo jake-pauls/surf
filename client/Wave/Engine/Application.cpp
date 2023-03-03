@@ -1,5 +1,7 @@
 #include "Application.h"
 
+#include "Timer.h"
+
 wv::Application::Application()
 	: m_Window(new Window)
 {
@@ -12,15 +14,52 @@ wv::Application::~Application()
 
 void wv::Application::Run()
 {
-	core::Log(ELogType::Info, "Starting the wave");
+	core::Log(ELogType::Info, "[Application] Starting the wave");
 
-	// Start systems and run the renderer here...
-	m_Window->Init();
+	// Create rendering context, for now it's Vulkan
+	// TODO: Determining this at runtime would be sick
+	using GAPI = Renderer::GraphicsAPI;
+	GAPI gapi = GAPI::Vulkan;
+
+	// Initialize the window and it's corresponding graphics context
+	m_Window->Init(gapi);
+	m_Renderer = Renderer::CreateRendererWithGAPI(m_Window, gapi);
+	m_Renderer->Init();
+
+	bool isRunning = true;
+	while (isRunning)
+	{
+		// Tick delta time
+		core::Timer::Tick();
+
+		// Handle polled events
+		SDL_Event event;
+		while (SDL_PollEvent(&event))
+		{
+			if (event.type == SDL_QUIT)
+				isRunning = false;
+
+			if (event.type == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_Window->GetSDLWindow()))
+				isRunning = false;
+		}
+
+		// Wait events if the window is minimized
+		while (m_Window->IsMinimized())
+		{
+			SDL_WaitEvent(&event);
+		}
+
+		m_Renderer->Draw();
+	}
 
 	Teardown();
 }
 
-void wv::Application::Teardown()
+void wv::Application::Teardown() const
 {
-	core::Log(ELogType::Info, "Tearing down the wave");
+	core::Log(ELogType::Info, "[Application] Tearing down the wave");
+
+	m_Renderer->Teardown();
+
+	m_Window->Teardown();
 }

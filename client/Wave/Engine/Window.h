@@ -5,25 +5,27 @@
 
 #include <SDL3/SDL.h>
 
+#include "RendererContext.h"
+
 namespace wv
 {
 	/// @brief Data container for the properties used to initialize an SDL window
 	struct WindowProperties
 	{
 		std::string Title;
-		unsigned int Width;
-		unsigned int Height;
-		float AspectRatio;
-		std::pair<unsigned int, unsigned int> MaxDimensions;
-		std::pair<unsigned int, unsigned int> MinDimensions;
+		const uint32_t Width;
+		const uint32_t Height;
+		const float AspectRatio;
+		const std::pair<uint32_t, uint32_t> MaxDimensions;
+		const std::pair<uint32_t, uint32_t> MinDimensions;
 
 		WindowProperties(const std::string& title = "wave.",
-			unsigned int width = 1250,
-			unsigned int height = 725,
-			unsigned int maxWidth = 3840,
-			unsigned int maxHeight = 2160,
-			unsigned int minWidth = 500,
-			unsigned int minHeight = 300)
+			const uint32_t width = 800,
+			const uint32_t height = 600,
+			const uint32_t maxWidth = 3840,
+			const uint32_t maxHeight = 2160,
+			const uint32_t minWidth = 500,
+			const uint32_t minHeight = 300)
 			: Title(title)
 			, Width(width)
 			, Height(height)
@@ -40,16 +42,26 @@ namespace wv
 		explicit Window(const WindowProperties& props = WindowProperties());
 
 		/// @brief Initializes the window in SDL, sets default settings from passed properties 
-		void Init();
+		void Init(Renderer::GraphicsAPI gapi);
 
 		/// @brief Render loop for SDL window 
-		void Render();
+		void Render() const;
 
 		/// @brief Destroys window in SDL and ends SDL session
-		void Teardown();
+		void Teardown() const;
 	
+		/// @brief Retrievies pointer to the currently open SDL window
+		inline SDL_Window* GetSDLWindow() const { return m_Window; }
+
+		/// @brief Retrieves pointer to the SDL windows current renderer context 
+		inline RendererContext* GetRendererContext() const { return m_RendererContext.get(); }
+
+		/// @brief Checks whether the current SDL window is minimized 
+		inline bool IsMinimized() const { return SDL_GetWindowFlags(m_Window) & SDL_WINDOW_MINIMIZED; }
+
 	private:
 		WindowProperties m_WindowProperties;
 		SDL_Window* m_Window = nullptr;
+		core::Unique<RendererContext> m_RendererContext = nullptr;
 	};
 }

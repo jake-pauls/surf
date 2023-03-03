@@ -10,7 +10,8 @@ enum class ELogType
 	Error,
 	Warn,
 	Info,
-	Debug
+	Debug,
+	Trace
 };
 
 namespace core
@@ -47,6 +48,7 @@ namespace core
 			core::Log(type, message);
 		}
 	}
+
 #else
 	inline void InitializeLogging() { }
 	inline void KillLogging() { }
