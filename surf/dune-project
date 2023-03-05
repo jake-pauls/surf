@@ -17,8 +17,10 @@
  (name surf)
  (synopsis "Surf")
  (description "Scripting? the graphics pipeline")
- (depends ocaml dune core alcotest)
+ (depends ocaml dune core alcotest menhir)
  (tags
   (graphics dsl interpreter)))
+
+(using menhir 2.1)
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

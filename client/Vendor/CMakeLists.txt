@@ -3,7 +3,7 @@ project(vendor)
 
 # Vulkan
 find_package(Vulkan REQUIRED)
-if (${Vulkan_FOUND})
+if(${Vulkan_FOUND})
 	message(STATUS "[Vendor] Found Vulkan include path -> '${Vulkan_INCLUDE_DIR}'")
 	message(STATUS "[Vendor] Found Vulkan libraries ->  '${Vulkan_LIBRARY}'")
 else()

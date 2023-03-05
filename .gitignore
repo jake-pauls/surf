@@ -1,6 +1,6 @@
 # VS
 *.vs/*
-*.vscode/*
+**/*.vscode/*
 *.vcxproj*
 *.sln
 
@@ -8,7 +8,8 @@
 CMakeFiles
 CMakeCache.txt
 *.cmake
-build/*
+**/build/*
+**/obj/*
 Testing/*
 compile_commands.json
 compile_commands.events.json
@@ -18,6 +19,9 @@ compile_commands.events.json
 
 # OCaml
 surf/_build
+*.cmi
+*.cmo
+*.o
 
 # ocamlbuild targets
 *.byte

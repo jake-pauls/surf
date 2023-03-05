@@ -1,5 +1,2 @@
-open Surf
-
-let () =
-  Base.four |> string_of_int |> print_endline
-  ; Base.name |> print_endline
+(** TODO: Have the main entrypoint accept a string to interpret *)
+let () = print_endline "surf."

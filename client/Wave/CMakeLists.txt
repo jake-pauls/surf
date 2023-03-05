@@ -83,7 +83,7 @@ add_executable(${WAVE_EXECUTABLE_NAME} wpch.h
 	${VKRENDERER_SOURCE_FILES} ${VKRENDERER_HEADER_FILES})
 
 # Place executable in the config directory on unix platforms 
-if (UNIX)
+if(UNIX)
     set_target_properties(${WAVE_EXECUTABLE_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/")
 endif()
 
@@ -99,6 +99,7 @@ source_group("Renderer/Vulkan" FILES ${VKRENDERER_SOURCE_FILES} ${VKRENDERER_HEA
 # Source groups can only be added relative to the directory the target is created in? Nice CMake.
 source_group("Renderer/Shaders" REGULAR_EXPRESSION ".*\.vert|.*\.frag")
 
+# Add precompiled header file
 target_precompile_headers(${WAVE_EXECUTABLE_NAME} PRIVATE wpch.h)
 
 target_include_directories(${WAVE_EXECUTABLE_NAME}
@@ -110,7 +111,6 @@ target_include_directories(${WAVE_EXECUTABLE_NAME}
 
 # Link the surf DSL API via it's alias, see api/CMakeLists.txt for more details
 target_link_libraries(${WAVE_EXECUTABLE_NAME}
-    surf::api
     # Vendor
     SDL3::SDL3
 	${Vulkan_LIBRARY}
@@ -128,7 +128,7 @@ else()
 endif()
 
 # Post-build: copy the SDL dll into the build folder
-if (WIN32)
+if(WIN32)
     add_custom_command(TARGET ${WAVE_EXECUTABLE_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${VENDOR_OUTPUT_DIR}/SDL/$<CONFIGURATION>/SDL3.dll"

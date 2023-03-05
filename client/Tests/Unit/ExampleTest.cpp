@@ -1,10 +1,16 @@
 #include <catch2/catch.hpp>
 
-#include <surf/surf.h>
-
 #pragma optimize("", off)
 
-TEST_CASE("Reason")
+TEST_CASE("Sample")
 {
-    REQUIRE(surf_BridgeTestReturn());
+    SECTION("Logic")
+    {
+        REQUIRE(2 + 2 == 4);
+    }
+
+    SECTION("Reason")
+    {
+        REQUIRE(true);
+    }
 }

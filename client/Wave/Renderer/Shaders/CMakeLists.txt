@@ -12,7 +12,7 @@ target_sources(${WAVE_EXECUTABLE_NAME} PRIVATE ${SHADER_FILES})
 # Check for GLSLC
 message(STATUS)
 find_program(GLSLC glslc)
-if (GLSLC)
+if(GLSLC)
     message(STATUS "[Shaders] Found GLSLC -> ${GLSLC}")
 else()
     message(WARNING "[Shaders] Could not find GLSLC, GLSL will not be compiled to SPIR-V")
@@ -20,19 +20,19 @@ endif()
 
 # Check for DXC (hlsl)
 find_program(DXC dxc)
-if (DXC)
+if(DXC)
     message(STATUS "[Shaders] Found DXC -> ${DXC}")
 else()
     message(WARNING "[Shaders] Could not find DXC, HLSL will not be compiled to SPIR-V")
 endif()
 
 # Fail build if a valid shader compiler was not found
-if (NOT GLSLC AND NOT DXC)
+if(NOT GLSLC AND NOT DXC)
     message(FATAL_ERROR "[Shaders] Couldn't find a valid shader compiler")
 endif()
 
 # Compile shaders to SPIR-V
-foreach (SHADER_FILE ${SHADER_FILES}) 
+foreach(SHADER_FILE ${SHADER_FILES}) 
     # Retrieve shader file metadata 
     get_filename_component(SHADER_NAME ${SHADER_FILE} NAME)
     get_filename_component(SHADER_EXT ${SHADER_FILE} LAST_EXT)
@@ -51,17 +51,17 @@ foreach (SHADER_FILE ${SHADER_FILES})
 
     # Add a custom command to compile shaders to SPIR-V at build time
     # By default, shaders will only be generated if a valid SPIR-V compiler is found on the system 
-    if (SHADER_DIR STREQUAL "glsl" AND GLSLC)
+    if(SHADER_DIR STREQUAL "glsl" AND GLSLC)
         add_custom_command(OUTPUT "${SPIRV_OUTPUT_DIR}/$<CONFIG>/Shaders/${SHADER_OUT_NAME}"
             COMMAND ${CMAKE_COMMAND} -E make_directory "${SPIRV_OUTPUT_DIR}/$<CONFIG>/Shaders"
             COMMAND ${GLSLC} ${CURRENT_SHADER_PATH} -o "${SPIRV_OUTPUT_DIR}/$<CONFIG>/Shaders/${SHADER_OUT_NAME}"
             DEPENDS ${CURRENT_SHADER_PATH}
             VERBATIM)
-    elseif (SHADER_DIR STREQUAL "hlsl" AND DXC)
+    elseif(SHADER_DIR STREQUAL "hlsl" AND DXC)
         # Check the shader extension in advance for hlsl compilation
-        if (SHADER_EXT STREQUAL ".vert")
+        if(SHADER_EXT STREQUAL ".vert")
             set(IS_VERT TRUE)
-        elseif (SHADER_EXT STREQUAL ".frag")
+        elseif(SHADER_EXT STREQUAL ".frag")
             set(IS_VERT FALSE)
         endif()
 

@@ -1,3 +1,9 @@
 (library
  (name surf)
  (libraries core))
+
+(ocamllex
+ (modules lexer))
+
+(menhir
+ (modules parser))

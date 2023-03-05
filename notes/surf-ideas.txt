@@ -1,0 +1,48 @@
+## cfg.surf
+---
+
+fun cfg(): PipelineConfig ->
+	gapi = "Vulkan"
+	mode = ["default", "deferred"]
+	lang = ["glsl", "hlsl"]
+
+---
+## Triangle.surf -> Triangle.frag.spv/Triangle.vert.spv
+---
+
+@lang(hlsl)
+@mode(default)
+
+# Triangle Shader - this is a comment
+shad Triangle
+	|> Vertex								# Vertex Pass (input data is 'piped' into this)
+		let Color = (1.0, 0.0, 0.0, 1.0)	# Implicit type definition () with 4 params is a Vec4
+		let Positions = preset.Triangle		# Contain some geometric primitives as presets?
+		surf ~> { Color, Positions }		# Surfing between passes is the main advantage
+	|> Fragment								# Fragment Pass ('surfed' data is 'piped' into this)
+		# Potentially unwrapped as
+		#	let Color = surf.Color
+		# 	let Positions = surf.Positions
+		surf ~> Color						# Final fragment-level 'surf' is final fragment output
+
+---
+## Notes
+- fun: Denotes a function that can be reused
+	- Return types are denoted with ':'
+ 	- 'PipelineConfig' is a return type strict to 'cfg.surf'
+		- This should error out the entire runtime if it doesn't exist
+
+- shad: Denotes a shader flow, requires a name
+	- Requires (at least?) 'Vertex' and 'Fragment' passes
+		- Some shaders might need multiple passes, consider adding 'VPass'/'FPass' for additional/generic passes as well
+		- '|>' pipes are key to this, they denote a pass
+
+- 'surf' alone is a keyord, but it also contains the input from the last pass (?)
+	- Keyword: Denotes passing an input to the next pass with the arguments
+		- Use '~>' to illustrate the type being passed
+		- Each pass should have something (I don't think this matters)
+
+- Types could be implicit? (pythonic)
+	- (): Vector (2, 3, 4)
+	- {}: Struct
+	- []: Array

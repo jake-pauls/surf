@@ -27,6 +27,5 @@ set_directory_properties(PROPERTIES VS_STARTUP_PROJECT wave)
 add_compile_options("$<$<CONFIG:DEBUG>:-D_WAVE_DEBUG>")
 add_compile_options("$<$<CONFIG:DEBUG>:-D_WAVE_ENABLE_LOGGING>")
 
-# Build surf api/client projects
-add_subdirectory(api)
+# Build surf client project
 add_subdirectory(client)
