@@ -44,11 +44,10 @@ jobs:
           cmake-version: '3.25.x'
 
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        uses: humbletim/install-vulkan-sdk@v1.1.1
         with:
-          vulkan-query-version: 1.3.236.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
+          version: 1.3.236.0
+          cache: true
 
       - name: Build project
         run: python ./scripts/surf.py
@@ -84,11 +83,10 @@ jobs:
           cmake-version: '3.25.x'
 
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        uses: humbletim/install-vulkan-sdk@v1.1.1
         with:
-          vulkan-query-version: 1.3.236.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
+          version: 1.3.236.0
+          cache: true
 
       - name: Build project
         run: python ./scripts/surf.py ${{ matrix.build-cfg }}
