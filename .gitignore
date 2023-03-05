@@ -9,6 +9,7 @@ CMakeFiles
 CMakeCache.txt
 *.cmake
 **/build/*
+**/obj/*
 Testing/*
 compile_commands.json
 compile_commands.events.json
@@ -18,6 +19,9 @@ compile_commands.events.json
 
 # OCaml
 surf/_build
+*.cmi
+*.cmo
+*.o
 
 # ocamlbuild targets
 *.byte

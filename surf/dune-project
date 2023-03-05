@@ -18,6 +18,7 @@
  (synopsis "Surf")
  (description "Scripting? the graphics pipeline")
  (depends ocaml dune core alcotest)
+ (allow_empty true)
  (tags
   (graphics dsl interpreter)))
 
