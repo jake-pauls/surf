@@ -3,7 +3,7 @@
 ## dune/opam project
 ##
 
-.PHONY: default run build test install uninstall clean fmt
+.PHONY: default run build test clean fmt
 
 default: run
 

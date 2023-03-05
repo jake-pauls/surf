@@ -48,7 +48,7 @@ CFLAGS := -I$(INCLUDE_DIR) -I$(WRAP_DIR) -I`$(OCAMLC) -where`
 SRCS := $(wildcard $(SRC_DIR)/*.c)
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 
-.PHONY: ml win32 clean
+.PHONY: ml unix win32 clean
 
 # TODO: Glob .ml files that have wrapper methods
 
