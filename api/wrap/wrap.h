@@ -1,7 +1,7 @@
 #ifndef Wrap_h
 #define Wrap_h
 
-/// OCAML WRAPPER
+extern char* interp(char* s);
 
 extern int fib(int n);
 
