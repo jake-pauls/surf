@@ -1,0 +1,5 @@
+(executable
+ (name gen)
+ (public_name gen)
+ (modes exe shared_object)
+ (libraries bindings ctypes ctypes.stubs))

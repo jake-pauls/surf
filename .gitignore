@@ -23,6 +23,10 @@ surf/_build
 *.cmo
 *.o
 
+# surf Codegen
+api/stubs
+surf/stubs
+
 # ocamlbuild targets
 *.byte
 *.native

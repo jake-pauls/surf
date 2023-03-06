@@ -1,5 +1,6 @@
 (library
  (name surf)
+ (public_name surf)
  (libraries core))
 
 (ocamllex

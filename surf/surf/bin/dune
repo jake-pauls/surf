@@ -1,4 +1,4 @@
 (executable
- (public_name surf)
  (name main)
+ (public_name surf)
  (libraries core surf))
