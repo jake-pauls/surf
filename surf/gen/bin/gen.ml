@@ -13,7 +13,9 @@ let gen dir_name ml_file c_file h_file =
   let h_file_oc = open_out (path dir_name h_file) in
   let stubs = (module Bindings.Stubs : Cstubs_inverted.BINDINGS) in
   (* Generate the ML module that links in the generated C *)
-  Cstubs_inverted.write_ml (Format.formatter_of_out_channel ml_file_oc) ~prefix stubs
+  Cstubs_inverted.write_ml
+    (Format.formatter_of_out_channel ml_file_oc)
+    ~prefix stubs
   ; (* Generate the C source file that exports OCaml functions *)
     Format.fprintf
       (Format.formatter_of_out_channel c_file_oc)
