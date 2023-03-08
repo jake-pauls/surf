@@ -1,5 +1,9 @@
 (** [bop] binary operations *)
-type bop = Add | Minus | Mult | Div
+type bop =
+  | Add
+  | Minus
+  | Mult
+  | Div
 
 (** [unop] unary operations *)
 type unop = Minus
