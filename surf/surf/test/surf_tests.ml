@@ -1,18 +1,17 @@
-open Surf
+open Helpers
 
-(** Sets up an Alcotest case for the interp function *)
-let check_interp name i s =
-  Alcotest.(check bool)
-    name true
-    (String.equal (string_of_int i) (Interpreter.interp s))
-
-let arithmetic =
+let int_basics = 
   [
     ("int", `Quick, fun _ -> check_interp "int" 2 "2");
     ("add", `Quick, fun _ -> check_interp "add" 5 "2+3");
     ("minus", `Quick, fun _ -> check_interp "minus" 4 "6-2");
-    ("minus on left of add", `Quick, fun _ -> check_interp "minus" 2 "6-2+2");
     ("mult", `Quick, fun _ -> check_interp "mult" 144 "12*12");
+    ("division", `Quick, fun _ -> check_interp "division" 5 "10 / 2");
+  ]
+
+let bedmas =
+  [
+    ("minus on left of add", `Quick, fun _ -> check_interp "minus" 2 "6-2+2");
     ("mult of mult", `Quick, fun _ -> check_interp "mult of mult" 24 "1*2*3*4");
     ( "mult on left of add",
       `Quick,
@@ -23,7 +22,6 @@ let arithmetic =
     ( "nested addition",
       `Quick,
       fun _ -> check_interp "nested addition" 18 "(10 + 5) + (1 + 2)" );
-    ("division", `Quick, fun _ -> check_interp "division" 5 "10 / 2");
     ( "division of division",
       `Quick,
       fun _ -> check_interp "division of division" 5 "40 / 4 / 2" );
@@ -50,5 +48,5 @@ let arithmetic =
       fun _ -> check_interp "dividing a negative" (-2) "-4 / 2" );
   ]
 
-let suite = [ ("arithmetic", arithmetic) ]
+let suite = [ ("basics", int_basics); ("bedmas", bedmas) ]
 let () = Alcotest.run "Default" suite

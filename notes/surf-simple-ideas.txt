@@ -1,0 +1,22 @@
+## cfg.surf
+---
+fun cfg ->
+	ret {
+		gapi: Vulkan
+		mode: Deferred
+		slang: hlsl
+	}
+
+---
+## red.surf
+---
+fun red ->
+	ret (1.0, 0.0, 0.0)
+
+---
+## Notes
+- Get logic for 'cfg' sorted out quickly
+	- Pass 'gapi', 'mode', and 'slang' as "expected" variables for cfg
+- Simple script example will pass a vec3 through the api
+
+

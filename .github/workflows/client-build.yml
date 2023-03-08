@@ -89,7 +89,7 @@ jobs:
           cache: true
 
       - name: Build project
-        run: python ./scripts/surf.py ${{ matrix.build-cfg }}
+        run: python ./scripts/wave.py ${{ matrix.build-cfg }}
 
       - name: Run make
         working-directory: ./build

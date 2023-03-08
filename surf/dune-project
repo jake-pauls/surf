@@ -17,7 +17,7 @@
  (name surf)
  (synopsis "Surf")
  (description "Scripting? the graphics pipeline")
- (depends ocaml dune core alcotest menhir ctypes)
+ (depends ocaml dune core fmt alcotest menhir ctypes)
  (tags
   (graphics dsl interpreter)))
 

@@ -31,7 +31,7 @@ def main() -> None:
     Simple build script for the project that drops the CMake build into a directory
     Build configuration can be passed either as 'Debug' or 'Release' 
 
-    ex: python surf.py debug
+    ex: python wave.py debug
     """
     # Check if a valid build configuration was passed
     # Argument is 'debug' by default 

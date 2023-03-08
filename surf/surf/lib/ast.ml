@@ -5,4 +5,8 @@ type bop = Add | Minus | Mult | Div
 type unop = Minus
 
 (** [expr] expression types *)
-type expr = Int of int | Binop of bop * expr * expr | Unop of unop * expr
+type expr =
+  | Int of int
+  | Float of float
+  | Binop of bop * expr * expr
+  | Unop of unop * expr

@@ -18,12 +18,12 @@ shad Triangle
 	|> Vertex								# Vertex Pass (input data is 'piped' into this)
 		let Color = (1.0, 0.0, 0.0, 1.0)	# Implicit type definition () with 4 params is a Vec4
 		let Positions = preset.Triangle		# Contain some geometric primitives as presets?
-		surf ~> { Color, Positions }		# Surfing between passes is the main advantage
+		surf { Color, Positions }			# Surfing between passes is the main advantage
 	|> Fragment								# Fragment Pass ('surfed' data is 'piped' into this)
 		# Potentially unwrapped as
 		#	let Color = surf.Color
 		# 	let Positions = surf.Positions
-		surf ~> Color						# Final fragment-level 'surf' is final fragment output
+		surf  Color							# Final fragment-level 'surf' is final fragment output
 
 ---
 ## Notes
