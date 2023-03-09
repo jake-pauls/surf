@@ -44,7 +44,7 @@ void vkn::VkModel::AllocateVertexBuffer()
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VMA_MEMORY_USAGE_GPU_ONLY);
 
-	c_VkRenderer.SubmitToRenderer([=](VkCommandBuffer commandBuffer) 
+	c_VkRenderer.SubmitToRenderer([=, this](VkCommandBuffer commandBuffer) 
 	{
 		VkBufferCopy bufferCopy = VkBufferCopy();
 		bufferCopy.dstOffset = 0;
@@ -83,7 +83,7 @@ void vkn::VkModel::AllocateIndexBuffer()
 		VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VMA_MEMORY_USAGE_GPU_ONLY);
 
-	c_VkRenderer.SubmitToRenderer([=](VkCommandBuffer commandBuffer) 
+	c_VkRenderer.SubmitToRenderer([=, this](VkCommandBuffer commandBuffer) 
 	{
 		VkBufferCopy bufferCopy;
 		bufferCopy.dstOffset = 0;
