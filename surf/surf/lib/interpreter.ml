@@ -1,4 +1,5 @@
 open Ast
+open Errors
 open Lexing
 
 (** [string_of_val e] converts [e] to a string. Requires: [e] is a value. *)
@@ -6,23 +7,22 @@ let string_of_val (e : expr) : string =
   match e with
   | Int i -> string_of_int i
   | Float f -> string_of_float f
-  | Unop _ -> failwith "No string representation"
-  | Binop _ -> failwith "No string representation"
+  | Var _ | Let _ | Binop _ | Unop _ -> failwith "no string representation"
 ;;
 
 (** [is_value e] checks whether [e] is a value. *)
 let is_value : expr -> bool = function
-  | Int _ -> true
-  | Float _ -> true
-  | Unop _ -> false
-  | Binop _ -> false
+  | Int _ | Float _ -> true
+  | Var _ | Let _ | Binop _ | Unop _ -> false
 ;;
 
 (** [step e] takes a single step of evaluation of [e]. Int: If an 'Int' gets here, it's
     already been computed. *)
 let rec step : expr -> expr = function
-  | Int _ -> failwith "Does not step"
-  | Float _ -> failwith "Does not step"
+  | Int _ | Float _ -> failwith "does not step"
+  | Var _ -> raise_rt_error err_unbound_var
+  | Let (_, _, e) when is_value e -> e
+  | Let (x, t, e) -> Let (x, t, step e)
   | Unop (unop, e) when is_value e -> step_unop unop e
   | Unop (unop, e) -> Unop (unop, step e)
   | Binop (bop, e1, e2) when is_value e1 && is_value e2 -> step_bop bop e1 e2
@@ -31,9 +31,9 @@ let rec step : expr -> expr = function
 
 and step_unop unop v =
   match unop, v with
-  | Minus, Int a -> Int (-a)
-  | Minus, Float a -> Float (-.a)
-  | _ -> failwith "precondition violated"
+  | UMinus, Int a -> Int (-a)
+  | UMinus, Float a -> Float (-.a)
+  | _ -> raise_rt_error err_unop_mismatch
 
 and step_bop bop v1 v2 =
   match bop, v1, v2 with
@@ -45,7 +45,47 @@ and step_bop bop v1 v2 =
   | Mult, Float a, Float b -> Float (a *. b)
   | Div, Int a, Int b -> Int (a / b)
   | Div, Float a, Float b -> Float (a /. b)
-  | _ -> failwith "precondition violated"
+  | _ -> raise_rt_error err_binop_mismatch
+;;
+
+(** [lookup_type env e] lookups up the type of [e] in the environment [env] *)
+let lookup_type env e =
+  match List.assoc_opt e env with
+  | Some t -> t
+  | None -> raise_tc_error err_unbound_var
+;;
+
+(** [typeof env e] the type of [e] in the environment [env] *)
+let rec typeof env = function
+  | Int _ -> STInt
+  | Float _ -> STFloat
+  | Var x -> lookup_type env x
+  | Unop (uop, e1) -> typeof_unop env uop e1
+  | Binop (bop, e1, e2) -> typeof_binop env bop e1 e2
+  | _ -> failwith "TODO"
+
+and typeof_unop env uop e1 =
+  match uop, typeof env e1 with
+  | UMinus, STInt -> STInt
+  | UMinus, STFloat -> STFloat
+
+and typeof_binop env bop e1 e2 =
+  match bop, typeof env e1, typeof env e2 with
+  | Add, STInt, STInt -> STInt
+  | Add, STFloat, STFloat -> STFloat
+  | Minus, STInt, STInt -> STInt
+  | Minus, STFloat, STFloat -> STFloat
+  | Mult, STInt, STInt -> STInt
+  | Mult, STFloat, STFloat -> STFloat
+  | Div, STInt, STInt -> STInt
+  | Div, STFloat, STFloat -> STFloat
+  | _ -> raise_tc_error err_binop_mismatch
+;;
+
+(** [typecheck] checks the type of [e], returns it if valid *)
+let typecheck e =
+  ignore (typeof [] e)
+  ; e
 ;;
 
 (** [eval e] fully evaluates [e] to a value [v]. Keeps calling itself and makes 'small
@@ -56,7 +96,7 @@ let rec eval (e : expr) : expr = if is_value e then e else e |> step |> eval
     printing *)
 let print_error_position lexbuf =
   let pos = lexbuf.lex_curr_p in
-  Fmt.str "Line: %d Position: %d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
+  Fmt.str "line: %d position: %d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 ;;
 
 (** [parse_token s] parses a single string expression [s] into an ast *)
@@ -67,23 +107,21 @@ let parse_token (s : string) : expr option =
     print_endline (Fmt.str "%s: %s@." (print_error_position lexbuf) msg)
     ; None
   | Parser.Error ->
-    print_endline (Fmt.str "[Syntax Error ~> %s]" (print_error_position lexbuf))
+    print_endline (Fmt.str "[syntax error ~> %s]" (print_error_position lexbuf))
     ; None
 ;;
 
 (** [parse_and_print s] submits an ast for evaluation *)
 let parse_and_print (s : string) : unit =
   match parse_token s with
-  | Some value ->
-    let e = eval value in
-    print_endline (string_of_val e)
+  | Some e -> eval e |> string_of_val |> print_endline
   | None -> ()
 ;;
 
 (** [parse_and_ret s] submits an ast for evaluation and returns interpretation as string *)
 let parse_and_ret (s : string) : string =
   match parse_token s with
-  | Some value -> eval value |> string_of_val
+  | Some e -> eval e |> string_of_val
   | None -> ""
 ;;
 
