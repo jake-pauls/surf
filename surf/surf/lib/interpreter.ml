@@ -60,9 +60,13 @@ let rec typeof env = function
   | Int _ -> STInt
   | Float _ -> STFloat
   | Var x -> lookup_type env x
+  | Let (x, t, e1) -> typeof_let env x t e1
   | Unop (uop, e1) -> typeof_unop env uop e1
   | Binop (bop, e1, e2) -> typeof_binop env bop e1 e2
-  | _ -> failwith "TODO"
+
+and typeof_let env _ t e1 =
+  let t' = typeof env e1 in
+  if t != t' then raise_tc_error err_poor_type_annotation else t'
 
 and typeof_unop env uop e1 =
   match uop, typeof env e1 with
@@ -114,14 +118,14 @@ let parse_token (s : string) : expr option =
 (** [parse_and_print s] submits an ast for evaluation *)
 let parse_and_print (s : string) : unit =
   match parse_token s with
-  | Some e -> eval e |> string_of_val |> print_endline
+  | Some e -> typecheck e |> eval |> string_of_val |> print_endline
   | None -> ()
 ;;
 
 (** [parse_and_ret s] submits an ast for evaluation and returns interpretation as string *)
 let parse_and_ret (s : string) : string =
   match parse_token s with
-  | Some e -> eval e |> string_of_val
+  | Some e -> typecheck e |> eval |> string_of_val
   | None -> ""
 ;;
 

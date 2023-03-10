@@ -12,7 +12,10 @@ let raise_rt_error e = raise (RuntimeError e)
 
 (* Error Messages *)
 
-(** [string] error string representing an unbound variable at runtime *)
+(** [string] error string representing a poor type annotation *)
+let err_poor_type_annotation = "poor type annotation"
+
+(** [string] error string representing an unbound variable *)
 let err_unbound_var = "unbound variable"
 
 (** [string] error string representing a mismatched unary operator at runtime *)
