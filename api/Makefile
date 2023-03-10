@@ -3,6 +3,11 @@
 ## Compiles the api source and builds a shared library for the surf interpreter 
 ##
 
+PLATFORM = linux
+ifeq ($(OS), Windows_NT)
+	PLATFORM = WIN32
+endif
+
 ##
 ## Utilities
 ##
@@ -45,7 +50,7 @@ FLEXLINK := flexlink
 FLEXLINKFLAGS := -chain mingw64 -exe -o $(EXE) -lversion -lws2_32 -Lbuild -lsurf
 
 CC := gcc
-CFLAGS := -I$(INCLUDE_DIR) -I$(STUBS_DIR) -I`$(OCAMLC) -where` -I`$(OCAMLC) -where`/../ctypes
+CFLAGS := -I$(INCLUDE_DIR) -I$(STUBS_DIR) -I`$(OCAMLC) -where` -I`$(OCAMLC) -where`/../ctypes -D$(PLATFORM)
 
 ##
 ## Source
