@@ -1,9 +1,10 @@
 # test.surf - Sample File
-
-# This is a comment
+# These are comments
 
 let x: int = 100;     # Let binding for integer type
 let y: float = 24.4;  # Let binding for float type       
 
-1.2 * 1.1           # Floating Point Math
-2 + 2               # Integer Math
+1.2 * 1.1             # Floating Point Math
+2 + 2                 # Integer Math
+
+let z: int = x + 5;   # Variable assignment 

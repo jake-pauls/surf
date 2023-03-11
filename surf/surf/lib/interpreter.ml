@@ -1,13 +1,21 @@
 open Ast
+open Env
 open Errors
 open Lexing
 
 (** [string_of_val e] converts [e] to a string. Requires: [e] is a value. *)
-let string_of_val (e : expr) : string =
-  match e with
+let string_of_val = function
   | Int i -> string_of_int i
   | Float f -> string_of_float f
   | Var _ | Let _ | Binop _ | Unop _ -> failwith "no string representation"
+;;
+
+(** [expr_of_vp (value, typ)] creates an ocaml type from a [value * styp] pair retrieved
+    from the StaticEnvironment *)
+let expr_of_vp ((value, styp) : string * stype) : expr =
+  match styp with
+  | STInt -> Int (int_of_string value)
+  | STFloat -> Float (float_of_string value)
 ;;
 
 (** [is_value e] checks whether [e] is a value. *)
@@ -18,16 +26,21 @@ let is_value : expr -> bool = function
 
 (** [step e] takes a single step of evaluation of [e]. Int: If an 'Int' gets here, it's
     already been computed. *)
-let rec step : expr -> expr = function
+let rec step env = function
   | Int _ | Float _ -> failwith "does not step"
-  | Var _ -> raise_rt_error err_unbound_var
-  | Let (_, _, e) when is_value e -> e
-  | Let (x, t, e) -> Let (x, t, step e)
+  | Var x ->
+    let vp = StaticEnvironment.lookup x env in
+    expr_of_vp vp
+  | Let (x, t, e) when is_value e ->
+    let s = string_of_val e in
+    StaticEnvironment.update x (s, t) env
+    ; e
+  | Let (x, t, e) -> Let (x, t, step env e)
   | Unop (unop, e) when is_value e -> step_unop unop e
-  | Unop (unop, e) -> Unop (unop, step e)
+  | Unop (unop, e) -> Unop (unop, step env e)
   | Binop (bop, e1, e2) when is_value e1 && is_value e2 -> step_bop bop e1 e2
-  | Binop (bop, e1, e2) when is_value e1 -> Binop (bop, e1, step e2)
-  | Binop (bop, e1, e2) -> Binop (bop, step e1, e2)
+  | Binop (bop, e1, e2) when is_value e1 -> Binop (bop, e1, step env e2)
+  | Binop (bop, e1, e2) -> Binop (bop, step env e1, e2)
 
 and step_unop unop v =
   match unop, v with
@@ -48,18 +61,13 @@ and step_bop bop v1 v2 =
   | _ -> raise_rt_error err_binop_mismatch
 ;;
 
-(** [lookup_type env e] lookups up the type of [e] in the environment [env] *)
-let lookup_type env e =
-  match List.assoc_opt e env with
-  | Some t -> t
-  | None -> raise_tc_error err_unbound_var
-;;
-
 (** [typeof env e] the type of [e] in the environment [env] *)
 let rec typeof env = function
   | Int _ -> STInt
   | Float _ -> STFloat
-  | Var x -> lookup_type env x
+  | Var x ->
+    let _, styp = StaticEnvironment.lookup x env in
+    styp
   | Let (x, t, e1) -> typeof_let env x t e1
   | Unop (uop, e1) -> typeof_unop env uop e1
   | Binop (bop, e1, e2) -> typeof_binop env bop e1 e2
@@ -86,15 +94,15 @@ and typeof_binop env bop e1 e2 =
   | _ -> raise_tc_error err_binop_mismatch
 ;;
 
-(** [typecheck] checks the type of [e], returns it if valid *)
-let typecheck e =
-  ignore (typeof [] e)
+(** [typecheck] checks the type of [e] in [env], returns it if valid *)
+let typecheck env e =
+  ignore (typeof env e)
   ; e
 ;;
 
 (** [eval e] fully evaluates [e] to a value [v]. Keeps calling itself and makes 'small
     steps' until it gets down to a value *)
-let rec eval (e : expr) : expr = if is_value e then e else e |> step |> eval
+let rec eval env e : expr = if is_value e then e else step env e |> eval env
 
 (** [print_error_position lexbuf] retrieves the line and position of a lexer error for
     printing *)
@@ -115,23 +123,27 @@ let parse_token (s : string) : expr option =
     ; None
 ;;
 
-(** [parse_and_print s] submits an ast for evaluation *)
-let parse_and_print (s : string) : unit =
+(** [parse_and_print env s] submits an ast for typing and evaluation in the [env] *)
+let parse_and_print env s : unit =
   match parse_token s with
-  | Some e -> typecheck e |> eval |> string_of_val |> print_endline
+  | Some e ->
+    let e' = typecheck env e in
+    eval env e' |> string_of_val |> print_endline
   | None -> ()
 ;;
 
-(** [parse_and_ret s] submits an ast for evaluation and returns interpretation as string *)
-let parse_and_ret (s : string) : string =
+(** [parse_and_ret env s] submits an ast for evaluation in the [env] and returns
+    interpretation as string *)
+let parse_and_ret env s : string =
   match parse_token s with
-  | Some e -> typecheck e |> eval |> string_of_val
+  | Some e ->
+    let e' = typecheck env e in
+    eval env e' |> string_of_val
   | None -> ""
 ;;
 
-(** [interp s] interprets [s] by lexing, parsing, and evaluating it *)
-let interp (s : string) : unit = s |> parse_and_print
+(** [interp env s] interprets [s] in the [env] *)
+let interp env s : unit = parse_and_print env s
 
-(** [interp_ret] interprets [s] by lexing, parsing, evaluating it, and returning it as a
-    string *)
-let interp_ret (s : string) : string = s |> parse_and_ret
+(** [interp_ret env s] interprets [s] in [env] and returns it as a string *)
+let interp_ret env s : string = parse_and_ret env s

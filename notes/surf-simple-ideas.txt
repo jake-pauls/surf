@@ -1,17 +1,19 @@
 ## cfg.surf
 ---
-fun cfg ->
-	ret {
-		gapi: Vulkan
-		mode: Deferred
-		slang: hlsl
-	}
+fun cfg() do
+  ret {
+	gapi: Vulkan
+	mode: Deferred
+	slang: hlsl
+  };
+end
 
 ---
 ## red.surf
 ---
-fun red ->
-	ret (1.0, 0.0, 0.0)
+fun red(): nil do
+  ret (1.0, 0.0, 0.0);
+end
 
 ---
 ## Notes
@@ -19,4 +21,30 @@ fun red ->
 	- Pass 'gapi', 'mode', and 'slang' as "expected" variables for cfg
 - Simple script example will pass a vec3 through the api
 
+---
+## test.surf
+---
 
+# Function
+fun test(msg, vec) : nil do
+  let maxInt: int = max(vec);
+
+  # Method Call
+  print ~> msg;
+
+  # ret: Returns
+  ret nil;
+end
+
+# Bindings
+let testVector: Vec2 = (2.0, 2.0);
+
+# Conditionals
+if True do
+  testVector.x = 5.0;
+else
+  testVector.x = 10.0;
+end
+
+# Function Calls
+test("Test", testVector);
