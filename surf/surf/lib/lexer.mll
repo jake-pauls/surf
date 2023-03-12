@@ -37,7 +37,7 @@ rule read =
   | ":" { COLON }
   | ";" { SEMICOLON }
   | "#" { read_comment lexbuf }
-  | _ { raise (SyntaxError ("Illegal character: " ^ Lexing.lexeme lexbuf))}
+  | _ { raise (SyntaxError ("illegal character: " ^ "\"" ^ Lexing.lexeme lexbuf ^ "\""))}
   | eof { EOF }
 
 and read_comment =

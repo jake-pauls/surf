@@ -52,7 +52,6 @@ test:
 
 clean:
 	dune clean
-	$(RIMRAF) $(STUBS_DIR)
 
 fmt:
 	dune fmt 

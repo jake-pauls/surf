@@ -26,11 +26,11 @@ end
 ---
 
 # Function
-fun test(msg, vec) : nil do
+fun test(msg: str, vec: vec2) ~> nil do
   let maxInt: int = max(vec);
 
   # Method Call
-  print ~> msg;
+  print(msg);
 
   # ret: Returns
   ret nil;

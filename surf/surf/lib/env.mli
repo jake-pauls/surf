@@ -7,3 +7,13 @@ module type ENVIRONMENT = sig
 end
 
 module StaticEnvironment : ENVIRONMENT
+
+module StaticEnvironmentBindings : sig
+  val senv_struct_name : string
+
+  type senv_struct = StaticEnvironment.t Ctypes.structure
+
+  val to_opaque : StaticEnvironment.t -> senv_struct Ctypes.ptr
+  val from_opaque : senv_struct Ctypes.ptr -> StaticEnvironment.t
+  val empty : unit -> senv_struct Ctypes.ptr
+end

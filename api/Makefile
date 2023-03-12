@@ -3,11 +3,6 @@
 ## Compiles the api source and builds a shared library for the surf interpreter 
 ##
 
-PLATFORM = linux
-ifeq ($(OS), Windows_NT)
-	PLATFORM = WIN32
-endif
-
 ##
 ## Utilities
 ##
@@ -32,7 +27,17 @@ SURF_INTERP_DIR := ../surf
 ##
 
 EXE := $(BUILD_DIR)/surf.exe
-SURF_CAML_DLL := $(BUILD_DIR)/libsurf.dll
+SURF_CAML_SHARED_LIB = $(BUILD_DIR)/libsurf.so
+
+##
+## OS-Specifics
+##
+
+PLATFORM = linux
+ifeq ($(OS), Windows_NT)
+	PLATFORM = WIN32
+	SURF_CAML_SHARED_LIB = $(BUILD_DIR)/libsurf.dll
+endif
 
 ##
 ## Compilation
@@ -43,7 +48,7 @@ OCAMLFINDOPT := ocamlfind opt
 
 # NOTE: surf HAS to be installed locally for codegen to work
 PACKAGES=surf,ctypes.stubs
-OCAMLFINDOPTFLAGS := -output-obj -package $(PACKAGES) -linkpkg -cclib -implib -o ../$(SURF_CAML_DLL)
+OCAMLFINDOPTFLAGS := -output-obj -package $(PACKAGES) -thread -linkpkg -cclib -implib -o ../$(SURF_CAML_SHARED_LIB)
 
 # OCaml requires 'flexlink' to compile dll's on Windows
 FLEXLINK := flexlink
@@ -67,8 +72,8 @@ dll: $(OBJ_DIR) $(BUILD_DIR)
 	$(MAKE) -C $(SURF_INTERP_DIR) prep-api
 	$(CC) $(CFLAGS) -c misc/Init.c -o obj/Init.o
 	$(CC) $(CFLAGS) -c stubs/gen.c -o obj/gen.o
-	$(OCAMLFINDOPT) -c -o stubs/gen_bindings.cmx -package $(PACKAGES) stubs/gen_bindings.ml
-	$(OCAMLFINDOPT) -c -o stubs/bindings.cmx -package $(PACKAGES) stubs/bindings.ml
+	$(OCAMLFINDOPT) -c -o stubs/gen_bindings.cmx -package $(PACKAGES) stubs/gen_bindings.ml -thread
+	$(OCAMLFINDOPT) -c -o stubs/bindings.cmx -package $(PACKAGES) stubs/bindings.ml -thread
 	cd stubs && $(OCAMLFINDOPT) $(OCAMLFINDOPTFLAGS) gen_bindings.ml bindings.cmx link.ml ../obj/Init.o ../obj/gen.o    
 
 win32: $(OBJS) | $(BUILD_DIR)

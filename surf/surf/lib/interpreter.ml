@@ -116,20 +116,11 @@ let parse_token (s : string) : expr option =
   let lexbuf = Lexing.from_string s in
   try Parser.prog Lexer.read lexbuf with
   | Lexer.SyntaxError msg ->
-    print_endline (Fmt.str "%s: %s@." (print_error_position lexbuf) msg)
+    print_endline (Fmt.str "[lexer error ~> %s (%s)]" (print_error_position lexbuf) msg)
     ; None
   | Parser.Error ->
     print_endline (Fmt.str "[syntax error ~> %s]" (print_error_position lexbuf))
     ; None
-;;
-
-(** [parse_and_print env s] submits an ast for typing and evaluation in the [env] *)
-let parse_and_print env s : unit =
-  match parse_token s with
-  | Some e ->
-    let e' = typecheck env e in
-    eval env e' |> string_of_val |> print_endline
-  | None -> ()
 ;;
 
 (** [parse_and_ret env s] submits an ast for evaluation in the [env] and returns
@@ -137,13 +128,25 @@ let parse_and_print env s : unit =
 let parse_and_ret env s : string =
   match parse_token s with
   | Some e ->
-    let e' = typecheck env e in
-    eval env e' |> string_of_val
+    let te = typecheck env e in
+    eval env te |> string_of_val
   | None -> ""
 ;;
+
+(** [parse_and_print env s] submits an ast for typing and evaluation in the [env] *)
+let parse_and_print env s : unit = parse_and_ret env s |> print_endline
 
 (** [interp env s] interprets [s] in the [env] *)
 let interp env s : unit = parse_and_print env s
 
 (** [interp_ret env s] interprets [s] in [env] and returns it as a string *)
 let interp_ret env s : string = parse_and_ret env s
+
+(** [c_interp_ret env s] entrypoint for the c-api, requires an [env] pointer to the static
+    environment as a basis for recursion, interprets a string [s] and returns any results *)
+let c_interp_ret (env : StaticEnvironmentBindings.senv_struct Ctypes.ptr) (s : string)
+  : string
+  =
+  let senv = StaticEnvironmentBindings.from_opaque env in
+  parse_and_ret senv s
+;;
