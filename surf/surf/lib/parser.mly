@@ -37,11 +37,11 @@ expr:
 
     /* Expression Types */
 
-    | e1 = expr; PLUS; e2 = expr { Binop (Add, e1, e2) }
-    | e1 = expr; MINUS; e2 = expr { Binop (Minus, e1, e2) }
-    | e1 = expr; MULT; e2 = expr { Binop (Mult, e1, e2) }
-    | e1 = expr; DIV; e2 = expr { Binop (Div, e1, e2) }
-    | MINUS; e = expr; %prec UMINUS { Unop (UMinus, e) }
+    | e1 = expr; PLUS; e2 = expr { Binop (`Add, e1, e2) }
+    | e1 = expr; MINUS; e2 = expr { Binop (`Minus, e1, e2) }
+    | e1 = expr; MULT; e2 = expr { Binop (`Mult, e1, e2) }
+    | e1 = expr; DIV; e2 = expr { Binop (`Div, e1, e2) }
+    | MINUS; e = expr; %prec UMINUS { Unop (`UMinus, e) }
 
     /* Assignment Rules */
 

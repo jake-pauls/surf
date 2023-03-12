@@ -2,13 +2,9 @@
 
 exception TypeError of string
 
-let raise_tc_error e = raise (TypeError e)
-
 (* Runtime Errors *)
 
 exception RuntimeError of string
-
-let raise_rt_error e = raise (RuntimeError e)
 
 (* Error Messages *)
 

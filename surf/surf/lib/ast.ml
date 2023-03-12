@@ -1,12 +1,13 @@
-(** [bop] binary operations *)
-type bop =
-  | Add
-  | Minus
-  | Mult
-  | Div
+(** [binop] binary operations *)
+type binop =
+  [ `Add
+  | `Minus
+  | `Mult
+  | `Div
+  ]
 
 (** [unop] unary operations *)
-type unop = UMinus
+type unop = [ `UMinus ]
 
 (** [stype] static types *)
 type stype =
@@ -19,5 +20,5 @@ type expr =
   | Float of float
   | Var of string
   | Let of string * stype * expr
-  | Binop of bop * expr * expr
+  | Binop of binop * expr * expr
   | Unop of unop * expr

@@ -26,7 +26,7 @@ module StaticEnvironment : ENVIRONMENT = struct
       error if the variable is not bound *)
   let lookup k env =
     try Hashtbl.find !env k with
-    | Not_found -> raise_rt_error err_unbound_var
+    | Not_found -> raise (RuntimeError err_unbound_var)
   ;;
 
   (** [update k v env] updates a [k] in the [env] to be bound to [v] *)

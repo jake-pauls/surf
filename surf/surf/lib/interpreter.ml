@@ -3,9 +3,12 @@ open Env
 open Errors
 open Lexing
 
-(** [string_of_val e] converts [e] to a string. Requires: [e] is a value. *)
-let string_of_val = function
+(** [string_of_val t e] converts [e] to a string, implicitly casts it to type [t] if
+    casting is possible. *)
+let string_of_val (t : stype) = function
+  | Int i when t = STFloat -> string_of_float (float_of_int i)
   | Int i -> string_of_int i
+  | Float f when t = STInt -> string_of_int (int_of_float f)
   | Float f -> string_of_float f
   | Var _ | Let _ | Binop _ | Unop _ -> failwith "no string representation"
 ;;
@@ -32,7 +35,7 @@ let rec step env = function
     let vp = StaticEnvironment.lookup x env in
     expr_of_vp vp
   | Let (x, t, e) when is_value e ->
-    let s = string_of_val e in
+    let s = string_of_val t e in
     StaticEnvironment.update x (s, t) env
     ; e
   | Let (x, t, e) -> Let (x, t, step env e)
@@ -44,21 +47,31 @@ let rec step env = function
 
 and step_unop unop v =
   match unop, v with
-  | UMinus, Int a -> Int (-a)
-  | UMinus, Float a -> Float (-.a)
-  | _ -> raise_rt_error err_unop_mismatch
+  | `UMinus, Int a -> Int (-a)
+  | `UMinus, Float a -> Float (-.a)
+  | _ -> raise (TypeError err_unop_mismatch)
 
 and step_bop bop v1 v2 =
   match bop, v1, v2 with
-  | Add, Int a, Int b -> Int (a + b)
-  | Add, Float a, Float b -> Float (a +. b)
-  | Minus, Int a, Int b -> Int (a - b)
-  | Minus, Float a, Float b -> Float (a -. b)
-  | Mult, Int a, Int b -> Int (a * b)
-  | Mult, Float a, Float b -> Float (a *. b)
-  | Div, Int a, Int b -> Int (a / b)
-  | Div, Float a, Float b -> Float (a /. b)
-  | _ -> raise_rt_error err_binop_mismatch
+  (* Add *)
+  | `Add, Int i1, Int i2 -> Int (i1 + i2)
+  | `Add, Float f1, Float f2 -> Float (f1 +. f2)
+  | `Add, Int i, Float f | `Add, Float f, Int i -> Float (float_of_int i +. f)
+  (* Minus *)
+  | `Minus, Int i1, Int i2 -> Int (i1 - i2)
+  | `Minus, Float f1, Float f2 -> Float (f1 -. f2)
+  | `Minus, Int i, Float f -> Float (float_of_int i -. f)
+  | `Minus, Float f, Int i -> Float (f -. float_of_int i)
+  (* Mult *)
+  | `Mult, Int i1, Int i2 -> Int (i1 * i2)
+  | `Mult, Float f1, Float f2 -> Float (f1 *. f2)
+  | `Mult, Int i, Float f | `Mult, Float f, Int i -> Float (float_of_int i *. f)
+  (* Div *)
+  | `Div, Int i1, Int i2 -> Int (i1 / i2)
+  | `Div, Float f1, Float f2 -> Float (f1 /. f2)
+  | `Div, Int i, Float f -> Float (float_of_int i /. f)
+  | `Div, Float f, Int i -> Float (f /. float_of_int i)
+  | _ -> raise (RuntimeError err_binop_mismatch)
 ;;
 
 (** [typeof env e] the type of [e] in the environment [env] *)
@@ -73,31 +86,37 @@ let rec typeof env = function
   | Binop (bop, e1, e2) -> typeof_binop env bop e1 e2
 
 and typeof_let env _ t e1 =
-  let t' = typeof env e1 in
-  if t != t' then raise_tc_error err_poor_type_annotation else t'
+  let t' =
+    typeof env e1
+    |> function
+    | STInt when t = STFloat -> STFloat
+    | STInt -> STInt
+    | STFloat when t = STInt -> STInt
+    | STFloat -> STFloat
+  in
+  if t != t' then raise (TypeError err_poor_type_annotation) else t'
 
 and typeof_unop env uop e1 =
   match uop, typeof env e1 with
-  | UMinus, STInt -> STInt
-  | UMinus, STFloat -> STFloat
+  | `UMinus, STInt -> STInt
+  | `UMinus, STFloat -> STFloat
 
-and typeof_binop env bop e1 e2 =
-  match bop, typeof env e1, typeof env e2 with
-  | Add, STInt, STInt -> STInt
-  | Add, STFloat, STFloat -> STFloat
-  | Minus, STInt, STInt -> STInt
-  | Minus, STFloat, STFloat -> STFloat
-  | Mult, STInt, STInt -> STInt
-  | Mult, STFloat, STFloat -> STFloat
-  | Div, STInt, STInt -> STInt
-  | Div, STFloat, STFloat -> STFloat
-  | _ -> raise_tc_error err_binop_mismatch
+and typeof_binop env (bop : binop) e1 e2 =
+  let e1_t = typeof env e1 in
+  let e2_t = typeof env e2 in
+  match bop, e1_t, e2_t with
+  | (`Add | `Minus), (STInt | STFloat), (STInt | STFloat) ->
+    if e1_t = STFloat || e2_t = STFloat then STFloat else STInt
+  | (`Mult | `Div), (STInt | STFloat), (STInt | STFloat) ->
+    if e1_t = STFloat || e2_t = STFloat then STFloat else STInt
 ;;
 
 (** [typecheck] checks the type of [e] in [env], returns it if valid *)
-let typecheck env e =
-  ignore (typeof env e)
-  ; e
+let typecheck (env : StaticEnvironment.t) (e : expr) : stype option =
+  try Some (typeof env e) with
+  | TypeError msg ->
+    print_endline (Fmt.str "[type error ~> %s]" msg)
+    ; None
 ;;
 
 (** [eval e] fully evaluates [e] to a value [v]. Keeps calling itself and makes 'small
@@ -128,8 +147,11 @@ let parse_token (s : string) : expr option =
 let parse_and_ret env s : string =
   match parse_token s with
   | Some e ->
-    let te = typecheck env e in
-    eval env te |> string_of_val
+    (match typecheck env e with
+     | Some t ->
+       let e' = eval env e in
+       string_of_val t e'
+     | None -> raise (TypeError err_poor_type_annotation))
   | None -> ""
 ;;
 

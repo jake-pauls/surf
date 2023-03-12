@@ -1,10 +1,11 @@
 # test.surf - Sample File
 # These are comments
 
+1.2 * 1.1             # Floating point math
+2 + 2                 # Integer math
+
 let x: int = 100;     # Let binding for integer type
 let y: float = 24.4;  # Let binding for float type       
 
-1.2 * 1.1             # Floating Point Math
-2 + 2                 # Integer Math
-
-let z: int = x + 5;   # Variable assignment 
+let z: int = x + y;   # Implicit type casting between 'int' and 'float'
+let x: int = y;       # Reassignment with casting
