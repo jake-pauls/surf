@@ -19,6 +19,10 @@
 
 #include <caml/callback.h>
 
+/// @brief Port number the API runs on
+#define API_PORT "3030"
+
+/// @brief Signal flag to ensure runtime stays running
 static volatile sig_atomic_t s_IsRunning = 1;
 
 /// @brief Catches SIGINT to ensure program stops if cancelled by an interruption
@@ -29,7 +33,7 @@ static void CatchInterruptionSignal(int _)
     s_IsRunning = 0;
 }
 
-void* GetInAddr(struct sockaddr* sa)
+void* GetInAddress(struct sockaddr* sa)
 {
 	if (sa->sa_family == AF_INET)
 		return &(((struct sockaddr_in*) sa)->sin_addr);
@@ -42,7 +46,7 @@ int surf_OpenConnection(StaticEnvironment* env)
     char* title;
     int status;
     struct addrinfo pHints, *pAddrInfo;
-    int listenSocket;
+    int serverSocket, clientSocket;
 
 #ifdef WIN32
     title = "<><>- surf api. [winsock] -<><>\n";
@@ -67,25 +71,28 @@ int surf_OpenConnection(StaticEnvironment* env)
     pHints.ai_flags = AI_PASSIVE;
 
     // Get address info
-    status = getaddrinfo(NULL, "8888", &pHints, &pAddrInfo);
+    status = getaddrinfo(NULL, API_PORT, &pHints, &pAddrInfo);
     if (status != 0)
     {
         printf("getaddrinfo error: %d\n", status);
     }
 
-    listenSocket = socket(pAddrInfo->ai_family, pAddrInfo->ai_socktype, pAddrInfo->ai_protocol);
+    // Open server socket
+    serverSocket = socket(pAddrInfo->ai_family, pAddrInfo->ai_socktype, pAddrInfo->ai_protocol);
     if (status < 0)
     {
         printf("socket error: %d\n", status);
     }
 
-    status = bind(listenSocket, pAddrInfo->ai_addr, pAddrInfo->ai_addrlen);
+    // Bind server socket
+    status = bind(serverSocket, pAddrInfo->ai_addr, pAddrInfo->ai_addrlen);
     if (status < 0)
     {
         printf("bind error: %d\n", status);
     }
 
-    status = listen(listenSocket, 10);
+    // Start listening
+    status = listen(serverSocket, 10);
     if (status < 0)
     {
         printf("listen error: %d\n", status);
@@ -94,7 +101,6 @@ int surf_OpenConnection(StaticEnvironment* env)
     // Cleanup the address info once socket is opened
     freeaddrinfo(pAddrInfo);
 
-    int clientSocket;
     struct sockaddr_storage clientAddr;
     char sendBuffer[INET6_ADDRSTRLEN];
     socklen_t sendBufferLen = sizeof clientAddr;
@@ -107,22 +113,22 @@ int surf_OpenConnection(StaticEnvironment* env)
         struct timeval timeout = { 1, 0 };
         fd_set fds;
         FD_ZERO(&fds);
-        FD_SET(listenSocket, &fds);
+        FD_SET(serverSocket, &fds);
 
         // Listen for sockets without blocking
-        select(listenSocket + 1, &fds, NULL, NULL, &timeout);
-        if (!FD_ISSET(listenSocket, &fds))
+        select(serverSocket + 1, &fds, NULL, NULL, &timeout);
+        if (!FD_ISSET(serverSocket, &fds))
             continue;
 
         // Accept connections and return information to socket descriptor
-        clientSocket = accept(listenSocket, (struct sockaddr*) &clientAddr, &sendBufferLen);
+        clientSocket = accept(serverSocket, (struct sockaddr*) &clientAddr, &sendBufferLen);
         if (clientSocket < 0)
         {
             printf("accept error: %d\n", clientSocket);
             continue;
         }
 
-        inet_ntop(clientAddr.ss_family, GetInAddr((struct sockaddr*) &clientAddr), sendBuffer, sizeof sendBuffer);
+        inet_ntop(clientAddr.ss_family, GetInAddress((struct sockaddr*) &clientAddr), sendBuffer, sizeof sendBuffer);
         printf("<><>- new connection: %s -<><>\n", sendBuffer);
         status = send(clientSocket, title, strlen(title), 0);
 
@@ -162,7 +168,7 @@ int surf_OpenConnection(StaticEnvironment* env)
         {
 #ifdef WIN32
             closesocket(clientSocket);
-            closesocket(listenSocket);
+            closesocket(serverSocket);
             WSACleanup();
 #else
             close(clientSocket);
@@ -176,7 +182,7 @@ int surf_OpenConnection(StaticEnvironment* env)
     // Cleanup sockets
 #ifdef WIN32
     closesocket(clientSocket);
-    closesocket(listenSocket);
+    closesocket(serverSocket);
     WSACleanup();
 #else
     close(clientSocket);
