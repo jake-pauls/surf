@@ -11,7 +11,8 @@ open Ast
 %token SEMICOLON
 %token LET
 %token EQUALS
-%token STINT STFLOAT
+%token COMMA
+%token STINT STFLOAT STVEC2 STVEC3 STVEC4
 %token EOF
 
 %nonassoc UMINUS
@@ -42,6 +43,9 @@ expr:
     | e1 = expr; MULT; e2 = expr { Binop (`Mult, e1, e2) }
     | e1 = expr; DIV; e2 = expr { Binop (`Div, e1, e2) }
     | MINUS; e = expr; %prec UMINUS { Unop (`UMinus, e) }
+    | LPAREN; e1 = expr; COMMA; e2 = expr; RPAREN { Vec2 (e1, e2) }
+    | LPAREN; e1 = expr; COMMA; e2 = expr; COMMA; e3 = expr; RPAREN { Vec3 (e1, e2, e3) } 
+    | LPAREN; e1 = expr; COMMA; e2 = expr; COMMA; e3 = expr; COMMA; e4 = expr; RPAREN { Vec4 (e1, e2, e3, e4) } 
 
     /* Assignment Rules */
 
@@ -53,4 +57,7 @@ expr:
 stype:
     | STINT { STInt } 
     | STFLOAT { STFloat }
+    | STVEC2 { STVec2 }
+    | STVEC3 { STVec3 }
+    | STVEC4 { STVec4 }
     ;

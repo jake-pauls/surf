@@ -1,7 +1,7 @@
 open Surf
 
 (** [empty unit] an empty static environment for testing *)
-let empty = Env.StaticEnvironment.empty ()
+let empty : Ast.expr Env.StaticEnvironment.t = Env.StaticEnvironment.empty ()
 
 (** [check_interp name i s env] sets up an alcotest case for the interp function with name
     [name] evaluating an integer [i] against the interpreted [s] *)

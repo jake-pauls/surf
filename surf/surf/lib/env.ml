@@ -3,21 +3,21 @@ open Errors
 open Ctypes
 
 module type ENVIRONMENT = sig
-  type t
+  type 'a t
 
   (** [empty unit] the empty state for the environment *)
-  val empty : unit -> t
+  val empty : unit -> 'a t
 
   (** [lookup string t] looks up a [string] key in data structure [t], returns a [stype] *)
-  val lookup : string -> t -> string * stype
+  val lookup : string -> 'a t -> 'a * stype
 
   (** [update string stype t] updates a [string] key in data structure [t] with a new
       [stype] *)
-  val update : string -> string * stype -> t -> unit
+  val update : string -> 'a * stype -> 'a t -> unit
 end
 
 module StaticEnvironment : ENVIRONMENT = struct
-  type t = (string, string * stype) Hashtbl.t ref
+  type 'a t = (string, 'a * stype) Hashtbl.t ref
 
   (** [empty unit] default hash table with 16 initial slots *)
   let empty () = ref (Hashtbl.create 16)
@@ -37,17 +37,17 @@ module StaticEnvironmentBindings = struct
   let senv_struct_name = "StaticEnvironment"
 
   (** [senv_struct] c-structure representation of the [StaticEnvironment] *)
-  type senv_struct = StaticEnvironment.t structure
+  type 'a senv_struct = 'a StaticEnvironment.t structure
 
   (** [to_opaque ovalue] creates an opaque pointer from an [ovalue] representing a static
       environment *)
-  let to_opaque (ovalue : StaticEnvironment.t) : senv_struct ptr =
+  let to_opaque (ovalue : 'a StaticEnvironment.t) : 'a senv_struct ptr =
     from_voidp (structure senv_struct_name) (Root.create ovalue)
   ;;
 
   (** [from_oaque opaque] converts a [opaque] static environment pointer to a static
       environment *)
-  let from_opaque (opaque : senv_struct ptr) : StaticEnvironment.t =
+  let from_opaque (opaque : 'a senv_struct ptr) : 'a StaticEnvironment.t =
     Root.get (to_voidp opaque)
   ;;
 

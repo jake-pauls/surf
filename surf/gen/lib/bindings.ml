@@ -5,7 +5,7 @@ open Surf
 module Stubs (I : Cstubs_inverted.INTERNAL) = struct
   open Env
 
-  let senv_t : StaticEnvironmentBindings.senv_struct typ =
+  let senv_t : 'a StaticEnvironmentBindings.senv_struct typ =
     structure StaticEnvironmentBindings.senv_struct_name
   ;;
 

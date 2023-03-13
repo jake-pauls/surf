@@ -47,7 +47,7 @@ surf:
 gen:
 	dune exec gen $(STUBS_DIR) $(STUBS_ML_FILE) $(STUBS_C_FILE) $(STUBS_H_FILE)
 
-test:
+tests:
 	dune runtest -f
 
 clean:

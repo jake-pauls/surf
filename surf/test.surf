@@ -1,11 +1,21 @@
 # test.surf - Sample File
 # These are comments
 
-1.2 * 1.1             # Floating point math
-2 + 2                 # Integer math
+# cfg.surf
+# let cfg_gapi: str = "Vulkan";
+# let cfg_method: str = "Forward";
+# let cfg_slang: str = "glsl";
 
-let x: int = 100;     # Let binding for integer type
-let y: float = 24.4;  # Let binding for float type       
+1.2 * 1.1                                               # Floating point math
+2 + 2                                                   # Integer math
 
-let z: int = x + y;   # Implicit type casting between 'int' and 'float'
-let x: int = y;       # Reassignment with casting
+let x: int = 100;                                       # Let binding for integer type
+let y: float = 24.4;                                    # Let binding for float type       
+
+let z: int = x + y;                                     # Implicit type casting between 'int' and 'float'
+let x: int = y;                                         # Reassignment with casting
+
+# Vector support (no math)
+let test_vector_two: Vec2 = (1.0, 2.0);                 # Vector2
+let test_vector_three: Vec3 = (1.0, 2.0, 3.0);          # Vector3
+let test_vector_four: Vec4 = (1.0, 2.0, 3.0, 4.0);      # Vector4

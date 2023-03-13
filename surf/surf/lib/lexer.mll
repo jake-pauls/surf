@@ -24,6 +24,9 @@ rule read =
   | "let" { LET }
   | "int" { STINT }
   | "float" { STFLOAT }
+  | "Vec2" { STVEC2 }
+  | "Vec3" { STVEC3 }
+  | "Vec4" { STVEC4 }
   | int { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | float { FLOAT (float_of_string (Lexing.lexeme lexbuf)) }
   | id { ID (Lexing.lexeme lexbuf) }
@@ -36,6 +39,7 @@ rule read =
   | "=" { EQUALS }
   | ":" { COLON }
   | ";" { SEMICOLON }
+  | "," { COMMA }
   | "#" { read_comment lexbuf }
   | _ { raise (SyntaxError ("illegal character: " ^ "\"" ^ Lexing.lexeme lexbuf ^ "\""))}
   | eof { EOF }

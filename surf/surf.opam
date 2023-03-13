@@ -16,7 +16,6 @@ depends: [
   "alcotest"
   "menhir"
   "ctypes"
-  "phantom-algebra"
   "odoc" {with-doc}
 ]
 build: [

@@ -30,7 +30,7 @@ $ dune exec surf script.surf    # run script
 * [menhir](http://cambium.inria.fr/~fpottier/menhir/) 
 * [ctypes](https://github.com/yallop/ocaml-ctypes)
   * libffi
-* [phantom-algebra](https://ocaml.org/p/phantom-algebra/latest)
+  * libzlib
 
 ### Note On Environments
 OCaml is incredibly straightforward for Unix environments, and the exact opposite on Windows or Cygwin-based environments.

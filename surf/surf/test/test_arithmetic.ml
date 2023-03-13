@@ -20,7 +20,8 @@ let float_basics =
   ]
 ;;
 
-(** [bedmas] testing order of operations and operand associativity with integers, should also be valid for floats *)
+(** [bedmas] testing order of operations and operand associativity with integers, should
+    also be valid for floats *)
 let bedmas =
   [ ("minus on left of add", `Quick, fun _ -> check_interp_int "minus" 2 "6-2+2" empty)
   ; ("mult of mult", `Quick, fun _ -> check_interp_int "mult of mult" 24 "1*2*3*4" empty)

@@ -1,9 +1,9 @@
 module type ENVIRONMENT = sig
-  type t
+  type 'a t
 
-  val empty : unit -> t
-  val lookup : string -> t -> string * Ast.stype
-  val update : string -> string * Ast.stype -> t -> unit
+  val empty : unit -> 'a t
+  val lookup : string -> 'a t -> 'a * Ast.stype
+  val update : string -> 'a * Ast.stype -> 'a t -> unit
 end
 
 module StaticEnvironment : ENVIRONMENT
@@ -11,9 +11,9 @@ module StaticEnvironment : ENVIRONMENT
 module StaticEnvironmentBindings : sig
   val senv_struct_name : string
 
-  type senv_struct = StaticEnvironment.t Ctypes.structure
+  type 'a senv_struct = 'a StaticEnvironment.t Ctypes.structure
 
-  val to_opaque : StaticEnvironment.t -> senv_struct Ctypes.ptr
-  val from_opaque : senv_struct Ctypes.ptr -> StaticEnvironment.t
-  val empty : unit -> senv_struct Ctypes.ptr
+  val to_opaque : 'a StaticEnvironment.t -> 'a senv_struct Ctypes.ptr
+  val from_opaque : 'a senv_struct Ctypes.ptr -> 'a StaticEnvironment.t
+  val empty : unit -> 'a senv_struct Ctypes.ptr
 end

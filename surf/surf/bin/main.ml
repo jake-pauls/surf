@@ -10,7 +10,7 @@ let interp_file env file_name : unit =
 ;;
 
 (** [repl stdin] enters a repl environment via stdin *)
-let rec repl env stdin : unit =
+let rec repl (env : 'a StaticEnvironment.t) (stdin : string option) : unit =
   match stdin with
   | Some s ->
     Interpreter.interp env s
@@ -20,7 +20,7 @@ let rec repl env stdin : unit =
 
 (** [main unit] usage: file_name file is instantly ran through the interpreter *)
 let () =
-  let env : StaticEnvironment.t = StaticEnvironment.empty () in
+  let env : Ast.expr StaticEnvironment.t = StaticEnvironment.empty () in
   let args : string array = Sys.get_argv () in
   let len = Array.length args in
   if len > 1
