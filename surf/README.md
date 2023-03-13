@@ -37,4 +37,4 @@ OCaml is incredibly straightforward for Unix environments, and the exact opposit
 
 If this is being run in a Windows environment, I highly recommend installing from [the supported windows installer](https://fdopen.github.io/opam-repository-mingw/). While this only runs OCaml in a mingw environment (as opposed to MSVC), it's much less of a struggle to setup. 
 
-Additionally, installing packages using [depext](https://fdopen.github.io/opam-repository-mingw/depext-cygwin/) will also ensure that additional packages (especially in Cygwin) are installed automatically, reducing the amount of time scowering the Cygwin repos for a dependency.
+Additionally, installing packages using [depext](https://fdopen.github.io/opam-repository-mingw/depext-cygwin/) will also ensure that additional packages (especially in Cygwin) are installed automatically, reducing the amount of time spent scowering the Cygwin repos for a dependency.

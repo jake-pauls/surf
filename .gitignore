@@ -4,6 +4,9 @@
 *.vcxproj*
 *.sln
 
+# Python
+__pycache__
+
 # CMake
 CMakeFiles
 CMakeCache.txt
