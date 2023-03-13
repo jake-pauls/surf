@@ -5,6 +5,7 @@ open Ast
 %token <int> INT
 %token <float> FLOAT
 %token <string> ID
+%token <string> STRING
 %token PLUS MINUS MULT DIV
 %token LPAREN RPAREN
 %token COLON
@@ -12,7 +13,8 @@ open Ast
 %token LET
 %token EQUALS
 %token COMMA
-%token STINT STFLOAT STVEC2 STVEC3 STVEC4
+%token STINT STFLOAT STSTRING
+%token STVEC2 STVEC3 STVEC4
 %token EOF
 
 %nonassoc UMINUS
@@ -34,7 +36,8 @@ expr:
     | LPAREN; e = expr; RPAREN { e }
     | i = INT { Int i }
     | f = FLOAT { Float f }
-    | x = ID { Var (x) }
+    | s = STRING { String s }
+    | x = ID { Var x }
 
     /* Expression Types */
 
@@ -57,6 +60,7 @@ expr:
 stype:
     | STINT { STInt } 
     | STFLOAT { STFloat }
+    | STSTRING { STString }
     | STVEC2 { STVec2 }
     | STVEC3 { STVec3 }
     | STVEC4 { STVec4 }

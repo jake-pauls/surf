@@ -5,10 +5,11 @@ open Utils
 
 (** [is_value e] checks whether [e] is a value *)
 let is_value : expr -> bool = function
-  | Int _ | Float _ -> true
-  (* TODO: Vectors shouldn't be values explicitly (they can be stepped if they have variables inside them at declaration time) *)
-  | Vec2 _ | Vec3 _ | Vec4 _ -> true 
-  | Var _ | Let _ | Binop _ | Unop _  -> false
+  | Int _ | Float _ | String _ -> true
+  (* TODO: Vectors shouldn't be values explicitly (they can be stepped if they have
+     variables inside them at declaration time) *)
+  | Vec2 _ | Vec3 _ | Vec4 _ -> true
+  | Var _ | Let _ | Binop _ | Unop _ -> false
 ;;
 
 (** [typed_string_of_val t e] converts [e] to a string, implicitly casts it to type [t] if
@@ -18,10 +19,13 @@ let rec typed_string_of_val (t : stype) = function
   | Int i -> string_of_int i
   | Float f when t = STInt -> string_of_int (int_of_float f)
   | Float f -> string_of_float f
+  | String s -> s
   (* TODO: Vec's with non-value types will break *)
   | Vec2 (e1, e2) when is_value e1 && is_value e2 -> vec2_string_of_val e1 e2
-  | Vec3 (e1, e2, e3) when is_value e1 && is_value e2 && is_value e3 -> vec3_string_of_val e1 e2 e3
-  | Vec4 (e1, e2, e3, e4) when is_value e1 && is_value e2 && is_value e3 && is_value e4 -> vec4_string_of_val e1 e2 e3 e4
+  | Vec3 (e1, e2, e3) when is_value e1 && is_value e2 && is_value e3 ->
+    vec3_string_of_val e1 e2 e3
+  | Vec4 (e1, e2, e3, e4) when is_value e1 && is_value e2 && is_value e3 && is_value e4 ->
+    vec4_string_of_val e1 e2 e3 e4
   | Var _ | Let _ | Binop _ | Unop _ -> failwith "no string representation"
   | _ -> failwith "no string representation"
 
@@ -31,13 +35,13 @@ and vec2_string_of_val e1 e2 =
   | Float f1, Float f2 -> Fmt.str "(%f, %f)" f1 f2
   | _ -> raise (RuntimeError err_vec_type_mismatch)
 
-and vec3_string_of_val e1 e2 e3 = 
+and vec3_string_of_val e1 e2 e3 =
   match e1, e2, e3 with
   | Int i1, Int i2, Int i3 -> Fmt.str "(%d, %d, %d)" i1 i2 i3
   | Float f1, Float f2, Float f3 -> Fmt.str "(%f, %f, %f)" f1 f2 f3
   | _ -> raise (RuntimeError err_vec_type_mismatch)
 
-and vec4_string_of_val e1 e2 e3 e4 = 
+and vec4_string_of_val e1 e2 e3 e4 =
   match e1, e2, e3, e4 with
   | Int i1, Int i2, Int i3, Int i4 -> Fmt.str "(%d, %d, %d, %d)" i1 i2 i3 i4
   | Float f1, Float f2, Float f3, Float f4 -> Fmt.str "(%f, %f, %f, %f)" f1 f2 f3 f4
@@ -48,14 +52,15 @@ and vec4_string_of_val e1 e2 e3 e4 =
     from the StaticEnvironment *)
 let expr_of_vp ((expr, styp) : Ast.expr * stype) : expr =
   match styp with
-  | STInt | STFloat | STVec2 | STVec3 | STVec4 -> expr
+  | STInt | STFloat | STString | STVec2 | STVec3 | STVec4 -> expr
 ;;
 
 (** [step e] takes a single step of evaluation of [e]. Int: If an 'Int' gets here, it's
     already been computed *)
 let rec step env = function
-  | Int _ | Float _ -> failwith "does not step"
-  (* TODO: as mentioned above, vectors should probably step to properly insert variable values *)
+  | Int _ | Float _ | String _ -> failwith "does not step"
+  (* TODO: as mentioned above, vectors should probably step to properly insert variable
+     values *)
   | Vec2 _ | Vec3 _ | Vec4 _ -> failwith "does not step"
   | Var x -> StaticEnvironment.lookup x env |> expr_of_vp
   | Let (x, t, e) when is_value e ->
@@ -72,6 +77,7 @@ and step_unop unop v =
   match unop, v with
   | `UMinus, Int a -> Int (-a)
   | `UMinus, Float a -> Float (-.a)
+  | `UMinus, String _ -> raise (TypeError err_unop_mismatch)
   | _ -> raise (TypeError err_unop_mismatch)
 
 and step_bop bop v1 v2 =
@@ -94,6 +100,8 @@ and step_bop bop v1 v2 =
   | `Div, Float f1, Float f2 -> Float (f1 /. f2)
   | `Div, Int i, Float f -> Float (float_of_int i /. f)
   | `Div, Float f, Int i -> Float (f /. float_of_int i)
+  (* String (Concatenation) *)
+  | `Add, String s1, String s2 -> String (s1 ^ s2)
   (* TODO: Vector math currently fails *)
   | _ -> raise (RuntimeError err_binop_mismatch)
 ;;
@@ -102,6 +110,7 @@ and step_bop bop v1 v2 =
 let rec typeof env = function
   | Int _ -> STInt
   | Float _ -> STFloat
+  | String _ -> STString
   | Vec2 _ -> STVec2
   | Vec3 _ -> STVec3
   | Vec4 _ -> STVec4
@@ -120,6 +129,7 @@ and typeof_let env _ t e1 =
     | STInt -> STInt
     | STFloat when t = STInt -> STInt
     | STFloat -> STFloat
+    | STString -> STString
     | STVec2 -> STVec2
     | STVec3 -> STVec3
     | STVec4 -> STVec4
@@ -133,6 +143,7 @@ and typeof_unop env uop e1 =
   | `UMinus, STVec2 -> STVec2
   | `UMinus, STVec3 -> STVec3
   | `UMinus, STVec4 -> STVec4
+  | `UMinus, STString -> failwith "why would you try doing that?"
 
 and typeof_binop env (bop : binop) e1 e2 =
   let e1_t = typeof env e1 in
@@ -143,6 +154,10 @@ and typeof_binop env (bop : binop) e1 e2 =
     if e1_t = STFloat || e2_t = STFloat then STFloat else STInt
   | (`Mult | `Div), (STInt | STFloat), (STInt | STFloat) ->
     if e1_t = STFloat || e2_t = STFloat then STFloat else STInt
+  (* String Ops *)
+  | `Add, STString, STString -> STString
+  | (`Minus | `Mult | `Div), STString, STString ->
+    raise (TypeError err_str_binop_mismatch)
   (* TODO: Vector math currently fails *)
   | _ -> raise (TypeError err_vec_binop_mismatch)
 ;;

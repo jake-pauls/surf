@@ -21,7 +21,15 @@ let err_unop_mismatch = "unary operator mismatch"
 let err_binop_mismatch = "binary operator mismatch"
 
 (** [string] error string representing a vector initialized with inconsistent number types *)
-let err_vec_type_mismatch = "vectors should be initialized with consistent types (int, int, int) or (float, float, float)"
+let err_vec_type_mismatch =
+  "vectors should be initialized with consistent types (int, int, int) or (float, float, \
+   float)"
+;;
 
-(** [string] error string representing an invalid binary operation being performed on a vector *)
-let err_vec_binop_mismatch = "attempting to perform an invalid binary operation on a vector"
+(** [string] error string representing an invalid binary operation being performed on a
+    vector *)
+let err_vec_binop_mismatch = "attempting to perform an invalid vector operation"
+
+(** [string] error string representing an invalid binary operation being performed on a
+    string *)
+let err_str_binop_mismatch = "attempting to perform invalid string operation"

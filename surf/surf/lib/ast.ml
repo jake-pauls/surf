@@ -13,6 +13,7 @@ type unop = [ `UMinus ]
 type stype =
   | STInt
   | STFloat
+  | STString
   | STVec2
   | STVec3
   | STVec4
@@ -21,6 +22,7 @@ type stype =
 type expr =
   | Int of int
   | Float of float
+  | String of string
   | Var of string
   | Let of string * stype * expr
   | Binop of binop * expr * expr
@@ -28,4 +30,3 @@ type expr =
   | Vec2 of expr * expr
   | Vec3 of expr * expr * expr
   | Vec4 of expr * expr * expr * expr
-
