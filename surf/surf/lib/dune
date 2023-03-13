@@ -1,7 +1,7 @@
 (library
  (name surf)
  (public_name surf)
- (libraries core))
+ (libraries core fmt ctypes ctypes.stubs))
 
 (ocamllex
  (modules lexer))

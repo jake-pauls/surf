@@ -23,7 +23,7 @@ STUBS_H_FILE := gen.h
 .PHONY: build build install surf gen test clean fmt
 
 # Required to 'prep' the API
-# Ideally, this is cleaned up at some point or merged into dune as a buildsystem
+# Ideally, this is cleaned up at some point or merged into dune or python as part of the buildsystem
 prep-api:
 	$(MAKE) install
 	$(MAKE) gen
@@ -41,18 +41,17 @@ install:
 	dune install surf
 
 surf:
-	dune exec surf
+	dune exec surf test.surf
 
 # 'gen' is a cli executable that takes in files/directories for the stubs to output
 gen:
 	dune exec gen $(STUBS_DIR) $(STUBS_ML_FILE) $(STUBS_C_FILE) $(STUBS_H_FILE)
 
-test:
+tests:
 	dune runtest -f
 
 clean:
 	dune clean
-	$(RIMRAF) $(STUBS_DIR)
 
 fmt:
 	dune fmt 

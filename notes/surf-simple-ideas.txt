@@ -1,0 +1,51 @@
+## cfg.surf
+---
+fun cfg() ~> Dict do
+  ret {
+	  gapi: Vulkan
+	  mode: Deferred
+	  slang: hlsl
+  };
+end
+
+---
+## red.surf
+---
+fun red() ~> Vec3 do
+  ret (1.0, 0.0, 0.0);
+end
+
+---
+## Notes
+- Get logic for 'cfg' sorted out quickly
+	- Pass 'gapi', 'mode', and 'slang' as "expected" variables for cfg
+- Simple script example will pass a vec3 through the api
+
+---
+## test.surf
+---
+
+# Function
+fun test(msg: Str, vec: Vec2) ~> nil do
+  let maxInt: Int = Max(vec);
+
+  # Method Call
+  print(msg);
+
+  # ret: Returns
+  ret nil;
+end
+
+# Bindings
+let testVector: Vec2 = (2.0, 2.0);
+let testMatrix: Mat4 = [1.0];
+
+# Conditionals
+if True do
+  testVector.x = 5.0;
+else
+  testVector.x = 10.0;
+end
+
+# Function Calls
+test("Test", testVector);

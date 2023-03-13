@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-void surf_Init();
+int surf_Init();
 
 #ifdef __cplusplus
 }

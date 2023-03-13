@@ -1,11 +1,27 @@
 open Ctypes
 open Surf
 
-let rec fib n = if n < 2 then 1 else fib (n - 1) + fib (n - 1)
-let fmt_res res = Printf.sprintf "Result is: %d\n" res
-
+(** internal stubs exported to dll **)
 module Stubs (I : Cstubs_inverted.INTERNAL) = struct
-  let () = I.internal "fib" (int @-> returning int) fib
-  let () = I.internal "fmt_res" (int @-> returning string) fmt_res
-  let () = I.internal "interp" (string @-> returning string) Interpreter.interp
+  open Env
+
+  let senv_t : 'a StaticEnvironmentBindings.senv_struct typ =
+    structure StaticEnvironmentBindings.senv_struct_name
+  ;;
+
+  let () = I.typedef senv_t StaticEnvironmentBindings.senv_struct_name
+
+  let () =
+    I.internal
+      "surfgen_InitRuntime"
+      (void @-> returning (ptr senv_t))
+      StaticEnvironmentBindings.empty
+  ;;
+
+  let () =
+    I.internal
+      "surfgen_Interp"
+      (ptr senv_t @-> string @-> returning string)
+      Interpreter.c_interp_ret
+  ;;
 end

@@ -2,7 +2,6 @@
 
 int main(int argc, char** argv)
 {
-    surf_Init();
-
-    return 0;
+    int res = surf_Init();
+    return res;
 }

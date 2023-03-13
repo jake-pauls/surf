@@ -50,7 +50,7 @@ jobs:
           cache: true
 
       - name: Build project
-        run: python ./scripts/surf.py
+        run: python ./scripts/surf.py wave ${{ matrix.build-cfg }}
 
       - name: Run msbuild
         run: msbuild ./build/surf.sln -interactive:False -property:Configuration=${{ matrix.build-cfg }} -m
@@ -89,7 +89,7 @@ jobs:
           cache: true
 
       - name: Build project
-        run: python ./scripts/surf.py ${{ matrix.build-cfg }}
+        run: python ./scripts/surf.py wave ${{ matrix.build-cfg }}
 
       - name: Run make
         working-directory: ./build
