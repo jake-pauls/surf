@@ -1,6 +1,9 @@
 <h3 align="center">🌊</h3>
 <p align="center">Rendering engine to demonstrate <b>surf</b>.</p>
 
+### Description
+Vulkan-based rendering engine that leverages the surf API to communicate script results to a renderer.
+
 ### Dependencies
 * [Vulkan](https://www.vulkan.org/)
 * [VMA](https://gpuopen.com/vulkan-memory-allocator/)

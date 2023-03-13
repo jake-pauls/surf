@@ -1,17 +1,17 @@
 ## cfg.surf
 ---
-fun cfg() do
+fun cfg() ~> Dict do
   ret {
-	gapi: Vulkan
-	mode: Deferred
-	slang: hlsl
+	  gapi: Vulkan
+	  mode: Deferred
+	  slang: hlsl
   };
 end
 
 ---
 ## red.surf
 ---
-fun red(): nil do
+fun red() ~> Vec3 do
   ret (1.0, 0.0, 0.0);
 end
 
@@ -26,8 +26,8 @@ end
 ---
 
 # Function
-fun test(msg: str, vec: vec2) ~> nil do
-  let maxInt: int = max(vec);
+fun test(msg: Str, vec: Vec2) ~> nil do
+  let maxInt: Int = Max(vec);
 
   # Method Call
   print(msg);
@@ -38,6 +38,7 @@ end
 
 # Bindings
 let testVector: Vec2 = (2.0, 2.0);
+let testMatrix: Mat4 = [1.0];
 
 # Conditionals
 if True do
