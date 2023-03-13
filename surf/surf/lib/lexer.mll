@@ -5,9 +5,10 @@ exception SyntaxError of string
 }
 
 let white = [' ' '\t']+
+
 let digit = ['0'-'9']
 let letter = ['a'-'z' 'A'-'Z']
-let id = letter+
+let id = (letter) (letter | digit | '_')*
 
 let frac = '.' digit*
 let exp = ['e' 'E'] ['-' '+']? digit+

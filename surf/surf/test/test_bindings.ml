@@ -1,6 +1,6 @@
 open Helpers
 
-(** [let_bindings] tests for let bindings *)
+(** [let_bindings] general tests for let bindings *)
 let let_bindings =
   [ ( "int let binding"
     , `Quick
