@@ -15,6 +15,7 @@ open Ast
 %token COMMA
 %token STINT STFLOAT STSTRING
 %token STVEC2 STVEC3 STVEC4
+%token MPUT
 %token EOF
 
 %nonassoc UMINUS
@@ -53,6 +54,10 @@ expr:
     /* Assignment Rules */
 
     | LET; x = ID; COLON; t = stype; EQUALS; e = expr; SEMICOLON { Let (x, t, e) }
+
+    /* Built-ins */
+
+    | MPUT; LPAREN; e = expr; RPAREN; SEMICOLON { Put (e) }
     ;
 
     /* Static Types */

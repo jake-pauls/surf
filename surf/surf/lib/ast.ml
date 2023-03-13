@@ -30,3 +30,5 @@ type expr =
   | Vec2 of expr * expr
   | Vec3 of expr * expr * expr
   | Vec4 of expr * expr * expr * expr
+  (* Built-ins *)
+  | Put of expr

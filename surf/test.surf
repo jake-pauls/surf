@@ -6,16 +6,24 @@ let cfg_gapi: str = "Vulkan";
 let cfg_method: str = "Forward";
 let cfg_slang: str = "glsl";
 
-1.2 * 1.1                                               # Floating point math
-2 + 2                                                   # Integer math
+let f_math: flt = 10.2 * 20.3;                        # Floating-point math
+let i_math: int = 10 / 2;                             # Integer math
 
-let x: int = 100;                                       # Let binding for integer type
-let y: float = 24.4;                                    # Let binding for float type       
+let x: int = 100;                                     # Let binding for integer type
+let y: flt = 24.4;                                    # Let binding for float type       
 
-let z: int = x + y;                                     # Implicit type casting between 'int' and 'float'
-let x: int = y;                                         # Reassignment with casting
+let z: int = x + y;                                   # Implicit type casting between 'int' and 'float'
+let x: int = y;                                       # Reassignment with casting
 
 # Vector support (no math)
-let test_vector_two: vec2 = (1.0, 2.0);                 # Vector2
-let test_vector_three: vec3 = (1.0, 2.0, 3.0);          # Vector3
-let test_vector_four: vec4 = (1.0, 2.0, 3.0, 4.0);      # Vector4
+let test_vector_two: v2 = (1.0, 2.0);                 # Vector2
+let test_vector_three: v3 = (1.0, 2.0, 3.0);          # Vector3
+let test_vector_four: v4 = (1.0, 2.0, 3.0, 4.0);      # Vector4
+
+# Printing - all types have string representation
+put(z);
+put(x);
+put(test_vector_three);
+put(cfg_slang);                                       
+put("Test");
+put("Another " + "string");
