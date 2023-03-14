@@ -2,9 +2,13 @@
 
 #include "Timer.h"
 
+#include <surf/Bridge.h>
+
 wv::Application::Application()
 	: m_Window(new Window)
 {
+	core::Log(ELogType::Debug, "Starting surf bridge...");
+	surf_StartBridge();
 }
 
 wv::Application::~Application()

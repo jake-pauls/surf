@@ -28,6 +28,7 @@ surf/_build
 
 # surf Codegen
 api/stubs
+api/server/stubs
 surf/stubs
 
 # ocamlbuild targets

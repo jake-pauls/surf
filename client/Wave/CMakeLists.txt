@@ -106,11 +106,15 @@ target_include_directories(${WAVE_EXECUTABLE_NAME}
     PRIVATE Core
     PRIVATE Engine
 	PRIVATE Renderer
+    # Client API
+    ${CMAKE_SOURCE_DIR}/api/client/include
     # Vendor
 	PRIVATE ${Vulkan_INCLUDE_DIR})
 
 # Link the surf DSL API via it's alias, see api/CMakeLists.txt for more details
 target_link_libraries(${WAVE_EXECUTABLE_NAME}
+    # Client API
+    surf::api
     # Vendor
     SDL3::SDL3
 	${Vulkan_LIBRARY}

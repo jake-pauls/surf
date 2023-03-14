@@ -1,4 +1,4 @@
-#include "surf/Bridge.h"
+#include "surf/Server.h"
 
 int main(int argc, char** argv)
 {

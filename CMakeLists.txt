@@ -28,4 +28,5 @@ add_compile_options("$<$<CONFIG:DEBUG>:-D_WAVE_DEBUG>")
 add_compile_options("$<$<CONFIG:DEBUG>:-D_WAVE_ENABLE_LOGGING>")
 
 # Build surf client project
+add_subdirectory(api)
 add_subdirectory(client)

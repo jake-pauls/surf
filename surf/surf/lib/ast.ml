@@ -95,12 +95,8 @@ let typed_string_of_val (t : stype) (e : expr) =
 (** [inf_string_of_val e] converts [e] to a string, infers it's internal type *)
 let inf_typed_string_of_val (e : expr) =
   match e with
-  | Int _ ->
-    print_endline "checking int"
-    ; typed_string_of_val STInt e
-  | Float _ ->
-    print_endline "checking flt"
-    ; typed_string_of_val STFloat e
+  | Int _ -> typed_string_of_val STInt e
+  | Float _ -> typed_string_of_val STFloat e
   | String _ -> typed_string_of_val STString e
   | Vec2 _ -> typed_string_of_val STVec2 e
   | Vec3 _ -> typed_string_of_val STVec3 e
