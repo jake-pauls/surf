@@ -31,7 +31,7 @@ add_subdirectory(api)
 target_link_libraries(${EXECUTABLE} surf::api)
 ```
 
-Once completed successfully, the server can be run on the command-line or by double-clicking the executable.
+Once completed successfully, the server can be run on the command-line or double-clicked. It runs on **port 3030** by default.
 ```
 $ ./build/server/surf.exe
 ```

@@ -2,13 +2,26 @@
 
 #include "Timer.h"
 
-#include <surf/Bridge.h>
+#include <surf/surf.h>
 
 wv::Application::Application()
 	: m_Window(new Window)
 {
 	core::Log(ELogType::Debug, "Starting surf bridge...");
-	surf_StartBridge();
+
+	surf_ApiResult result = surf_StartBridge();
+	WAVE_ASSERT(result != SURF_API_ERROR, "Failed to connect to the surf API");
+
+    const char* buffer = "let x: v2 = (1, 2);";
+    char* out = surf_Interp(buffer);
+
+	core::Log(ELogType::Debug, "Sent: {}", buffer);
+	core::Log(ELogType::Debug, "Received: {}", out);
+
+    free(out);
+
+	result = surf_DestroyBridge();
+	WAVE_ASSERT(result != SURF_API_ERROR, "Failed to destroy surf bridge");
 }
 
 wv::Application::~Application()

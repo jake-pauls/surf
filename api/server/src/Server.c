@@ -2,8 +2,9 @@
 #include "gen.h" 
 /// CODEGEN
 
-#include "surf/Utils.h"
-#include "surf/Server.h"
+#include "Utils.h"
+#include "Define.h"
+#include "Server.h"
 
 #ifdef WIN32
 #include <WinSock2.h>
@@ -19,9 +20,6 @@
 
 #include <caml/callback.h>
 
-/// @brief Port number the API runs on
-#define API_PORT "3030"
-
 /// @brief Signal flag to ensure runtime stays running
 static volatile sig_atomic_t s_IsRunning = 1;
 
@@ -33,12 +31,17 @@ static void CatchInterruptionSignal(int _)
     s_IsRunning = 0;
 }
 
-void* GetInAddress(struct sockaddr* sa)
+/// @brief Retrieves the in-address for a passed socket
+/// @param socketAddress Socket to retrieve the address of
+/// @return Reference to the in-address for the passed socket
+void* GetInAddress(struct sockaddr* socketAddress)
 {
-	if (sa->sa_family == AF_INET)
-		return &(((struct sockaddr_in*) sa)->sin_addr);
+    // IPv4
+	if (socketAddress->sa_family == AF_INET)
+		return &(((struct sockaddr_in*) socketAddress)->sin_addr);
 
-	return &(((struct sockaddr_in6*) sa)->sin6_addr);
+    // IPv6
+	return &(((struct sockaddr_in6*) socketAddress)->sin6_addr);
 }
 
 int surf_OpenConnection(StaticEnvironment* env)
@@ -46,7 +49,10 @@ int surf_OpenConnection(StaticEnvironment* env)
     char* title;
     int status;
     struct addrinfo pHints, *pAddrInfo;
+
     int serverSocket, clientSocket;
+    int socketArr[] = { clientSocket, serverSocket };
+    size_t socketArrLen = 2;
 
 #ifdef WIN32
     title = "<><>- surf api. [winsock] -<><>\n";
@@ -56,7 +62,7 @@ int surf_OpenConnection(StaticEnvironment* env)
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != NO_ERROR) 
     {
-		printf("WSAStartup failed with error: %ld\n", iResult);
+		SERVER_LOG("WSAStartup failed with error: %d", iResult);
 		return 1;
 	}
 #else 
@@ -65,45 +71,38 @@ int surf_OpenConnection(StaticEnvironment* env)
 #endif
 
     // Clear hints before using them
-    memset(&pHints, 0, sizeof pHints);
+    memset(&pHints, 0, sizeof(pHints));
     pHints.ai_family = AF_UNSPEC;
     pHints.ai_socktype = SOCK_STREAM;
+    pHints.ai_protocol = IPPROTO_TCP;
     pHints.ai_flags = AI_PASSIVE;
 
     // Get address info
     status = getaddrinfo(NULL, API_PORT, &pHints, &pAddrInfo);
     if (status != 0)
-    {
-        printf("getaddrinfo error: %d\n", status);
-    }
+        SERVER_LOG("getaddrinfo error: %d", status);
 
     // Open server socket
     serverSocket = socket(pAddrInfo->ai_family, pAddrInfo->ai_socktype, pAddrInfo->ai_protocol);
-    if (status < 0)
-    {
-        printf("socket error: %d\n", status);
-    }
+    if (serverSocket < 0)
+        SERVER_LOG("socket error: %d", serverSocket);
 
     // Bind server socket
     status = bind(serverSocket, pAddrInfo->ai_addr, pAddrInfo->ai_addrlen);
     if (status < 0)
-    {
-        printf("bind error: %d\n", status);
-    }
+        SERVER_LOG("bind error: %d", status);
 
     // Start listening
     status = listen(serverSocket, 10);
     if (status < 0)
-    {
-        printf("listen error: %d\n", status);
-    }
+        SERVER_LOG("listen error: %d", status);
 
     // Cleanup the address info once socket is opened
     freeaddrinfo(pAddrInfo);
 
     struct sockaddr_storage clientAddr;
     char sendBuffer[INET6_ADDRSTRLEN];
-    socklen_t sendBufferLen = sizeof clientAddr;
+    socklen_t sendBufferLen = sizeof(clientAddr);
 
     char recvBuffer[INET6_ADDRSTRLEN];
     socklen_t recvBufferLen = INET6_ADDRSTRLEN;
@@ -124,13 +123,12 @@ int surf_OpenConnection(StaticEnvironment* env)
         clientSocket = accept(serverSocket, (struct sockaddr*) &clientAddr, &sendBufferLen);
         if (clientSocket < 0)
         {
-            printf("accept error: %d\n", clientSocket);
+            SERVER_LOG("accept error: %d", clientSocket);
             continue;
         }
 
-        inet_ntop(clientAddr.ss_family, GetInAddress((struct sockaddr*) &clientAddr), sendBuffer, sizeof sendBuffer);
-        printf("<><>- new connection: %s -<><>\n", sendBuffer);
-        status = send(clientSocket, title, strlen(title), 0);
+        inet_ntop(clientAddr.ss_family, GetInAddress((struct sockaddr*) &clientAddr), sendBuffer, sizeof(sendBuffer));
+        SERVER_LOG("new connection: %s", sendBuffer);
 
         // Receive data until the client disconnects
         int rBytes;
@@ -163,36 +161,37 @@ int surf_OpenConnection(StaticEnvironment* env)
             }
         } while (rBytes > 0 && status >= 0);
         
-        // Client disconnected unexpectedly, cleanup sockets
+        // Client disconnected unexpectedly, kill sockets
         if (status == -1)
         {
-#ifdef WIN32
-            closesocket(clientSocket);
-            closesocket(serverSocket);
-            WSACleanup();
-#else
-            close(clientSocket);
-            close(listenSocket);
-#endif
-
+            surf_KillSockets(socketArr, socketArrLen);
             _Exit(4);
         }
     }
 
-    // Cleanup sockets
-#ifdef WIN32
-    closesocket(clientSocket);
-    closesocket(serverSocket);
-    WSACleanup();
-#else
-    close(clientSocket);
-    close(listenSocket);
-#endif
+    // Default exit, kill sockets
+    surf_KillSockets(socketArr, socketArrLen);
 
     return 0;
 }
 
-int surf_Init()
+void surf_KillSockets(int socketArr[], size_t socketArrLen)
+{
+    for (size_t i = 0; i < socketArrLen; ++i)
+    {
+#ifdef WIN32
+        closesocket(socketArr[i]);
+#else
+        close(socketArr[i]);
+#endif
+    }
+
+#ifdef WIN32
+    WSACleanup();
+#endif
+}
+
+int surf_InitServer()
 {
     // Initialize signal for interruptions (ie: server is accessed via command line)
     signal(SIGINT, CatchInterruptionSignal);
