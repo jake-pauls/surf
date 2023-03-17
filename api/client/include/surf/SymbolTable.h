@@ -3,15 +3,8 @@
 
 #define SURF_SYMBOL_TABLE_STARTING_SIZE 2
 
-/// @brief Simple enum to pass into/require in surf functions
-/// @todo C requires at least one named argument in a variadic function pointer, which is why this is required
-///       - is there anything useful that can be done or populated with this?
-typedef enum surf_FunArg {
-    SURF_FUN_ARG_INTERNAL = 0
-} surf_FunArg;
-
 /// @brief Represents a C function pointer stored in the symbol table
-typedef void (*surf_fun_t)(surf_FunArg, ...);
+typedef void (*surf_fun_t)(void);
 
 /// @brief Symbols registered in the surf API require an identifier and a valid function pointer
 typedef struct surf_Symbol

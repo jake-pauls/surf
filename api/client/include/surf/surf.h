@@ -7,6 +7,7 @@ extern "C" {
 
 #include "Bridge.h"
 #include "Interp.h"
+#include "Argpack.h"
 
 #ifdef __cplusplus
 }

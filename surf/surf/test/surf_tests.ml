@@ -10,6 +10,7 @@ let suite =
   ; "Test_arithmetic.bedmas", bedmas
   ; "Test_bindings.let_bindings", let_bindings
   ; "Test_builtins.put", put
+  ; "Test_builtins.ref", ref
   ; "Test_strings.strings", strings
   ]
 ;;

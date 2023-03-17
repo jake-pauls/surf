@@ -31,12 +31,9 @@ char* surf_InterpLine(const char* line)
         const char space = ' ';
         char** split = StringSplit(dupLine, space);
 
-        // If keyword #1 of the executed line was a reflection keyword, search and execute the registered function 
+        // Keyword #1 should be the reflection keyword for it to be executed
         if (strcmp(split[0], "ref") == 0) 
-        {
-            SURF_API_CLIENT_LOG("ref was executed!");
-		    surf_InternalParseReflection(buffer);
-        }
+		    surf_InternalExecuteReflectionCallback(buffer);
 
         free(split);
     }
@@ -59,12 +56,10 @@ void surf_InterpRegisterSymbol(const char* id, surf_fun_t func)
     if (s_SymbolTable == NULL)
         s_SymbolTable = surf_SymbolTableCreate();
 
-    SURF_API_CLIENT_LOG("Registered symbol with id: %s", id);
-
     surf_SymbolTableInsert(s_SymbolTable, id, func);
 }
 
-void surf_InternalParseReflection(const char* buffer)
+void surf_InternalExecuteReflectionCallback(const char* buffer)
 {
     // Prevent retrieving reflected functions if they don't exist
     if (s_SymbolTable == NULL)
@@ -75,17 +70,67 @@ void surf_InternalParseReflection(const char* buffer)
 
     char* dupBuffer = STRDUP(buffer);
 	const char space = ' ';
-	char** split = StringSplit(dupBuffer, space);
+	char** args = StringSplit(dupBuffer, space);
 
     // Function should be the first string after 'ref'
-    char* id = split[1];
-    SURF_API_CLIENT_LOG("Looking up reflected function %s", id);
-    surf_fun_t callback = surf_SymbolTableLookup(s_SymbolTable, id);
-    
-    // Execute the callback with the internal argument
-    callback(SURF_FUN_ARG_INTERNAL);
+    char* identifier = args[1];
+    surf_fun_t callback = surf_SymbolTableLookup(s_SymbolTable, identifier);
 
-    free(split);
+    // Retrieve the length of the args to check for argument pack
+    int splitLen = -1;
+    while (args[++splitLen] != NULL);
+    
+    // Reflected function has the signature (void)(void), and can be instantly called
+    if (splitLen <= 2)
+    {
+		callback();
+        free(args);
+        free(dupBuffer);
+        return;
+    } 
+
+    // Setup array of generic arguments
+	int vArgsIndex = 0;
+	void** vArgs = (void**) malloc((splitLen - 2) * sizeof(void*));
+
+	for (size_t i = 2; i < splitLen; ++i)
+	{
+		const char typeDelimeter = ':';
+		char** splitArg = StringSplit(args[i], typeDelimeter);
+
+		char* argValue = splitArg[0];
+		char* argType = splitArg[1];
+
+        // Retrieve a reference to the value and match it against its surf type
+		// Note: Currently only marshals 'int', 'flt', and 'str' types
+
+		if (strcmp(argType, "int") == 0)
+		{
+			int intArg = atoi(argValue);
+			vArgs[vArgsIndex] = &intArg;
+		}
+		else if (strcmp(argType, "flt") == 0)
+		{
+			float fltArg = (float) atof(argValue);
+			vArgs[vArgsIndex] = &fltArg;
+		}
+		else if (strcmp(argType, "str") == 0)
+		{
+			vArgs[vArgsIndex] = &argValue;
+		}
+
+		vArgsIndex++;
+
+		free(splitArg);
+	}
+
+	// Function has some args, client function is responsible for having a 'void**' to catch them
+	// Casting each arg to its appropriate type and passing it requires metaprogramming or lots more work
+	// Could be a TODO, but seems unnecessary to prove the concept of surf
+	callback(vArgs);
+
+	free(vArgs);
+    free(args);
     free(dupBuffer);
 }
 

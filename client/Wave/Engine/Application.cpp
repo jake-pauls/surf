@@ -3,15 +3,24 @@
 #include "Timer.h"
 
 #include <surf/surf.h>
-#include <surf/SymbolTable.h>
 
-#include <map>
+void fun() 
+{ 
+	core::Log(ELogType::Debug, "fun(): a simple function callback");
+}
 
-void fun(surf_FunArg a, ...) { std::cout << "wtf this worked... " << a << std::endl; }
+void anotherFun(void** args) 
+{ 
+	int aInt = surf_ArgpackGetInt(args, 0);
+	float aFlt = surf_ArgpackGetFlt(args, 1);
+	char* aStr = surf_ArgpackGetStr(args, 2);
 
-void test(const char* aStr, ...) { std::cout << "another wtf " << aStr << std::endl; }
-void testTwo(const char* another, ...) { std::cout << "last one " << another << std::endl; }
-void testThree(const char* another, ...) { std::cout << "last one again " << another << std::endl; }
+	core::Log(ELogType::Debug, "anotherFun(): a function callback with an argpack");
+	core::Log(ELogType::Debug, "int is {}", aInt);
+	core::Log(ELogType::Debug, "float is {}", aFlt);
+	core::Log(ELogType::Debug, "string is {}", aStr);
+}
+
 
 wv::Application::Application()
 	: m_Window(new Window)
@@ -32,8 +41,12 @@ wv::Application::Application()
 	surf_InterpRegisterSymbol("myFunc", &fun);
 	const char* testBuffer = "ref myFunc();";
 	char* reflectResult = surf_InterpLine(testBuffer);
-	core::Log(ELogType::Debug, "Result: {}", reflectResult);
 	surf_InterpDestroyLine(reflectResult);
+
+	surf_InterpRegisterSymbol("anotherFun", (surf_fun_t) &anotherFun);
+	const char* anotherTestBuffer = "ref anotherFun(2:int, 2.02:flt, \"string\":str);";
+	char* anotherReflectResult = surf_InterpLine(anotherTestBuffer);
+	surf_InterpDestroyLine(anotherReflectResult);
 
 	result = surf_DestroyBridge();
 	WAVE_ASSERT(result != SURF_API_ERROR, "Failed to destroy surf bridge");

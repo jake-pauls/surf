@@ -11,6 +11,7 @@ set(HEADER_FILES
     client/include/surf/Interp.h
     client/include/surf/SymbolTable.h
     client/include/surf/Utils.h
+    client/include/surf/Argpack.h
     client/include/surf/Algorithm.h
     client/include/surf/Define.h
     client/include/surf/surf.h)

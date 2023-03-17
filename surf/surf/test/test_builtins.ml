@@ -137,3 +137,27 @@ let put =
           empty )
   ]
 ;;
+
+(** [ref] general tests for the 'ref' builtin *)
+let ref =
+  [ ( "basic ref"
+    , `Quick
+    , fun _ -> check_interp_str "basic ref" "ref myFunc" "ref myFunc();" empty )
+  ; ( "single arg ref"
+    , `Quick
+    , fun _ ->
+        check_interp_str "single arg ref" "ref myFunc 1:int" "ref myFunc(1: int);" empty )
+  ; ( "double arg ref"
+    , `Quick
+    , fun _ ->
+        check_interp_str "double arg ref" "ref myFunc 1:int 2.05:flt" "ref myFunc(1: int, 2.05: flt);" empty )
+  ; ( "triple arg ref"
+    , `Quick
+    , fun _ ->
+        check_interp_str "triple arg ref" "ref myFunc 1:int 2.05:flt Test:str" "ref myFunc(1: int, 2.05: flt, \"Test\": str);" empty )
+  ; ( "quad arg ref"
+    , `Quick
+    , fun _ ->
+        check_interp_str "quad arg ref" "ref myFunc 1:int 2.05:flt Test:str (1, 2):v2" "ref myFunc(1: int, 2.05: flt, \"Test\": str, (1, 2): v2);" empty )
+  ]
+;;
