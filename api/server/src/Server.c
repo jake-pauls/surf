@@ -62,7 +62,7 @@ int surf_OpenConnection(StaticEnvironment* env)
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != NO_ERROR) 
     {
-		SERVER_LOG("WSAStartup failed with error: %d", iResult);
+		SURF_API_SERVER_LOG("WSAStartup failed with error: %d", iResult);
 		return 1;
 	}
 #else 
@@ -80,22 +80,22 @@ int surf_OpenConnection(StaticEnvironment* env)
     // Get address info
     status = getaddrinfo(NULL, API_PORT, &pHints, &pAddrInfo);
     if (status != 0)
-        SERVER_LOG("getaddrinfo error: %d", status);
+        SURF_API_SERVER_LOG("getaddrinfo error: %d", status);
 
     // Open server socket
     serverSocket = socket(pAddrInfo->ai_family, pAddrInfo->ai_socktype, pAddrInfo->ai_protocol);
     if (serverSocket < 0)
-        SERVER_LOG("socket error: %d", serverSocket);
+        SURF_API_SERVER_LOG("socket error: %d", serverSocket);
 
     // Bind server socket
     status = bind(serverSocket, pAddrInfo->ai_addr, pAddrInfo->ai_addrlen);
     if (status < 0)
-        SERVER_LOG("bind error: %d", status);
+        SURF_API_SERVER_LOG("bind error: %d", status);
 
     // Start listening
     status = listen(serverSocket, 10);
     if (status < 0)
-        SERVER_LOG("listen error: %d", status);
+        SURF_API_SERVER_LOG("listen error: %d", status);
 
     // Cleanup the address info once socket is opened
     freeaddrinfo(pAddrInfo);
@@ -123,12 +123,12 @@ int surf_OpenConnection(StaticEnvironment* env)
         clientSocket = accept(serverSocket, (struct sockaddr*) &clientAddr, &sendBufferLen);
         if (clientSocket < 0)
         {
-            SERVER_LOG("accept error: %d", clientSocket);
+            SURF_API_SERVER_LOG("accept error: %d", clientSocket);
             continue;
         }
 
         inet_ntop(clientAddr.ss_family, GetInAddress((struct sockaddr*) &clientAddr), sendBuffer, sizeof(sendBuffer));
-        SERVER_LOG("new connection: %s", sendBuffer);
+        SURF_API_SERVER_LOG("new connection: %s", sendBuffer);
 
         // Receive data until the client disconnects
         int rBytes;
@@ -141,7 +141,7 @@ int surf_OpenConnection(StaticEnvironment* env)
 
                 // Testing: Interpret data submitted
                 char* res = surfgen_Interp(env, fData);
-                printf("%s\n", res);
+                SURF_API_SERVER_LOG("%s\n", res);
                 
                 // Temp: Add a newline for the client
                 size_t resLen = strlen(res);

@@ -3,6 +3,15 @@
 #include "Timer.h"
 
 #include <surf/surf.h>
+#include <surf/SymbolTable.h>
+
+#include <map>
+
+void fun(surf_FunArg a, ...) { std::cout << "wtf this worked... " << a << std::endl; }
+
+void test(const char* aStr, ...) { std::cout << "another wtf " << aStr << std::endl; }
+void testTwo(const char* another, ...) { std::cout << "last one " << another << std::endl; }
+void testThree(const char* another, ...) { std::cout << "last one again " << another << std::endl; }
 
 wv::Application::Application()
 	: m_Window(new Window)
@@ -12,13 +21,19 @@ wv::Application::Application()
 	surf_ApiResult result = surf_StartBridge();
 	WAVE_ASSERT(result != SURF_API_ERROR, "Failed to connect to the surf API");
 
-    const char* buffer = "let x: v2 = (1, 2);";
-    char* out = surf_Interp(buffer);
-
+	// Example line of surf
+	const char* buffer = "let x: v2 = (1, 2);";
+	char* out = surf_InterpLine(buffer);
 	core::Log(ELogType::Debug, "Sent: {}", buffer);
 	core::Log(ELogType::Debug, "Received: {}", out);
+	surf_InterpDestroyLine(out);
 
-    free(out);
+	// Symbol registration
+	surf_InterpRegisterSymbol("myFunc", &fun);
+	const char* testBuffer = "ref myFunc();";
+	char* reflectResult = surf_InterpLine(testBuffer);
+	core::Log(ELogType::Debug, "Result: {}", reflectResult);
+	surf_InterpDestroyLine(reflectResult);
 
 	result = surf_DestroyBridge();
 	WAVE_ASSERT(result != SURF_API_ERROR, "Failed to destroy surf bridge");

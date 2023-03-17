@@ -26,6 +26,7 @@ type expr =
   | Float of float
   | String of string
   | Var of string
+  | Reflect of string 
   | Let of string * stype * expr
   (* Operators *)
   | Binop of binop * expr * expr
@@ -40,7 +41,7 @@ type expr =
 (** [is_value e] checks whether [e] is a value, vectors containing all value types are
     considered values *)
 let rec is_value : expr -> bool = function
-  | Int _ | Float _ | String _ -> true
+  | Int _ | Float _ | String _ | Reflect _ -> true
   | Vec2 (e1, e2) when is_value e1 && is_value e2 -> true
   | Vec3 (e1, e2, e3) when is_value e1 && is_value e2 && is_value e3 -> true
   | Vec4 (e1, e2, e3, e4) when is_value e1 && is_value e2 && is_value e3 && is_value e4 ->
@@ -85,6 +86,8 @@ let typed_string_of_val (t : stype) (e : expr) =
   | Float f when t = STInt -> string_of_int (int_of_float f)
   | Float f -> string_of_float f
   | String s -> s
+  (* TODO: Add params here *)
+  | Reflect r -> Fmt.str "ref %s" r
   (* TODO: Vec's with non-value types will break *)
   | Vec2 (e1, e2) when is_value e -> vec2_string_of_val e1 e2
   | Vec3 (e1, e2, e3) when is_value e -> vec3_string_of_val e1 e2 e3
@@ -97,7 +100,7 @@ let inf_typed_string_of_val (e : expr) =
   match e with
   | Int _ -> typed_string_of_val STInt e
   | Float _ -> typed_string_of_val STFloat e
-  | String _ -> typed_string_of_val STString e
+  | (String _ | Reflect _) -> typed_string_of_val STString e
   | Vec2 _ -> typed_string_of_val STVec2 e
   | Vec3 _ -> typed_string_of_val STVec3 e
   | Vec4 _ -> typed_string_of_val STVec4 e

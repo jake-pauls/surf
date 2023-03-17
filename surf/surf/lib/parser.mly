@@ -15,6 +15,7 @@ open Ast
 %token COMMA
 %token STINT STFLOAT STSTRING
 %token STVEC2 STVEC3 STVEC4
+%token REFLECT
 %token MPUT
 %token EOF
 
@@ -50,6 +51,10 @@ expr:
     | LPAREN; e1 = expr; COMMA; e2 = expr; RPAREN { Vec2 (e1, e2) }
     | LPAREN; e1 = expr; COMMA; e2 = expr; COMMA; e3 = expr; RPAREN { Vec3 (e1, e2, e3) } 
     | LPAREN; e1 = expr; COMMA; e2 = expr; COMMA; e3 = expr; COMMA; e4 = expr; RPAREN { Vec4 (e1, e2, e3, e4) } 
+
+    /* Reflect (API) */
+
+    | REFLECT; x = ID; LPAREN; RPAREN; SEMICOLON; { Reflect (x) }
 
     /* Assignment Rules */
 

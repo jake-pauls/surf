@@ -15,7 +15,7 @@ let expr_of_vp ((expr, styp) : Ast.expr * stype) : expr =
     already been computed *)
 let rec step env exp =
   match exp with
-  | Int _ | Float _ | String _ ->
+  | Int _ | Float _ | String _ | Reflect _ ->
     raise (RuntimeError (Fmt.str "%s: %s" err_interp_failure "does not step"))
   | Var x -> StaticEnvironment.lookup x env |> expr_of_vp
   | Let (x, t, e) when is_value e ->

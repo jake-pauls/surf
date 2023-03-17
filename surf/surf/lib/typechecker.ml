@@ -6,7 +6,7 @@ open Errors
 let rec typeof env = function
   | Int _ -> STInt
   | Float _ -> STFloat
-  | String _ -> STString
+  | (String _ | Reflect _) -> STString
   | Vec2 _ -> STVec2
   | Vec3 _ -> STVec3
   | Vec4 _ -> STVec4
