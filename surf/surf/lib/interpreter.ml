@@ -1,7 +1,6 @@
 open Ast
 open Env
 open Errors
-open Utils
 open Typechecker
 
 (** [expr_of_vp (value, typ)] creates an ocaml type from a [value * styp] pair retrieved
@@ -100,12 +99,10 @@ let rec eval env e : expr =
 let parse_token (s : string) : expr option =
   let lexbuf = Lexing.from_string s in
   try Parser.prog Lexer.read lexbuf with
-  | Lexer.SyntaxError msg ->
-    print_endline (Fmt.str "[lexer error ~> %s (%s)]" (print_error_position lexbuf) msg)
-    ; None
-  | Parser.Error ->
-    print_endline (Fmt.str "[syntax error ~> %s]" (print_error_position lexbuf))
-    ; None
+  | RuntimeError msg -> raise (RuntimeError msg)
+  | TypeError msg -> raise (TypeError msg)
+  | Lexer.SyntaxError msg -> raise (SyntaxError (msg, lexbuf))
+  | Parser.Error -> raise (ParserError lexbuf)
 ;;
 
 (** [parse_and_ret env s] submits an ast for evaluation in the [env] and returns
@@ -127,11 +124,13 @@ let parse_and_ret env s : string =
     | None -> ""
   with
   | RuntimeError msg ->
-    print_endline (Fmt.str "[runtime error ~> %s]" msg)
-    ; ""
-  | TypeError msg ->
-    print_endline (Fmt.str "[type error ~> %s]" msg)
-    ; ""
+    print_endline ("do " ^ msg ^ " end")
+    ; print_and_ret_err (fmt_runtime_error msg)
+  | TypeError msg -> print_and_ret_err (fmt_type_error msg)
+  | SyntaxError (msg, lexbuf) ->
+    print_and_ret_err (fmt_syntax_error (Utils.print_error_position lexbuf) msg)
+  | ParserError lexbuf ->
+    print_and_ret_err (fmt_parser_error (Utils.print_error_position lexbuf))
 ;;
 
 (** [interp env s] interprets [s] in the [env] - currently used in the interactive repl

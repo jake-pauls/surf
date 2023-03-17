@@ -4,7 +4,7 @@
 #define SURF_SYMBOL_TABLE_STARTING_SIZE 2
 
 /// @brief Represents a C function pointer stored in the symbol table
-typedef void (*surf_fun_t)(void);
+typedef void (*surf_fun_t)(void*);
 
 /// @brief Symbols registered in the surf API require an identifier and a valid function pointer
 typedef struct surf_Symbol

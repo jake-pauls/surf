@@ -101,11 +101,11 @@ and string_of_args (a : (expr * stype) list) : string =
   let fmt_arg_stype s e = Fmt.str "%s:%s" (typed_string_of_val s e) (string_of_stype s) in
   match a with
   | [] -> ""
-  | [ (expr, stype) ] -> fmt_arg_stype stype expr 
+  | [ (expr, stype) ] -> fmt_arg_stype stype expr
   | (hd_expr, hd_stype) :: tl -> fmt_arg_stype hd_stype hd_expr ^ " " ^ string_of_args tl
 
 (** [string_of_stype s] gets the string of an stype [s] *)
-and string_of_stype = function 
+and string_of_stype = function
   | STInt -> "int"
   | STFloat -> "flt"
   | STString -> "str"

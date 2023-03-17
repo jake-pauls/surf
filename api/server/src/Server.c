@@ -141,7 +141,7 @@ int surf_OpenConnection(StaticEnvironment* env)
 
                 // Testing: Interpret data submitted
                 char* res = surfgen_Interp(env, fData);
-                SURF_API_SERVER_LOG("%s\n", res);
+                SURF_API_SERVER_LOG("%s", res);
                 
                 // Temp: Add a newline for the client
                 size_t resLen = strlen(res);

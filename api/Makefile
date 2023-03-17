@@ -7,6 +7,7 @@
 ## Directories
 ##
 
+VENDOR_DIR := ./vendor
 BUILD_DIR := ./build
 SERVER_DIR := ./server
 CLIENT_DIR := ./client
@@ -22,15 +23,18 @@ ifeq ($(OS), Windows_NT)
 	SHARED_LIB_EXT = dll
 endif
 
-.PHONY: server client clean
+.PHONY: vendor server client clean
+
+vendor:
+	$(MAKE) -C $(VENDOR_DIR) check 
 
 server:
-	$(MAKE) -C $(SERVER_DIR) $(SHARED_LIB_EXT)
-	$(MAKE) -C $(SERVER_DIR) $(PLATFORM)
+	$(MAKE) -C $(SERVER_DIR) $(SHARED_LIB_EXT) $(PLATFORM)
 
 client:
-	$(MAKE) -C $(CLIENT_DIR) $(PLATFORM)
+	$(MAKE) -C $(CLIENT_DIR) $(PLATFORM) tests
 
 clean:
 	$(MAKE) -C $(SERVER_DIR) $@ 
 	$(MAKE) -C $(CLIENT_DIR) $@
+	$(MAKE) -C $(VENDOR_DIR) $@

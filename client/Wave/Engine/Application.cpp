@@ -4,12 +4,12 @@
 
 #include <surf/surf.h>
 
-void fun() 
+void Fun() 
 { 
 	core::Log(ELogType::Debug, "fun(): a simple function callback");
 }
 
-void anotherFun(void** args) 
+void AnotherFun(void** args) 
 { 
 	int aInt = surf_ArgpackGetInt(args, 0);
 	float aFlt = surf_ArgpackGetFlt(args, 1);
@@ -20,7 +20,6 @@ void anotherFun(void** args)
 	core::Log(ELogType::Debug, "float is {}", aFlt);
 	core::Log(ELogType::Debug, "string is {}", aStr);
 }
-
 
 wv::Application::Application()
 	: m_Window(new Window)
@@ -38,12 +37,12 @@ wv::Application::Application()
 	surf_InterpDestroyLine(out);
 
 	// Symbol registration
-	surf_InterpRegisterSymbol("myFunc", &fun);
+	surf_InterpRegisterSymbol("myFunc", (surf_fun_t) &Fun);
 	const char* testBuffer = "ref myFunc();";
 	char* reflectResult = surf_InterpLine(testBuffer);
 	surf_InterpDestroyLine(reflectResult);
 
-	surf_InterpRegisterSymbol("anotherFun", (surf_fun_t) &anotherFun);
+	surf_InterpRegisterSymbol("anotherFun", (surf_fun_t) &AnotherFun);
 	const char* anotherTestBuffer = "ref anotherFun(2:int, 2.02:flt, \"string\":str);";
 	char* anotherReflectResult = surf_InterpLine(anotherTestBuffer);
 	surf_InterpDestroyLine(anotherReflectResult);

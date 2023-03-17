@@ -62,3 +62,29 @@ val check_interp_v4f
   -> string
   -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
   -> unit
+
+val check_interp_type_error
+  :  string
+  -> string
+  -> string
+  -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
+  -> unit
+
+val check_interp_runtime_error
+  :  string
+  -> string
+  -> string
+  -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
+  -> unit
+
+val check_interp_parser_error
+  :  string
+  -> string
+  -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
+  -> unit
+
+val check_interp_syntax_error
+  :  string
+  -> string
+  -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
+  -> unit

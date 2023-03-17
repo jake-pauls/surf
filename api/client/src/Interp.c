@@ -83,7 +83,7 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
     // Reflected function has the signature (void)(void), and can be instantly called
     if (splitLen <= 2)
     {
-		callback();
+		callback(NULL);
         free(args);
         free(dupBuffer);
         return;

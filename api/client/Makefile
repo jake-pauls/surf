@@ -15,24 +15,35 @@ MKDIR := mkdir -p
 ##
 
 SRC_DIR := ./src
+TEST_DIR := ./tests
 OBJ_DIR := ./obj
+SRC_OBJ_DIR := $(OBJ_DIR)/src
+TEST_OBJ_DIR := $(OBJ_DIR)/tests
 BUILD_DIR := ../build/client
+TEST_OUT_DIR := $(BUILD_DIR)/tests
 INCLUDE_DIR := ./include
 SURF_INTERP_DIR := ../../surf
+
+VENDOR_BUILD_DIR := ../build/vendor
+CHECK_BUILD_DIR := $(VENDOR_BUILD_DIR)/check
+CHECK_INCLUDE_DIR := $(CHECK_BUILD_DIR)/src
 
 ##
 ## Out
 ##
 
 STATIC_LIB := $(BUILD_DIR)/libsurf.a
+TEST_EXE := $(BUILD_DIR)/tests.exe
 
 ##
 ## OS-Specifics
 ##
 
 PLATFORM = linux
+SHARED_LIB_EXT = .so
 ifeq ($(OS), Windows_NT)
 	PLATFORM = WIN32
+	SHARED_LIB_EXT = .dll
 endif
 
 ##
@@ -41,6 +52,10 @@ endif
 
 CC := gcc
 CFLAGS := -I$(INCLUDE_DIR) -D$(PLATFORM)
+
+CHECK_INCLUDES := -I$(CHECK_BUILD_DIR) -I$(CHECK_INCLUDE_DIR)
+CHECK_LINKS := -L$(CHECK_INCLUDE_DIR) -lcheck -pthread
+
 AR := ar
 ARFLAGS := rcs $(STATIC_LIB)
 
@@ -49,17 +64,29 @@ ARFLAGS := rcs $(STATIC_LIB)
 ##
 
 SRCS := $(wildcard $(SRC_DIR)/*.c)
-OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
+TEST_SRCS := $(wildcard $(TEST_DIR)/*.c)
+OBJS := $(patsubst $(SRC_DIR)/%.c,$(SRC_OBJ_DIR)/%.o,$(SRCS))
+TEST_OBJS := $(patsubst $(TEST_DIR)/%.c,$(TEST_OBJ_DIR)/%.o, $(TEST_SRCS))
 
-.PHONY: win32 clean
+.PHONY: win32 tests run-tests clean
 
 win32: $(OBJS) | $(BUILD_DIR)
 	$(AR) $(ARFLAGS) $^ 
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+tests: $(TEST_EXE)
+	cp $(CHECK_INCLUDE_DIR)/libcheck$(SHARED_LIB_EXT) $(BUILD_DIR)
+	$(TEST_EXE)
+
+$(TEST_EXE): $(TEST_OBJS) | $(BUILD_DIR)
+	$(CC) $(CFLAGS) $(CHECK_INCLUDES) $^ -o $(TEST_EXE) $(CHECK_LINKS)
+
+$(SRC_OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(SRC_OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR) $(OBJ_DIR):
+$(TEST_OBJ_DIR)/%.o: $(TEST_DIR)/%.c | $(OBJ_DIR) $(TEST_OBJ_DIR)
+	$(CC) $(CFLAGS) $(CHECK_INCLUDES) -c $< -o $@
+
+$(BUILD_DIR) $(OBJ_DIR) $(SRC_OBJ_DIR) $(TEST_OBJ_DIR):
 	$(MKDIR) $@
 
 clean:

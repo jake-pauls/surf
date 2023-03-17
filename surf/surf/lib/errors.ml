@@ -5,6 +5,28 @@ exception TypeError of string
 (* Runtime Errors *)
 
 exception RuntimeError of string
+exception SyntaxError of string * Lexing.lexbuf
+exception ParserError of Lexing.lexbuf
+
+(* Error Formatting *)
+
+(** [fmt_type_error msg] formats the error [msg] into a type error string *)
+let fmt_type_error msg = Fmt.str "[type error ~> %s]" msg
+
+(** [fmt_runtime_error msg] formats the error [msg] into a runtime error string *)
+let fmt_runtime_error msg = Fmt.str "[runtime error ~> %s]" msg
+
+(** [fmt_syntax_error msg] formats the error [msg] into a syntax error string *)
+let fmt_syntax_error pos msg = Fmt.str "[syntax error ~> %s (%s)]" pos msg
+
+(** [fmt_parser_error msg] formats the error [msg] into a parser error string *)
+let fmt_parser_error pos = Fmt.str "[parser error ~> %s]" pos
+
+(** [print_and_ret_err err] prints [err] and returns it *)
+let print_and_ret_err err =
+  print_endline err
+  ; err
+;;
 
 (* Error Messages *)
 

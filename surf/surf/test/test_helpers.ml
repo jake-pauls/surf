@@ -1,4 +1,5 @@
 open Surf
+open Errors
 
 (** [empty unit] an empty static environment for testing *)
 let empty : Ast.expr Env.StaticEnvironment.t = Env.StaticEnvironment.empty ()
@@ -85,4 +86,50 @@ let check_interp_v4f name v s env =
     name
     true
     (String.equal float_arr_str (Interpreter.interp_ret env s))
+;;
+
+(** [check_interp_type_err name err s env] sets up an alcotest case for the interp
+    function with name [name] checking for the type error message [err] against the
+    interpreted [s] *)
+let check_interp_type_error name err s env =
+  Alcotest.(check bool)
+    name
+    true
+    (String.equal (fmt_type_error err) (Interpreter.interp_ret env s))
+;;
+
+(** [check_interp_runtime_err name err s env] sets up an alcotest case for the interp
+    function with name [name] checking for the runtime error message [err] against the
+    interpreted [s] *)
+let check_interp_runtime_error name err s env =
+  let e = fmt_runtime_error err in
+  print_endline e;
+  let a = Interpreter.interp_ret env s in
+  print_endline a;
+  Alcotest.(check bool)
+    name
+    true
+    (String.equal (fmt_runtime_error err) (Interpreter.interp_ret env s))
+;;
+
+(** [check_interp_parser_err name s env] sets up an alcotest case for the interp function
+    with name [name] checking for a parser error against the interpreted [s] *)
+let check_interp_parser_error name s env =
+  Alcotest.(check bool)
+    name
+    true
+    (* fmt_parser_error requires a lexbuf, so just check if the right error is thrown
+       instead *)
+    (Utils.contains_substr (Interpreter.interp_ret env s) "parser error ~>")
+;;
+
+(** [check_interp_syntax_err name s env] sets up an alcotest case for the interp function
+    with name [name] checking for a syntax error against the interpreted [s] *)
+let check_interp_syntax_error name s env =
+  Alcotest.(check bool)
+    name
+    true
+    (* fmt_syntax_error requires a lexbuf, so just check if the right error is thrown
+       instead *)
+    (Utils.contains_substr (Interpreter.interp_ret env s) "syntax error ~>")
 ;;

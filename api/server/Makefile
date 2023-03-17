@@ -26,7 +26,7 @@ SURF_INTERP_DIR := ../../surf
 ## Out
 ##
 
-EXE := $(BUILD_DIR)/surf.exe
+WIN_EXE := $(BUILD_DIR)/winsurf.exe
 SURF_CAML_SHARED_LIB = $(BUILD_DIR)/libsurf.so
 SHARED_LIB_EXT = so
 
@@ -54,7 +54,7 @@ OCAMLFINDOPTFLAGS := -output-obj -package $(PACKAGES) -thread -linkpkg -cclib -i
 
 # OCaml requires 'flexlink' to compile dll's on Windows
 FLEXLINK := flexlink
-FLEXLINKFLAGS := -chain mingw64 -exe -o $(EXE) -lversion -lws2_32 -L$(BUILD_DIR) -lsurf
+FLEXLINKFLAGS := -chain mingw64 -exe -o $(WIN_EXE) -lversion -lws2_32 -L$(BUILD_DIR) -lsurf
 
 CC := gcc
 CFLAGS := -I$(INCLUDE_DIR) -I$(STUBS_DIR) -I`$(OCAMLC) -where` -I`$(OCAMLC) -where`/../ctypes -D$(PLATFORM)
@@ -77,6 +77,9 @@ $(SHARED_LIB_EXT): $(OBJ_DIR) $(BUILD_DIR)
 	$(OCAMLFINDOPT) -c -o stubs/gen_bindings.cmx -package $(PACKAGES) stubs/gen_bindings.ml -thread
 	$(OCAMLFINDOPT) -c -o stubs/bindings.cmx -package $(PACKAGES) stubs/bindings.ml -thread
 	cd stubs && $(OCAMLFINDOPT) $(OCAMLFINDOPTFLAGS) gen_bindings.ml bindings.cmx link.ml ../obj/Init.o ../obj/gen.o    
+
+run:
+	$(WIN_EXE)
 
 win32: $(OBJS) | $(BUILD_DIR)
 	$(FLEXLINK) $(FLEXLINKFLAGS) $^ 
