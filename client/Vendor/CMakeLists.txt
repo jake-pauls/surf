@@ -41,3 +41,6 @@ message(STATUS "[Vendor] Recursed and collected libraries from SDL3")
 # tinyobjloader 
 add_subdirectory(tinyobjloader EXCLUDE_FROM_ALL)
 message(STATUS "[Vendor] Recursed and collected libraries from tinyobjloader")
+
+# Add to 'Vendor' directory for VS 
+set_target_properties(SDL3 VulkanMemoryAllocator tinyobjloader PROPERTIES FOLDER Vendor)

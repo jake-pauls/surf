@@ -9,27 +9,18 @@ typedef void** surf_argpack_t;
 /// @param args Argpack containing the reflected arguments
 /// @param index Zero-based index of the argument to retrieve as an int
 /// @return The integer argument
-int surf_ArgpackGetInt(surf_argpack_t args, int index)
-{
-    return *((int*) args[index]);
-}
+int surf_ArgpackGetInt(surf_argpack_t args, int index);
 
 /// @brief Unpacks a float argument for a function reflected in the surf interpreter 
 /// @param args Argpack containing the reflected arguments
 /// @param index Zero-based index of the argument to retrieve as an float
 /// @return The float argument
-float surf_ArgpackGetFlt(surf_argpack_t args, int index)
-{
-    return *((float*) args[index]);
-}
+float surf_ArgpackGetFlt(surf_argpack_t args, int index);
 
 /// @brief Unpacks a string argument for a function reflected in the surf interpreter
 /// @param args Argpack containing the reflected arguments
 /// @param index Zero-based index of the argument to retrieve as a C string
 /// @return The string argument
-char* surf_ArgpackGetStr(surf_argpack_t args, int index)
-{
-    return *((char**) args[index]);
-}
+char* surf_ArgpackGetStr(surf_argpack_t args, int index);
 
 #endif /* Argpack_h */

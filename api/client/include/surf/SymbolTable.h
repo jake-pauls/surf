@@ -1,7 +1,7 @@
 #ifndef SymbolTable_h
 #define SymbolTable_h
 
-#define SURF_SYMBOL_TABLE_STARTING_SIZE 2
+#define SURF_SYMBOL_TABLE_STARTING_SIZE 23
 
 /// @brief Represents a C function pointer stored in the symbol table
 typedef void (*surf_fun_t)(void*);

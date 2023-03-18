@@ -51,12 +51,20 @@ void surf_InterpDestroyLine(char* line)
     line = NULL;
 }
 
-void surf_InterpRegisterSymbol(const char* id, surf_fun_t func)
+void surf_InterpRegisterSymbol(const char* id, surf_fun_t fun)
 {
     if (s_SymbolTable == NULL)
         s_SymbolTable = surf_SymbolTableCreate();
 
-    surf_SymbolTableInsert(s_SymbolTable, id, func);
+    surf_SymbolTableInsert(s_SymbolTable, id, fun);
+}
+
+void surf_InterpUnregisterSymbol(const char* id)
+{
+    if (s_SymbolTable == NULL)
+        return;
+
+    surf_SymbolTableRemove(s_SymbolTable, id);
 }
 
 void surf_InternalExecuteReflectionCallback(const char* buffer)
@@ -74,7 +82,11 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
 
     // Function should be the first string after 'ref'
     char* identifier = args[1];
+
+    // Exit out if function isn't found
     surf_fun_t callback = surf_SymbolTableLookup(s_SymbolTable, identifier);
+    if (callback == NULL)
+        return;
 
     // Retrieve the length of the args to check for argument pack
     int splitLen = -1;

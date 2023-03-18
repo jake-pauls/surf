@@ -144,6 +144,3 @@ add_custom_command(TARGET ${WAVE_EXECUTABLE_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Assets"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/Assets" "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Assets")
-
-# Post-build: Create 'Vendor' directory for VS 
-set_target_properties(SDL3 VulkanMemoryAllocator tinyobjloader PROPERTIES FOLDER Vendor)

@@ -9,11 +9,11 @@ void Fun()
 	core::Log(ELogType::Debug, "fun(): a simple function callback");
 }
 
-void AnotherFun(void** args) 
+void AnotherFun(surf_argpack_t argpack) 
 { 
-	int aInt = surf_ArgpackGetInt(args, 0);
-	float aFlt = surf_ArgpackGetFlt(args, 1);
-	char* aStr = surf_ArgpackGetStr(args, 2);
+	int aInt = surf_ArgpackGetInt(argpack, 0);
+	float aFlt = surf_ArgpackGetFlt(argpack, 1);
+	char* aStr = surf_ArgpackGetStr(argpack, 2);
 
 	core::Log(ELogType::Debug, "anotherFun(): a function callback with an argpack");
 	core::Log(ELogType::Debug, "int is {}", aInt);
@@ -46,6 +46,8 @@ wv::Application::Application()
 	const char* anotherTestBuffer = "ref anotherFun(2:int, 2.02:flt, \"string\":str);";
 	char* anotherReflectResult = surf_InterpLine(anotherTestBuffer);
 	surf_InterpDestroyLine(anotherReflectResult);
+
+	surf_InterpUnregisterSymbol("anotherFun");
 
 	result = surf_DestroyBridge();
 	WAVE_ASSERT(result != SURF_API_ERROR, "Failed to destroy surf bridge");

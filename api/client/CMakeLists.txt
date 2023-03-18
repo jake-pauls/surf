@@ -2,6 +2,7 @@ set(SOURCE_FILES
     src/Bridge.c
     src/Interp.c
     src/SymbolTable.c
+    src/Argpack.c
     src/Utils.c)
 
 set(HEADER_FILES

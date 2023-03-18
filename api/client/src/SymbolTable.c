@@ -23,6 +23,9 @@ static surf_Symbol* surf_SymbolTableCreateSymbol(const char* id, surf_fun_t fun)
 
 static void surf_SymbolTableDeleteSymbol(surf_Symbol* symbol)
 {
+    if (symbol == NULL)
+        return;
+
     free(symbol->Identifier);
     symbol->Identifier = NULL;
 
@@ -54,7 +57,7 @@ void surf_SymbolTableDestroy(surf_SymbolTable* table)
     for (size_t i = 0; i < table->Size; ++i) 
     {
         surf_Symbol* symbol = table->Items[i];
-        if (symbol != NULL)
+        if (symbol != &SymbolTableDeletedItem)
             surf_SymbolTableDeleteSymbol(symbol);
     }
 
@@ -166,7 +169,7 @@ void surf_SymbolTableRemove(surf_SymbolTable* table, const char* id)
     unsigned int initial = index;
     surf_Symbol* item = table->Items[index];
 
-    int probeCount = 0;
+    unsigned int probeCount = 0;
     while (item != NULL) 
     {
         if (item != &SymbolTableDeletedItem) 
@@ -175,6 +178,7 @@ void surf_SymbolTableRemove(surf_SymbolTable* table, const char* id)
             {
                 surf_SymbolTableDeleteSymbol(item);
                 table->Items[index] = &SymbolTableDeletedItem;
+                return;
             }
         }
 
