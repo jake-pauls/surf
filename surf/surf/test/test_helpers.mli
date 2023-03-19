@@ -7,7 +7,7 @@ val check_interp_int
   -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
   -> unit
 
-val check_interp_float
+val check_interp_flt
   :  string
   -> float
   -> string
@@ -21,44 +21,70 @@ val check_interp_str
   -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
   -> unit
 
-val check_interp_vec2f
+val check_interp_v2f
   :  string
   -> float array
   -> string
   -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
   -> unit
 
-val check_interp_vec2i
+val check_interp_v2i
   :  string
   -> int array
   -> string
   -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
   -> unit
 
-val check_interp_vec3i
+val check_interp_v3i
   :  string
   -> int array
   -> string
   -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
   -> unit
 
-val check_interp_vec3f
+val check_interp_v3f
   :  string
   -> float array
   -> string
   -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
   -> unit
 
-val check_interp_vec4i
+val check_interp_v4i
   :  string
   -> int array
   -> string
   -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
   -> unit
 
-val check_interp_vec4f
+val check_interp_v4f
   :  string
   -> float array
+  -> string
+  -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
+  -> unit
+
+val check_interp_type_error
+  :  string
+  -> string
+  -> string
+  -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
+  -> unit
+
+val check_interp_runtime_error
+  :  string
+  -> string
+  -> string
+  -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
+  -> unit
+
+val check_interp_parser_error
+  :  string
+  -> string
+  -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
+  -> unit
+
+val check_interp_syntax_error
+  :  string
   -> string
   -> Surf.Ast.expr Surf.Env.StaticEnvironment.t
   -> unit

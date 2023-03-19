@@ -42,5 +42,13 @@ namespace core
         /// @param filename Filename of the asset to retrieve
         /// @return Standard path object to the retrieved file
         static inline Path GetAssetPath(const char* filename) { return GetAssetsDirectory() / filename; }
+
+        /// @brief Wrapper to retrieve path to the scripts directory
+        static inline Path GetScriptsDirectory() { return GetRootDirectory() / "Scripts"; }
+
+        /// @brief Wrapper to retrieve a script in the scripts directory
+        /// @param filename Filename of the script to retrieve
+        /// @return Standard path object to the retrieved file
+        static inline Path GetScriptPath(const char* filename) { return GetScriptsDirectory() / filename; }
     };
 }

@@ -15,6 +15,8 @@ open Ast
 %token COMMA
 %token STINT STFLOAT STSTRING
 %token STVEC2 STVEC3 STVEC4
+%token REFLECT
+%token MPUT
 %token EOF
 
 %nonassoc UMINUS
@@ -50,9 +52,30 @@ expr:
     | LPAREN; e1 = expr; COMMA; e2 = expr; COMMA; e3 = expr; RPAREN { Vec3 (e1, e2, e3) } 
     | LPAREN; e1 = expr; COMMA; e2 = expr; COMMA; e3 = expr; COMMA; e4 = expr; RPAREN { Vec4 (e1, e2, e3, e4) } 
 
+    /* Reflect (API) */
+    /* TODO: Not having semicolons exist in a separated_list yields weird syntax */
+    /* ex: put(ref myFunc(1: int, 2: int, x: v2);); */
+    /* goal: put(ref myFunc(1: int, 2: int, x: v2)); */
+
+    | REFLECT; x = ID; a = args; SEMICOLON { Reflect (x, a) }
+
     /* Assignment Rules */
 
     | LET; x = ID; COLON; t = stype; EQUALS; e = expr; SEMICOLON { Let (x, t, e) }
+
+    /* Built-ins */
+
+    | MPUT; LPAREN; e = expr; RPAREN; SEMICOLON { Put (e) }
+    ;
+
+    /* Arguments */
+
+arg:
+    | e = expr; COLON; t = stype { (e, t) }
+    ;
+
+args:
+    | LPAREN; args = separated_list(COMMA, arg); RPAREN; { args }
     ;
 
     /* Static Types */

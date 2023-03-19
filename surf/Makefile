@@ -14,7 +14,7 @@ RIMRAF := rm -rf
 ##
 
 # Stubs can be directly placed in the 'api' directory
-STUBS_DIR := ../api/stubs
+STUBS_DIR := ../api/server/stubs
 
 STUBS_ML_FILE := gen_bindings.ml
 STUBS_C_FILE := gen.c

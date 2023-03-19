@@ -1,4 +1,4 @@
-open Helpers
+open Test_helpers
 
 (** [int_basics] default integer operations *)
 let int_basics =
@@ -10,18 +10,18 @@ let int_basics =
   ]
 ;;
 
-(** [float_basics] default float operations *)
-let float_basics =
-  [ ("float", `Quick, fun _ -> check_interp_float "float" 2.0 "2.0" empty)
-  ; ("add", `Quick, fun _ -> check_interp_float "add" 5.4 "2.2+3.2" empty)
-  ; ("minus", `Quick, fun _ -> check_interp_float "minus" 4.0 "6.1-2.1" empty)
-  ; ("mult", `Quick, fun _ -> check_interp_float "mult" 125.44 "12.25*10.24" empty)
-  ; ("division", `Quick, fun _ -> check_interp_float "division" 5.0 "10.0 / 2.0" empty)
+(** [flt_basics] default flt operations *)
+let flt_basics =
+  [ ("flt", `Quick, fun _ -> check_interp_flt "flt" 2.0 "2.0" empty)
+  ; ("add", `Quick, fun _ -> check_interp_flt "add" 5.4 "2.2+3.2" empty)
+  ; ("minus", `Quick, fun _ -> check_interp_flt "minus" 4.0 "6.1-2.1" empty)
+  ; ("mult", `Quick, fun _ -> check_interp_flt "mult" 125.44 "12.25*10.24" empty)
+  ; ("division", `Quick, fun _ -> check_interp_flt "division" 5.0 "10.0 / 2.0" empty)
   ]
 ;;
 
 (** [bedmas] testing order of operations and operand associativity with integers, should
-    also be valid for floats *)
+    also be valid for flts *)
 let bedmas =
   [ ("minus on left of add", `Quick, fun _ -> check_interp_int "minus" 2 "6-2+2" empty)
   ; ("mult of mult", `Quick, fun _ -> check_interp_int "mult of mult" 24 "1*2*3*4" empty)

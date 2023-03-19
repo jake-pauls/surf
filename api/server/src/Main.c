@@ -1,7 +1,7 @@
-#include "surf/Bridge.h"
+#include "Server.h"
 
 int main(int argc, char** argv)
 {
-    int res = surf_Init();
+    int res = surf_InitServer();
     return res;
 }

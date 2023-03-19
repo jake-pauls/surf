@@ -2,6 +2,8 @@
 open Parser
 
 exception SyntaxError of string
+
+let line_num = ref 1
 }
 
 let white = [' ' '\t']+
@@ -14,7 +16,9 @@ let frac = '.' digit*
 let exp = ['e' 'E'] ['-' '+']? digit+
 let float = digit* frac? exp?
 
-let newline = '\r' | '\n' | "\r\n" 
+let cr = '\r'
+let lf = '\n'
+let newline = cr | lf | (cr lf)
 
 let int = digit+
 
@@ -24,11 +28,13 @@ rule read =
   | newline { read lexbuf }
   | "let" { LET }
   | "int" { STINT }
-  | "float" { STFLOAT }
+  | "flt" { STFLOAT }
   | "str" { STSTRING }
-  | "vec2" { STVEC2 }
-  | "vec3" { STVEC3 }
-  | "vec4" { STVEC4 }
+  | "v2" { STVEC2 }
+  | "v3" { STVEC3 }
+  | "v4" { STVEC4 }
+  | "ref" { REFLECT }
+  | "put" { MPUT }
   | int { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | float { FLOAT (float_of_string (Lexing.lexeme lexbuf)) }
   | id { ID (Lexing.lexeme lexbuf) }

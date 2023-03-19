@@ -19,3 +19,6 @@
 [submodule "client/Vendor/stb"]
 	path = client/Vendor/stb
 	url = https://github.com/nothings/stb
+[submodule "api/vendor/check"]
+	path = api/vendor/check
+	url = https://github.com/libcheck/check.git

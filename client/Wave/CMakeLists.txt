@@ -106,11 +106,15 @@ target_include_directories(${WAVE_EXECUTABLE_NAME}
     PRIVATE Core
     PRIVATE Engine
 	PRIVATE Renderer
+    # Client API
+    ${CMAKE_SOURCE_DIR}/api/client/include
     # Vendor
 	PRIVATE ${Vulkan_INCLUDE_DIR})
 
 # Link the surf DSL API via it's alias, see api/CMakeLists.txt for more details
 target_link_libraries(${WAVE_EXECUTABLE_NAME}
+    # Client API
+    surf::api
     # Vendor
     SDL3::SDL3
 	${Vulkan_LIBRARY}
@@ -141,5 +145,8 @@ add_custom_command(TARGET ${WAVE_EXECUTABLE_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/Assets" "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Assets")
 
-# Post-build: Create 'Vendor' directory for VS 
-set_target_properties(SDL3 VulkanMemoryAllocator tinyobjloader PROPERTIES FOLDER Vendor)
+# Post-build: copy the scripts folder into the build folder
+add_custom_command(TARGET ${WAVE_EXECUTABLE_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Scripts"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/Scripts" "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Scripts")
