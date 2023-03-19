@@ -4,13 +4,20 @@ on:
   push:
     branches:
       - main
+      - feat/profiling
   pull_request:
     paths-ignore:
       - 'build/**'
+      - 'gen/**'
+      - 'stubs/**'
       - '.vs/**'
       - '.vscode/**'
       - '**/*.md'
       - '*.git*'
+
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   win32:
@@ -55,6 +62,10 @@ jobs:
       - name: Run msbuild
         run: msbuild ./build/surf.sln -interactive:False -property:Configuration=${{ matrix.build-cfg }} -m
 
+      - name: Run client API tests (Check)
+        working-directory: ${{ github.workspace }}
+        run: ctest --output-on-failure --test-dir ./build/api/client/tests/
+
   linux:
     name: Linux Builds
     strategy:
@@ -94,3 +105,7 @@ jobs:
       - name: Run make
         working-directory: ./build
         run: make
+
+      - name: Run client API tests (Check)
+        working-directory: ${{ github.workspace }}
+        run: ctest --output-on-failure --test-dir ./build/api/client/tests/

@@ -17,7 +17,7 @@ Compiling and running the server or building the client library have been abstra
 
 The server can be compiled using GNU Make. **Note:** This only has support for mingw/cygwin environments at the moment.
 ```
-# mingw/cygwin 
+# mingw/cygwin
 $ make server
 ```
 
@@ -40,3 +40,6 @@ The server can be optionally connected to and tested with `netcat`, ex:
 ```
 $ nc localhost 3030
 ```
+
+### Dependencies
+* [Check](https://libcheck.github.io/check/)
