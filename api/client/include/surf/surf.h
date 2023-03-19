@@ -5,6 +5,8 @@
 extern "C" {
 #endif
 
+#include "Cfg.h"
+#include "Vec.h"
 #include "Bridge.h"
 #include "Interp.h"
 #include "Argpack.h"

@@ -2,7 +2,10 @@
 #include "surf/Bridge.h"
 #include "surf/Define.h"
 #include "surf/Utils.h"
+#include "surf/Cfg.h"
+#include "surf/Vec.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -10,6 +13,11 @@ static surf_SymbolTable* s_SymbolTable = NULL;
 
 char* surf_InterpLine(const char* line)
 {
+    // Bail out of all interpreter requests if no cfg.surf file is present 
+    // TODO: Find a way to do this that is less ironic?
+    if (!surf_CfgIsValidLoaded() && !strstr(line, "cfg"))
+        return NULL;
+
     int _ = surf_InternalSendSocket(line, strlen(line), 0);
 
     // Create string buffer
@@ -20,11 +28,11 @@ char* surf_InterpLine(const char* line)
     _ = surf_InternalReceiveSocket(buffer, bufferLen, 0);
 
     // Check if buffer is a function reflected in the API
-    // Have to cross-check with the original line of surf code to make sure interpreter isn't returning string
+    // Have to cross-check with the original str of surf code to make sure interpreter isn't returning string
     // This can be much much more clean if the server also returned a command type
     // Due to the nature of this being over a network - namely with a Mingw server, the only other issue is passing structs over sockets is prone to mangling 
 
-    // Preliminary check: check if the line has 'ref' at all 
+    // Preliminary check: check if the str has 'ref' at all 
     char* dupLine = STRDUP(line);
     if (strstr(line, "ref"))
     {
@@ -42,13 +50,132 @@ char* surf_InterpLine(const char* line)
     return STRDUP(buffer);
 }
 
-void surf_InterpDestroyLine(char* line)
+int surf_InterpFile(const char* filepath)
 {
-    if (line == NULL)
+    FILE* handle = fopen(filepath, "r");
+    if (handle == NULL)
+        return SURF_FALSE;
+
+    char str[SURF_MAX_BUFFER_SIZE];
+    while (fgets(str, SURF_MAX_BUFFER_SIZE, handle))
+    {
+        // TODO: This is kind of unsafe...
+        surf_InterpLine(str);
+    }
+
+    fclose(handle);
+    return SURF_TRUE;
+}
+
+void surf_InterpFreeString(char* str)
+{
+    if (str == NULL)
         return; 
 
-    free(line);
-    line = NULL;
+    free(str);
+    str = NULL;
+}
+
+int surf_InterpGetInt(const char* name, int* out) 
+{
+    const char* fmt = "put(%s);";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name);
+
+    char* ret = surf_InterpLine(buffer);
+    if (!IsStringInt(ret) || IsStringEmpty(ret))
+        return SURF_FALSE;
+
+    *(out) = atoi(ret);
+
+    free(ret);
+	free(buffer);
+
+    return SURF_TRUE;
+}
+
+int surf_InterpGetFlt(const char* name, float* out)
+{
+    const char* fmt = "put(%s);";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name);
+
+    char* ret = surf_InterpLine(buffer);
+    if (!IsStringFloat(ret) || IsStringEmpty(ret))
+        return SURF_FALSE;
+
+    *(out) = (float) atof(ret);
+
+    free(ret);
+    free(buffer);
+
+    return SURF_TRUE;
+}
+
+int surf_InterpGetStr(const char* name, char** out)
+{
+    const char* fmt = "put(%s);";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name);
+
+    // TODO: Check internal types of the interpreter to ensure this is a string
+    char* ret = surf_InterpLine(buffer);
+    if (IsStringEmpty(ret))
+        return SURF_FALSE;
+
+    // Allocate string for the user, doing this for consistency with other 'surf_InterpGet*' functions
+    // Clients must use 'surf_InterpFreeString' to release this string
+    _ = ASPRINTF(out, "%s", ret);
+
+    free(ret);
+    free(buffer);
+
+    return SURF_TRUE;
+}
+
+void surf_InterpBindInt(const char* name, int i)
+{
+    const char* fmt = "let %s: int = %d;";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name, i);
+
+    // Interpret and discard the result
+    char* ret = surf_InterpLine(buffer);
+    free(ret);
+
+    free(buffer);
+}
+
+void surf_InterpBindFlt(const char* name, float f)
+{
+    const char* fmt = "let %s: flt = %f;";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name, f);
+
+    // Interpret and discard the result
+    char* ret = surf_InterpLine(buffer);
+    free(ret);
+
+    free(buffer);
+}
+
+void surf_InterpBindStr(const char* name, const char* str)
+{
+    const char* fmt = "let %s: str = \"%s\";";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name, str);
+
+    // Interpret and discard the result
+    char* ret = surf_InterpLine(buffer);
+    free(ret);
+
+    free(buffer);
 }
 
 void surf_InterpRegisterSymbol(const char* id, surf_fun_t fun)
@@ -114,7 +241,6 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
 		char* argType = splitArg[1];
 
         // Retrieve a reference to the value and match it against its surf type
-		// Note: Currently only marshals 'int', 'flt', and 'str' types
 
 		if (strcmp(argType, "int") == 0)
 		{
@@ -130,6 +256,24 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
 		{
 			vArgs[vArgsIndex] = &argValue;
 		}
+        else if (strcmp(argType, "v2") == 0)
+        {
+            surf_V2 v2 = { 0.0f, 0.0f };
+            surf_VecV2FromStr(argValue, &v2);
+            vArgs[vArgsIndex] = &v2;
+        }
+        else if (strcmp(argType, "v3") == 0)
+        {
+            surf_V3 v3 = { 0.0f, 0.0f, 0.0f };
+            surf_VecV3FromStr(argValue, &v3);
+            vArgs[vArgsIndex] = &v3;
+        }
+        else if (strcmp(argType, "v4") == 0)
+        {
+            surf_V4 v4 = { 0.0f, 0.0f, 0.0f, 0.0f };
+            surf_VecV4FromStr(argValue, &v4);
+            vArgs[vArgsIndex] = &v4;
+        }
 
 		vArgsIndex++;
 
@@ -148,7 +292,7 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
 
 void surf_InternalInterpDestroy()
 {
-    if (s_SymbolTable != NULL)
-        surf_SymbolTableDestroy(s_SymbolTable);
+    if (s_SymbolTable)
+		surf_SymbolTableDestroy(s_SymbolTable);
 }
 

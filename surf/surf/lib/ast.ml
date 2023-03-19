@@ -54,8 +54,8 @@ let rec is_value : expr -> bool = function
     expressions *)
 let vec2_string_of_val e1 e2 =
   match e1, e2 with
-  | Int i1, Int i2 -> Fmt.str "(%d, %d)" i1 i2
-  | Float f1, Float f2 -> Fmt.str "(%f, %f)" f1 f2
+  | Int i1, Int i2 -> Fmt.str "(%d,%d)" i1 i2
+  | Float f1, Float f2 -> Fmt.str "(%f,%f)" f1 f2
   | _ -> raise (RuntimeError err_vec_type_mismatch)
 ;;
 
@@ -63,8 +63,8 @@ let vec2_string_of_val e1 e2 =
     expressions *)
 let vec3_string_of_val e1 e2 e3 =
   match e1, e2, e3 with
-  | Int i1, Int i2, Int i3 -> Fmt.str "(%d, %d, %d)" i1 i2 i3
-  | Float f1, Float f2, Float f3 -> Fmt.str "(%f, %f, %f)" f1 f2 f3
+  | Int i1, Int i2, Int i3 -> Fmt.str "(%d,%d,%d)" i1 i2 i3
+  | Float f1, Float f2, Float f3 -> Fmt.str "(%f,%f,%f)" f1 f2 f3
   | _ -> raise (RuntimeError err_vec_type_mismatch)
 ;;
 
@@ -72,8 +72,8 @@ let vec3_string_of_val e1 e2 e3 =
     expressions *)
 let vec4_string_of_val e1 e2 e3 e4 =
   match e1, e2, e3, e4 with
-  | Int i1, Int i2, Int i3, Int i4 -> Fmt.str "(%d, %d, %d, %d)" i1 i2 i3 i4
-  | Float f1, Float f2, Float f3, Float f4 -> Fmt.str "(%f, %f, %f, %f)" f1 f2 f3 f4
+  | Int i1, Int i2, Int i3, Int i4 -> Fmt.str "(%d,%d,%d,%d)" i1 i2 i3 i4
+  | Float f1, Float f2, Float f3, Float f4 -> Fmt.str "(%f,%f,%f,%f)" f1 f2 f3 f4
   | _ -> raise (RuntimeError err_vec_type_mismatch)
 ;;
 

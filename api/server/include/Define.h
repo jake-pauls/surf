@@ -10,4 +10,8 @@
 /// @brief Port to run the server on
 #define API_PORT "3030"
 
+/// @brief Transmission/reading buffer size 
+/// @todo Write more wrappers to determine buffer sizes (ie: don't rely on this)
+#define SURF_MAX_BUFFER_SIZE 256
+
 #endif /* Define_h */

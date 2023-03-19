@@ -16,6 +16,7 @@ MKDIR := mkdir -p
 
 SRC_DIR := ./src
 TEST_DIR := ./tests
+UNIT_TEST_DIR := $(TEST_DIR)/Unit
 OBJ_DIR := ./obj
 SRC_OBJ_DIR := $(OBJ_DIR)/src
 TEST_OBJ_DIR := $(OBJ_DIR)/tests
@@ -54,7 +55,7 @@ CC := gcc
 CFLAGS := -I$(INCLUDE_DIR) -D$(PLATFORM)
 
 CHECK_INCLUDES := -I$(CHECK_BUILD_DIR) -I$(CHECK_INCLUDE_DIR)
-CHECK_LINKS := -L$(CHECK_INCLUDE_DIR) -lcheck -pthread
+CHECK_LINKS := -L$(CHECK_INCLUDE_DIR) -lcheck -pthread -L$(BUILD_DIR) -lsurf -lws2_32
 
 AR := ar
 ARFLAGS := rcs $(STATIC_LIB)
@@ -65,8 +66,10 @@ ARFLAGS := rcs $(STATIC_LIB)
 
 SRCS := $(wildcard $(SRC_DIR)/*.c)
 TEST_SRCS := $(wildcard $(TEST_DIR)/*.c)
+UNIT_TEST_SRCS := $(wildcard $(UNIT_TEST_DIR)/*.c)
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(SRC_OBJ_DIR)/%.o,$(SRCS))
 TEST_OBJS := $(patsubst $(TEST_DIR)/%.c,$(TEST_OBJ_DIR)/%.o, $(TEST_SRCS))
+UNIT_TEST_OBJS := $(patsubst $(UNIT_TEST_DIR)/%.c, $(TEST_OBJ_DIR)/%.o, $(UNIT_TEST_SRCS))
 
 .PHONY: win32 tests run-tests clean
 
@@ -77,13 +80,16 @@ tests: $(TEST_EXE)
 	cp $(CHECK_INCLUDE_DIR)/libcheck$(SHARED_LIB_EXT) $(BUILD_DIR)
 	$(TEST_EXE)
 
-$(TEST_EXE): $(TEST_OBJS) | $(BUILD_DIR)
+$(TEST_EXE): $(TEST_OBJS) $(UNIT_TEST_OBJS) | $(BUILD_DIR)
 	$(CC) $(CFLAGS) $(CHECK_INCLUDES) $^ -o $(TEST_EXE) $(CHECK_LINKS)
 
 $(SRC_OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(SRC_OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TEST_OBJ_DIR)/%.o: $(TEST_DIR)/%.c | $(OBJ_DIR) $(TEST_OBJ_DIR)
+	$(CC) $(CFLAGS) $(CHECK_INCLUDES) -c $< -o $@
+
+$(TEST_OBJ_DIR)/%.o: $(UNIT_TEST_DIR)/%.c | $(OBJ_DIR) $(TEST_OBJ_DIR)
 	$(CC) $(CFLAGS) $(CHECK_INCLUDES) -c $< -o $@
 
 $(BUILD_DIR) $(OBJ_DIR) $(SRC_OBJ_DIR) $(TEST_OBJ_DIR):

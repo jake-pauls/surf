@@ -123,9 +123,7 @@ let parse_and_ret env s : string =
        | None -> raise (TypeError err_poor_type_annotation))
     | None -> ""
   with
-  | RuntimeError msg ->
-    print_endline ("do " ^ msg ^ " end")
-    ; print_and_ret_err (fmt_runtime_error msg)
+  | RuntimeError msg -> print_and_ret_err (fmt_runtime_error msg)
   | TypeError msg -> print_and_ret_err (fmt_type_error msg)
   | SyntaxError (msg, lexbuf) ->
     print_and_ret_err (fmt_syntax_error (Utils.print_error_position lexbuf) msg)

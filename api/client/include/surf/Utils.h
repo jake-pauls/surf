@@ -8,4 +8,33 @@
 /// @reference https://stackoverflow.com/questions/9210528/split-string-with-delimiters-in-c
 char** StringSplit(char* str, const char delimeter);
 
+/// @brief Converts a string to a lowercase representation of itself
+/// @param str String to convert to lowercase
+void StringToLower(char** str);
+
+/// @brief Checks if a passed string is empty
+/// @param str String to evaluate
+/// @return True if the string is empty, false if it is not
+int IsStringEmpty(char* str);
+
+/// @brief Checks if a passed string is a valid integer
+/// @param str String to evaluate
+/// @return True if the string is an integer, false if it is not
+int IsStringInt(char* str);
+
+/// @brief Checks if a passed string is a valid float
+/// @param str String to evaluate
+/// @return True if the string is a float, false if it is not
+int IsStringFloat(char* str);
+
+#ifdef WIN32
+/// @brief Variadic function to allocate memory for a buffer based on it's variadic arguments, the buffer `pStr` should be freed
+/// @param pStr Buffer to allocate for the string
+/// @param fmt C-style formatting string
+/// @param Variadic arguments to place into the format string
+/// @return Number of bytes in the string that was allocated, -1 if none were
+/// @reference https://stackoverflow.com/questions/40159892/using-asprintf-on-windows
+int vasprintf(char** pStr, const char* fmt, ...);
+#endif
+
 #endif /* Utils_h */

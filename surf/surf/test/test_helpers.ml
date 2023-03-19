@@ -103,13 +103,13 @@ let check_interp_type_error name err s env =
     interpreted [s] *)
 let check_interp_runtime_error name err s env =
   let e = fmt_runtime_error err in
-  print_endline e;
-  let a = Interpreter.interp_ret env s in
-  print_endline a;
-  Alcotest.(check bool)
-    name
-    true
-    (String.equal (fmt_runtime_error err) (Interpreter.interp_ret env s))
+  print_endline e
+  ; let a = Interpreter.interp_ret env s in
+    print_endline a
+    ; Alcotest.(check bool)
+        name
+        true
+        (String.equal (fmt_runtime_error err) (Interpreter.interp_ret env s))
 ;;
 
 (** [check_interp_parser_err name s env] sets up an alcotest case for the interp function

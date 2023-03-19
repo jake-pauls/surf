@@ -1,16 +1,21 @@
 set(SOURCE_FILES
     src/Bridge.c
     src/Interp.c
+    src/Cfg.c
     src/SymbolTable.c
     src/Argpack.c
+    src/Vec.c
+    src/Algorithm.c
     src/Utils.c)
 
 set(HEADER_FILES
     include/surf/Bridge.h
     include/surf/Interp.h
+    include/surf/Cfg.h
     include/surf/SymbolTable.h
     include/surf/Utils.h
     include/surf/Argpack.h
+    include/surf/Vec.h
     include/surf/Algorithm.h
     include/surf/Define.h
     include/surf/surf.h)

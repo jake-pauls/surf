@@ -101,11 +101,11 @@ int surf_OpenConnection(StaticEnvironment* env)
     freeaddrinfo(pAddrInfo);
 
     struct sockaddr_storage clientAddr;
-    char sendBuffer[INET6_ADDRSTRLEN];
+    char sendBuffer[SURF_MAX_BUFFER_SIZE];
     socklen_t sendBufferLen = sizeof(clientAddr);
 
-    char recvBuffer[INET6_ADDRSTRLEN];
-    socklen_t recvBufferLen = INET6_ADDRSTRLEN;
+    char recvBuffer[SURF_MAX_BUFFER_SIZE];
+    socklen_t recvBufferLen = SURF_MAX_BUFFER_SIZE;
 
     while (s_IsRunning) 
     {

@@ -19,7 +19,7 @@ $ dune build
 3. Run surf in interactive mode, or execute a script
 ```
 $ dune exec surf                # interactive repl
-$ dune exec surf script.surf    # run script
+$ dune exec surf test.surf      # run script
 ```
 
 ### Dependencies

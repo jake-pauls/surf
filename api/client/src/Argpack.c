@@ -1,16 +1,31 @@
 #include "surf/Argpack.h"
 
-int surf_ArgpackGetInt(surf_argpack_t args, int index)
+int surf_ArgpackGetInt(surf_argpack_t argpack, int index)
 {
-    return *((int*) args[index]);
+    return *((int*) argpack[index]);
 }
 
-float surf_ArgpackGetFlt(surf_argpack_t args, int index)
+float surf_ArgpackGetFlt(surf_argpack_t argpack, int index)
 {
-    return *((float*) args[index]);
+    return *((float*) argpack[index]);
 }
 
-char* surf_ArgpackGetStr(surf_argpack_t args, int index)
+char* surf_ArgpackGetStr(surf_argpack_t argpack, int index)
 {
-    return *((char**) args[index]);
+    return *((char**) argpack[index]);
+}
+
+surf_V2 surf_ArgpackGetV2(surf_argpack_t argpack, int index)
+{ 
+    return *((surf_V2*) argpack[index]);
+}
+
+surf_V3 surf_ArgpackGetV3(surf_argpack_t argpack, int index)
+{
+    return *((surf_V3*) argpack[index]);
+}
+
+surf_V4 surf_ArgpackGetV4(surf_argpack_t argpack, int index)
+{
+    return *((surf_V4*) argpack[index]);
 }
