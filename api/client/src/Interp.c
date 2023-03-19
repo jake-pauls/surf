@@ -136,6 +136,66 @@ int surf_InterpGetStr(const char* name, char** out)
     return SURF_TRUE;
 }
 
+int surf_InterpGetV2(const char* name, surf_V2* out)
+{
+    const char* fmt = "put(%s);";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name);
+
+    // TODO: Check internal types of the interpreter to ensure this is a string
+    char* ret = surf_InterpLine(buffer);
+    if (IsStringEmpty(ret))
+        return SURF_FALSE;
+
+    surf_VecV2FromStr(ret, out);
+
+    free(ret);
+    free(buffer);
+
+    return SURF_TRUE;
+}
+
+int surf_InterpGetV3(const char* name, surf_V3* out)
+{
+    const char* fmt = "put(%s);";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name);
+
+    // TODO: Check internal types of the interpreter to ensure this is a string
+    char* ret = surf_InterpLine(buffer);
+    if (IsStringEmpty(ret))
+        return SURF_FALSE;
+
+    surf_VecV3FromStr(ret, out);
+
+    free(ret);
+    free(buffer);
+
+    return SURF_TRUE;
+}
+
+int surf_InterpGetV4(const char* name, surf_V4* out)
+{
+    const char* fmt = "put(%s);";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name);
+
+    // TODO: Check internal types of the interpreter to ensure this is a string
+    char* ret = surf_InterpLine(buffer);
+    if (IsStringEmpty(ret))
+        return SURF_FALSE;
+
+    surf_VecV4FromStr(ret, out);
+
+    free(ret);
+    free(buffer);
+
+    return SURF_TRUE;
+}
+
 void surf_InterpBindInt(const char* name, int i)
 {
     const char* fmt = "let %s: int = %d;";
@@ -170,6 +230,48 @@ void surf_InterpBindStr(const char* name, const char* str)
 
     char* buffer;
     int _ = ASPRINTF(&buffer, fmt, name, str);
+
+    // Interpret and discard the result
+    char* ret = surf_InterpLine(buffer);
+    free(ret);
+
+    free(buffer);
+}
+
+void surf_InterpBindV2(const char* name, float f1, float f2)
+{
+    const char* fmt = "let %s: v2 = (%f,%f);";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name, f1, f2);
+
+    // Interpret and discard the result
+    char* ret = surf_InterpLine(buffer);
+    free(ret);
+
+    free(buffer);
+}
+
+void surf_InterpBindV3(const char* name, float f1, float f2, float f3)
+{
+    const char* fmt = "let %s: v3 = (%f,%f,%f);";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name, f1, f2, f3);
+
+    // Interpret and discard the result
+    char* ret = surf_InterpLine(buffer);
+    free(ret);
+
+    free(buffer);
+}
+
+void surf_InterpBindV4(const char* name, float f1, float f2, float f3, float f4)
+{
+    const char* fmt = "let %s: v4 = (%f,%f,%f,%f);";
+
+    char* buffer;
+    int _ = ASPRINTF(&buffer, fmt, name, f1, f2, f3, f4);
 
     // Interpret and discard the result
     char* ret = surf_InterpLine(buffer);

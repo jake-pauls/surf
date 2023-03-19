@@ -69,6 +69,10 @@ wv::Application::Application()
 	surf_InterpBindFlt("aFlt", (float) 1.2034);
 	surf_InterpBindStr("aStr", "strstr");
 
+	surf_InterpBindV2("aV2", 1.02f, 2.02f);
+	surf_InterpBindV3("aV3", 1.02f, 2.02f, 3.02f);
+	surf_InterpBindV4("aV4", 1.02f, 2.02f, 3.02f, 4.02f);
+
 	int anInt;
 	if (surf_InterpGetInt("anInt", &anInt))
 		core::Log(ELogType::Warn, "anInt: {}", anInt);
@@ -81,6 +85,18 @@ wv::Application::Application()
 	if (surf_InterpGetStr("aStr", &aStr))
 		core::Log(ELogType::Warn, "aStr: {}", aStr);
 	surf_InterpFreeString(aStr);
+
+	surf_V2 aV2;
+	if (surf_InterpGetV2("aV2", &aV2))
+		core::Log(ELogType::Warn, "aV2: x->{} y->{}", aV2.x, aV2.y);
+
+	surf_V3 aV3;
+	if (surf_InterpGetV3("aV3", &aV3))
+		core::Log(ELogType::Warn, "aV3: x->{} y->{} z->{}", aV3.x, aV3.y, aV3.z);
+
+	surf_V4 aV4;
+	if (surf_InterpGetV4("aV4", &aV4))
+		core::Log(ELogType::Warn, "aV4: x->{} y->{} z->{} w->{}", aV4.x, aV4.y, aV4.z, aV4.w);
 
 	result = surf_DestroyBridge();
 	WAVE_ASSERT(result != SURF_API_ERROR, "Failed to destroy surf bridge");
