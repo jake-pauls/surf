@@ -3,6 +3,8 @@
 #include <surf/surf.h>
 #include <surf/SymbolTable.h>
 
+#include <stdio.h>
+
 //! Variables
 
 surf_SymbolTable* g_SymbolTable;
@@ -19,10 +21,9 @@ void Suite_SymbolTableTeardown(void)
     surf_SymbolTableDestroy(g_SymbolTable);
 }
 
-//! Sample Functions 
-
-void Suite_SymbolTableSampleFunctionOne(surf_argpack_t argpack) { return; }
-void Suite_SymbolTableSampleFunctionTwo(surf_argpack_t argpack) { return; }
+//! Sample Functions - used print statements to avoid them being optimized out in release
+void Suite_SymbolTableSampleFunctionOne(surf_argpack_t argpack) { printf("FUNCTION 1\n"); return; }
+void Suite_SymbolTableSampleFunctionTwo(surf_argpack_t argpack) { printf("FUNCTION 2\n"); return; }
 
 //! Tests
 

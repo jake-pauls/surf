@@ -1,5 +1,6 @@
 #include <check.h>
 
+#include "Unit/Suite_Vec.h"
 #include "Unit/Suite_Interp.h"
 #include "Unit/Suite_SymbolTable.h"
 
@@ -11,6 +12,7 @@ int main()
     runner = srunner_create(Suite_SymbolTable());
     srunner_set_fork_status(runner, CK_NOFORK);
     srunner_add_suite(runner, Suite_Interp());
+    srunner_add_suite(runner, Suite_Vec());
 
     srunner_set_log (runner, "results.log");
     srunner_set_xml (runner, "results.xml");

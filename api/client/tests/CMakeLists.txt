@@ -4,10 +4,12 @@ set(TEST_EXECUTABLE_NAME api-tests)
 
 set(TEST_SOURCE_FILES Main.c 
     Unit/Suite_SymbolTable.c
-    Unit/Suite_Interp.c)
+    Unit/Suite_Interp.c
+    Unit/Suite_Vec.c)
 
 set(TEST_HEADER_FILES Unit/Suite_SymbolTable.h
-    Unit/Suite_Interp.h)
+    Unit/Suite_Interp.h
+    Unit/Suite_Vec.h)
 
 add_executable(${TEST_EXECUTABLE_NAME} ${TEST_SOURCE_FILES} ${TEST_HEADER_FILES})
 
