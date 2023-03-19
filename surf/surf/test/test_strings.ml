@@ -78,24 +78,24 @@ let strings =
     , fun _ ->
         check_interp_str
           "string concatenation with v2"
-          "v2 is (1, 2)"
-          "let x: str = \"v2 is \" + (1, 2);"
+          "v2 is (1,2)"
+          "let x: str = \"v2 is \" + (1,2);"
           empty )
   ; ( "concatenating strings with v3"
     , `Quick
     , fun _ ->
         check_interp_str
           "string concatenation with v3"
-          "v3 is (1, 2, 3)"
-          "let x: str = \"v3 is \" + (1, 2, 3);"
+          "v3 is (1,2,3)"
+          "let x: str = \"v3 is \" + (1,2,3);"
           empty )
   ; ( "concatenating strings with v4"
     , `Quick
     , fun _ ->
         check_interp_str
           "string concatenation with v4"
-          "v4 is (1, 2, 3, 4)"
-          "let x: str = \"v4 is \" + (1, 2, 3, 4);"
+          "v4 is (1,2,3,4)"
+          "let x: str = \"v4 is \" + (1,2,3,4);"
           empty )
   ]
 ;;

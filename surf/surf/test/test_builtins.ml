@@ -7,31 +7,31 @@ let put =
   ; ( "put flt with decimals"
     , `Quick
     , fun _ -> check_interp_str "put flt with decimals" "1.23" "put(1.23);" empty )
-  ; ("put v2i", `Quick, fun _ -> check_interp_str "put v2i" "(1, 2)" "put((1, 2));" empty)
+  ; ("put v2i", `Quick, fun _ -> check_interp_str "put v2i" "(1,2)" "put((1, 2));" empty)
   ; ( "put v2f"
     , `Quick
-    , fun _ -> check_interp_str "put v2f" "(1.000000, 2.000000)" "put((1.0, 2.0));" empty
+    , fun _ -> check_interp_str "put v2f" "(1.000000,2.000000)" "put((1.0, 2.0));" empty
     )
   ; ( "put v3i"
     , `Quick
-    , fun _ -> check_interp_str "put v3i" "(1, 2, 3)" "put((1, 2, 3));" empty )
+    , fun _ -> check_interp_str "put v3i" "(1,2,3)" "put((1, 2, 3));" empty )
   ; ( "put v3f"
     , `Quick
     , fun _ ->
         check_interp_str
           "put v3f"
-          "(1.000000, 2.000000, 3.000000)"
+          "(1.000000,2.000000,3.000000)"
           "put((1.0, 2.0, 3.0));"
           empty )
   ; ( "put v4i"
     , `Quick
-    , fun _ -> check_interp_str "put v4i" "(1, 2, 3, 4)" "put((1, 2, 3, 4));" empty )
+    , fun _ -> check_interp_str "put v4i" "(1,2,3,4)" "put((1, 2, 3, 4));" empty )
   ; ( "put v4f"
     , `Quick
     , fun _ ->
         check_interp_str
           "put v4f"
-          "(1.000000, 2.000000, 3.000000, 4.000000)"
+          "(1.000000,2.000000,3.000000,4.000000)"
           "put((1.0, 2.0, 3.0, 4.0));"
           empty )
   ; ( "put string"
@@ -92,48 +92,48 @@ let put =
     , fun _ ->
         check_interp_str
           "put concat string with v2"
-          "v2: (1, 2)"
-          "put(\"v2: \" + (1, 2));"
+          "v2: (1,2)"
+          "put(\"v2: \" + (1,2));"
           empty )
   ; ( "put concat v2 with string"
     , `Quick
     , fun _ ->
         check_interp_str
           "put concat v2 with string"
-          "(1, 2) is a v2"
-          "put((1, 2) + \" is a v2\");"
+          "(1,2) is a v2"
+          "put((1,2) + \" is a v2\");"
           empty )
   ; ( "put concat string with v3"
     , `Quick
     , fun _ ->
         check_interp_str
           "put concat string with v3"
-          "v3: (1, 2, 3)"
-          "put(\"v3: \" + (1, 2, 3));"
+          "v3: (1,2,3)"
+          "put(\"v3: \" + (1,2,3));"
           empty )
   ; ( "put concat v3 with string"
     , `Quick
     , fun _ ->
         check_interp_str
           "put concat v3 with string"
-          "(1, 2, 3) is a v3"
-          "put((1, 2, 3) + \" is a v3\");"
+          "(1,2,3) is a v3"
+          "put((1,2,3) + \" is a v3\");"
           empty )
   ; ( "put concat string with v4"
     , `Quick
     , fun _ ->
         check_interp_str
           "put concat string with v4"
-          "v4: (1, 2, 3, 4)"
-          "put(\"v4: \" + (1, 2, 3, 4));"
+          "v4: (1,2,3,4)"
+          "put(\"v4: \" + (1,2,3,4));"
           empty )
   ; ( "put concat v4 with string"
     , `Quick
     , fun _ ->
         check_interp_str
           "put concat v4 with string"
-          "(1, 2, 3, 4) is a v4"
-          "put((1, 2, 3, 4) + \" is a v4\");"
+          "(1,2,3,4) is a v4"
+          "put((1,2,3,4) + \" is a v4\");"
           empty )
   ]
 ;;
@@ -169,8 +169,8 @@ let ref =
     , fun _ ->
         check_interp_str
           "quad arg ref"
-          "ref myFunc 1:int 2.05:flt Test:str (1, 2):v2"
-          "ref myFunc(1: int, 2.05: flt, \"Test\": str, (1, 2): v2);"
+          "ref myFunc 1:int 2.05:flt Test:str (1,2):v2"
+          "ref myFunc(1: int, 2.05: flt, \"Test\": str, (1,2): v2);"
           empty )
   ]
 ;;

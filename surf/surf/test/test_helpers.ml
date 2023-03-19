@@ -31,7 +31,7 @@ let check_interp_str name str s env =
 (** [check_interp_v2f name v s env] sets up an alcotest case for the interp function with
     name [name] evaluating a float v2 [v] against the interpreted [s] *)
 let check_interp_v2f name v s env =
-  let float_arr_str = Fmt.str "(%f, %f)" v.(0) v.(1) in
+  let float_arr_str = Fmt.str "(%f,%f)" v.(0) v.(1) in
   Alcotest.(check bool)
     name
     true
@@ -41,7 +41,7 @@ let check_interp_v2f name v s env =
 (** [check_interp_v2i name v s env] sets up an alcotest case for the interp function with
     name [name] evaluating an integer v2 [v] against the interpreted [s] *)
 let check_interp_v2i name v s env =
-  let float_arr_str = Fmt.str "(%d, %d)" v.(0) v.(1) in
+  let float_arr_str = Fmt.str "(%d,%d)" v.(0) v.(1) in
   Alcotest.(check bool)
     name
     true
@@ -51,7 +51,7 @@ let check_interp_v2i name v s env =
 (** [check_interp_v3i name v s env] sets up an alcotest case for the interp function with
     name [name] evaluating an integer v3 [v] against the interpreted [s] *)
 let check_interp_v3i name v s env =
-  let float_arr_str = Fmt.str "(%d, %d, %d)" v.(0) v.(1) v.(2) in
+  let float_arr_str = Fmt.str "(%d,%d,%d)" v.(0) v.(1) v.(2) in
   Alcotest.(check bool)
     name
     true
@@ -61,7 +61,7 @@ let check_interp_v3i name v s env =
 (** [check_interp_v3f name v s env] sets up an alcotest case for the interp function with
     name [name] evaluating a float v3 [v] against the interpreted [s] *)
 let check_interp_v3f name v s env =
-  let float_arr_str = Fmt.str "(%f, %f, %f)" v.(0) v.(1) v.(2) in
+  let float_arr_str = Fmt.str "(%f,%f,%f)" v.(0) v.(1) v.(2) in
   Alcotest.(check bool)
     name
     true
@@ -71,7 +71,7 @@ let check_interp_v3f name v s env =
 (** [check_interp_v4i name v s env] sets up an alcotest case for the interp function with
     name [name] evaluating an integer v4 [v] against the interpreted [s] *)
 let check_interp_v4i name v s env =
-  let float_arr_str = Fmt.str "(%d, %d, %d, %d)" v.(0) v.(1) v.(2) v.(3) in
+  let float_arr_str = Fmt.str "(%d,%d,%d,%d)" v.(0) v.(1) v.(2) v.(3) in
   Alcotest.(check bool)
     name
     true
@@ -81,7 +81,7 @@ let check_interp_v4i name v s env =
 (** [check_interp_v4f name v s env] sets up an alcotest case for the interp function with
     name [name] evaluating a float v4 [v] against the interpreted [s] *)
 let check_interp_v4f name v s env =
-  let float_arr_str = Fmt.str "(%f, %f, %f, %f)" v.(0) v.(1) v.(2) v.(3) in
+  let float_arr_str = Fmt.str "(%f,%f,%f,%f)" v.(0) v.(1) v.(2) v.(3) in
   Alcotest.(check bool)
     name
     true
