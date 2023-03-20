@@ -18,6 +18,7 @@
 namespace wv
 {
 	class Window;
+	class Camera;
 }
 
 namespace vkn
@@ -49,7 +50,7 @@ namespace vkn
 		friend class VkShaderPipeline;
 
 	public:
-		explicit VkRenderer(wv::Window* window);
+		explicit VkRenderer(wv::Window* window, wv::Camera* camera);
 		~VkRenderer() override = default;
 
 		void Init() override;
@@ -99,6 +100,7 @@ namespace vkn
 
 	private:
 		wv::Window* m_Window = nullptr;
+		wv::Camera* m_Camera = nullptr;
 
 		RendererUploadContext m_UploadContext = {};
 

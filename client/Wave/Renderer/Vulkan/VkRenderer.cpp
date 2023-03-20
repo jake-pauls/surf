@@ -7,6 +7,8 @@
 #include <imgui_impl_sdl3.h>
 #include <imgui_impl_vulkan.h>
 
+#include "Camera.h"
+
 #include "VkPass.h"
 #include "VkModel.h"
 #include "VkHardware.h"
@@ -14,8 +16,9 @@
 #include "VkShaderPipeline.h"
 #include "VkInitializers.h"
 
-vkn::VkRenderer::VkRenderer(wv::Window* window)
+vkn::VkRenderer::VkRenderer(wv::Window* window, wv::Camera* camera)
 	: m_Window(window)
+	, m_Camera(camera)
 {
 }
 
@@ -270,29 +273,10 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 {
 	const VkExtent2D extent = m_VkSwapChain->m_SwapChainExtent;
 
-	glm::vec3 cameraPosition = { 0.0f, 0.0f, -2.0f };
-	glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
-	glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height), 0.1f, 200.0f);
-	projectionMatrix[1][1] *= -1;
+	// Update camera extent every frame if it's changed
+	m_Camera->SetScreenDimensions(static_cast<float>(extent.width), static_cast<float>(extent.height));
 
 	// WIP
-
-	float deltaX, deltaY;
-	SDL_GetRelativeMouseState(&deltaX, &deltaY);
-	double angle = (double) atan2(deltaY, deltaX);
-
-	float xRot = 1.0f;
-	float yRot = 1.0f;
-	if (deltaX > deltaY)
-	{
-		xRot = 1.0f;
-		yRot = 0.0f;
-	}
-	else if (deltaY > deltaX)
-	{
-		xRot = 0.0f;
-		yRot = 1.0f;
-	}
 
 	VkMesh* lastMesh = nullptr;
 	VkMaterial* lastMaterial = nullptr;
@@ -306,7 +290,6 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 		std::vector<vkn::VmaAllocatedDescriptorSet>& modelUniformBuffers = model->m_UniformBuffers;
 
 		glm::mat4& mm = model->m_ModelMatrix;
-		mm = glm::rotate(mm, glm::radians((core::Timer::DeltaTimeF() * 0.2f) * static_cast<float>(angle * 0.01)), glm::vec3(xRot, yRot, 0.0f));
 
 		// Bind material if it's different than the last
 		if (modelMaterial != lastMaterial)
@@ -338,8 +321,8 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 
 		// Submit uniforms through descriptor sets
 		VkMeshUniformBufferObject uniform;
-		uniform.m_ProjectionMatrix = projectionMatrix;
-		uniform.m_ViewMatrix = viewMatrix;
+		uniform.m_ProjectionMatrix = m_Camera->GetProjectionMatrix();
+		uniform.m_ViewMatrix = m_Camera->GetViewMatrix();
 
 		void* data;
 		VK_CALL(vmaMapMemory(m_VkHardware->m_VmaAllocator, modelUniformBuffers[m_CurrentFrameIndex].m_Allocation, &data));

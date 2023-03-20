@@ -26,11 +26,13 @@ list(TRANSFORM CORE_HEADER_FILES PREPEND "Core/")
 set(ENGINE_SOURCE_FILES
     Main.cpp
     Application.cpp
-	Window.cpp)
+	Window.cpp
+    Camera.cpp)
 
 set(ENGINE_HEADER_FILES
     Application.h
-	Window.h)
+	Window.h
+    Camera.h)
 
 list(TRANSFORM ENGINE_SOURCE_FILES PREPEND "Engine/")
 list(TRANSFORM ENGINE_HEADER_FILES PREPEND "Engine/")

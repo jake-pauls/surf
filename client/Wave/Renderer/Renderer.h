@@ -3,6 +3,7 @@
 namespace wv
 {
     class Window;
+    class Camera;
 
     /// @brief Abstract renderer with a particular API implementation
     class Renderer 
@@ -32,6 +33,6 @@ namespace wv
 
 		/// @brief Creates a renderer containing the implementation for the selected rendering API
 		/// @return Unique pointer containing the constructed renderer 
-		static core::Unique<Renderer> CreateRendererWithGAPI(Window* window, Renderer::GraphicsAPI gapi);
+		static core::Unique<Renderer> CreateRendererWithGAPI(Window* window, Camera* camera, Renderer::GraphicsAPI gapi);
     };
 }

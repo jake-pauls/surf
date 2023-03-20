@@ -2,7 +2,7 @@
 
 #include "Vulkan/VkRenderer.h"
 
-core::Unique<wv::Renderer> wv::Renderer::CreateRendererWithGAPI(Window* window, Renderer::GraphicsAPI gapi)
+core::Unique<wv::Renderer> wv::Renderer::CreateRendererWithGAPI(Window* window, Camera* camera, Renderer::GraphicsAPI gapi)
 {
 	switch (gapi)
 	{
@@ -13,7 +13,7 @@ core::Unique<wv::Renderer> wv::Renderer::CreateRendererWithGAPI(Window* window, 
 		WAVE_ASSERT(false, "DirectX is unimplemented");
 		return nullptr;
 	case Renderer::GraphicsAPI::Vulkan:
-		return core::CreateUnique<vkn::VkRenderer>(window);
+		return core::CreateUnique<vkn::VkRenderer>(window, camera);
 	};
 
 	WAVE_ASSERT(false, "Unknown rendering API selected");

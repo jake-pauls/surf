@@ -1,7 +1,8 @@
 #include "Application.h"
 
-#include "Timer.h"
-#include "FileSystem.h"
+#include "Window.h"
+#include "Camera.h"
+#include "Renderer.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -38,6 +39,7 @@ void AnotherFun(surf_argpack_t argpack)
 
 wv::Application::Application()
 	: m_Window(new Window)
+	, m_Camera(new Camera)
 {
 	//core::Log(ELogType::Debug, "Starting surf bridge...");
 	//surf_ApiResult result = surf_StartBridge();
@@ -107,6 +109,7 @@ wv::Application::Application()
 wv::Application::~Application()
 {
 	delete m_Window;
+	delete m_Camera;
 }
 
 void wv::Application::Run()
@@ -120,8 +123,13 @@ void wv::Application::Run()
 
 	// Initialize the window and it's corresponding graphics context
 	m_Window->Init(gapi);
-	m_Renderer = Renderer::CreateRendererWithGAPI(m_Window, gapi);
+	m_Renderer = Renderer::CreateRendererWithGAPI(m_Window, m_Camera, gapi);
 	m_Renderer->Init();
+
+	// Initialize SDL Keys
+	bool sdlKeys[322];
+	for (size_t i = 0; i < 322; ++i)
+		sdlKeys[i] = false;
 
 	bool isRunning = true;
 	while (isRunning)
@@ -140,6 +148,29 @@ void wv::Application::Run()
 
 			if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(m_Window->GetSDLWindow()))
 				isRunning = false;
+
+			switch (event.type)
+			{
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
+				if (event.button.button == SDL_BUTTON_MIDDLE)
+					m_IsMouseDown = true;
+				break;
+			case SDL_EVENT_MOUSE_BUTTON_UP:
+				if (event.button.button == SDL_BUTTON_MIDDLE)
+					m_IsMouseDown = false;
+				break;
+			case SDL_EVENT_MOUSE_WHEEL:
+				m_Camera->Zoom(event.wheel.y);
+				break;
+			case SDL_EVENT_KEY_DOWN:
+				sdlKeys[event.key.keysym.scancode] = true;
+				break;
+			case SDL_EVENT_KEY_UP:
+				sdlKeys[event.key.keysym.scancode] = false;
+				break;
+			}
+
+			UpdateControls(sdlKeys);
 		}
 
 		// Wait events if the window is minimized
@@ -148,7 +179,11 @@ void wv::Application::Run()
 			SDL_WaitEvent(&event);
 		}
 	
-		ImGui_ImplVulkan_NewFrame();
+		if (gapi == GAPI::Vulkan)
+			ImGui_ImplVulkan_NewFrame();
+		else
+			WAVE_ASSERT(false, "Graphics API not configured with ImGui");
+
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
 		ImGui::ShowDemoWindow();
@@ -166,4 +201,35 @@ void wv::Application::Teardown() const
 	m_Renderer->Teardown();
 
 	m_Window->Teardown();
+}
+
+void wv::Application::UpdateControls(bool* keys)
+{
+	// Use escape to toggle the mouse being locked
+	if (keys[SDL_SCANCODE_ESCAPE])
+	{
+		m_IsMouseLocked = !m_IsMouseLocked;
+		SDL_SetRelativeMouseMode(static_cast<SDL_bool>(m_IsMouseLocked));
+	}
+
+	// Handle mouse orbits if mouse is locked
+	if (m_IsMouseDown && m_IsMouseLocked)
+	{
+		float xPos, yPos;
+		SDL_GetMouseState(&xPos, &yPos);
+
+		if (m_FirstFrame)
+		{
+			m_LastX = xPos;
+			m_LastY = yPos;
+			m_FirstFrame = false;
+		}
+
+		float xOffset = xPos - m_LastX;
+		float yOffset = m_LastY - yPos;
+		m_LastX = xPos;
+		m_LastY = yPos;
+
+		m_Camera->Orbit(xOffset, yOffset);
+	}
 }
