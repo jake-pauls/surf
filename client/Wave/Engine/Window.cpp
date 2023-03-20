@@ -19,12 +19,10 @@ void wv::Window::Init(Renderer::GraphicsAPI gapi)
 	
 	// Set window flags, retrieve context specific flags from render context
 	SDL_WindowFlags contextFlags = m_RendererContext->GetContextSDLWindowFlags();
-	SDL_WindowFlags windowFlags = static_cast<SDL_WindowFlags>(contextFlags | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+	SDL_WindowFlags windowFlags = static_cast<SDL_WindowFlags>(contextFlags | SDL_WINDOW_RESIZABLE);
 
 	m_Window = SDL_CreateWindow(
 		m_WindowProperties.Title.c_str(), 
-		SDL_WINDOWPOS_CENTERED, 
-		SDL_WINDOWPOS_CENTERED, 
 		m_WindowProperties.Width, 
 		m_WindowProperties.Height, 
 		windowFlags

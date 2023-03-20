@@ -4,7 +4,7 @@
 #include <functional>
 #include <unordered_map>
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
 #include "Renderer.h"
@@ -83,9 +83,9 @@ namespace vkn
 		void DrawCommandBuffer(VkCommandBuffer commandBuffer);
 		void EndRenderPass(VkCommandBuffer commandBuffer);
 
-		// TODO: Abstract mesh loading
+		void InitImGui();
+
 		void LoadMeshes();
-		void LoadScene();
 
 		VkMaterial* LookupMaterial(const std::string& materialName);
 		VkMaterial* CreateMaterial(const VkShaderPipeline& shaderPipeline, 
@@ -129,6 +129,8 @@ namespace vkn
 		VkModel* m_TexturedModel = nullptr;
 		VkMesh m_UntexturedMesh = {};
 		VkMesh m_TexturedMesh = {};
+
+		VkDescriptorPool m_ImguiDescriptorPool;
 
 		std::vector<VkModel*> m_RenderableModels;
 		std::unordered_map<std::string, VkMaterial> m_Materials;

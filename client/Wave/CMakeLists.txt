@@ -124,7 +124,8 @@ target_link_libraries(${WAVE_EXECUTABLE_NAME}
     glm
     stb
     spdlog
-    tinyobjloader)
+    tinyobjloader
+    imgui)
 
 # Platform specific compiler flags
 if(MSVC)

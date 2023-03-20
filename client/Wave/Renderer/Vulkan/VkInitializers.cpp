@@ -305,11 +305,12 @@ VkPushConstantRange vkn::InitPushConstantRange(const uint32_t size)
 
 VkDescriptorPoolCreateInfo vkn::InitDescriptorPoolCreateInfo(const uint32_t poolSizeCount, 
 	const VkDescriptorPoolSize* poolSizes,
-	int maxSets)
+	int maxSets,
+	VkDescriptorPoolCreateFlags flags /* = 0 */)
 {
 	VkDescriptorPoolCreateInfo info = VkDescriptorPoolCreateInfo();
 	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	info.flags = 0;
+	info.flags = flags;
 
 	info.maxSets = maxSets;
 	info.poolSizeCount = poolSizeCount;

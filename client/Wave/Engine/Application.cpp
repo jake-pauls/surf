@@ -3,6 +3,9 @@
 #include "Timer.h"
 #include "FileSystem.h"
 
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_vulkan.h>
 #include <surf/surf.h>
 
 void Fun(surf_argpack_t argpack) 
@@ -130,10 +133,12 @@ void wv::Application::Run()
 		SDL_Event event;
 		while (SDL_PollEvent(&event))
 		{
-			if (event.type == SDL_QUIT)
+			ImGui_ImplSDL3_ProcessEvent(&event);
+
+			if (event.type == SDL_EVENT_QUIT)
 				isRunning = false;
 
-			if (event.type == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(m_Window->GetSDLWindow()))
+			if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED && event.window.windowID == SDL_GetWindowID(m_Window->GetSDLWindow()))
 				isRunning = false;
 		}
 
@@ -142,6 +147,11 @@ void wv::Application::Run()
 		{
 			SDL_WaitEvent(&event);
 		}
+	
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
+		ImGui::NewFrame();
+		ImGui::ShowDemoWindow();
 
 		m_Renderer->Draw();
 	}

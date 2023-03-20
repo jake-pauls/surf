@@ -3,6 +3,9 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 #include <glm/gtx/transform.hpp>
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_vulkan.h>
 
 #include "VkPass.h"
 #include "VkModel.h"
@@ -49,6 +52,8 @@ void vkn::VkRenderer::Init()
 	}
 
 	LoadMeshes();
+
+	InitImGui();
 }
 
 void vkn::VkRenderer::Draw()
@@ -56,6 +61,9 @@ void vkn::VkRenderer::Draw()
 	VkCommandBuffer commandBuffer = BeginFrame();
 	if (commandBuffer == VK_NULL_HANDLE) 
 		return;
+
+	// Draw ImGui
+	ImGui::Render();
 
 	BeginRenderPass(commandBuffer);
 
@@ -85,7 +93,11 @@ void vkn::VkRenderer::Teardown()
 	m_Materials.clear();
 	m_RenderableModels.clear();
 
-	// Sync objects
+	// Destroy ImGui
+	vkDestroyDescriptorPool(m_VkHardware->m_LogicalDevice, m_ImguiDescriptorPool, nullptr);
+	ImGui_ImplVulkan_Shutdown();
+
+	// Destroy sync objects
 	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
 	{
 		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
@@ -93,12 +105,12 @@ void vkn::VkRenderer::Teardown()
 		vkDestroyFence(m_VkHardware->m_LogicalDevice, m_InFlightFences[i], nullptr);
 	}
 
-	// Upload context
+	// Destroy upload context
 	vkDestroyFence(m_VkHardware->m_LogicalDevice, m_UploadContext.m_UploadFence, nullptr);
 	vkFreeCommandBuffers(m_VkHardware->m_LogicalDevice, m_UploadContext.m_CommandPool, 1, &m_UploadContext.m_CommandBuffer);
 	vkDestroyCommandPool(m_VkHardware->m_LogicalDevice, m_UploadContext.m_CommandPool, nullptr);
 
-	// Command buffers/pools
+	// Destroy command buffers/pools
 	vkFreeCommandBuffers(m_VkHardware->m_LogicalDevice, m_CommandPool, static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
 	m_CommandBuffers.clear();
 	vkDestroyCommandPool(m_VkHardware->m_LogicalDevice, m_CommandPool, nullptr);
@@ -258,11 +270,29 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 {
 	const VkExtent2D extent = m_VkSwapChain->m_SwapChainExtent;
 
-	// MVP/Uniform Testing
 	glm::vec3 cameraPosition = { 0.0f, 0.0f, -2.0f };
 	glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
 	glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height), 0.1f, 200.0f);
 	projectionMatrix[1][1] *= -1;
+
+	// WIP
+
+	float deltaX, deltaY;
+	SDL_GetRelativeMouseState(&deltaX, &deltaY);
+	double angle = (double) atan2(deltaY, deltaX);
+
+	float xRot = 1.0f;
+	float yRot = 1.0f;
+	if (deltaX > deltaY)
+	{
+		xRot = 1.0f;
+		yRot = 0.0f;
+	}
+	else if (deltaY > deltaX)
+	{
+		xRot = 0.0f;
+		yRot = 1.0f;
+	}
 
 	VkMesh* lastMesh = nullptr;
 	VkMaterial* lastMaterial = nullptr;
@@ -276,7 +306,7 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 		std::vector<vkn::VmaAllocatedDescriptorSet>& modelUniformBuffers = model->m_UniformBuffers;
 
 		glm::mat4& mm = model->m_ModelMatrix;
-		mm = glm::rotate(glm::mat4(1.0f), glm::radians(core::Timer::DeltaTime() * 0.02f), glm::vec3(1.0f, 0.0f, 0.0f));
+		mm = glm::rotate(mm, glm::radians((core::Timer::DeltaTimeF() * 0.2f) * static_cast<float>(angle * 0.01)), glm::vec3(xRot, yRot, 0.0f));
 
 		// Bind material if it's different than the last
 		if (modelMaterial != lastMaterial)
@@ -327,7 +357,50 @@ void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
 	WAVE_ASSERT(m_IsFrameStarted, "Cannot end render pass without a frame in progress");
 	WAVE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot render pass on a command buffer from a different frame");
 
+	// Pass command buffer information to ImGui
+	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
 	vkCmdEndRenderPass(commandBuffer);
+}
+
+void vkn::VkRenderer::InitImGui()
+{
+	VkDescriptorPoolSize imguiDescriptorPoolSizes[] =
+	{
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+	};
+
+	VkDescriptorPoolCreateInfo imguiPoolInfo = vkn::InitDescriptorPoolCreateInfo(static_cast<uint32_t>(std::size(imguiDescriptorPoolSizes)), 
+		imguiDescriptorPoolSizes, 1000, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+	VK_CALL(vkCreateDescriptorPool(m_VkHardware->m_LogicalDevice, &imguiPoolInfo, nullptr, &m_ImguiDescriptorPool));
+
+	ImGui::CreateContext();
+	ImGui_ImplSDL3_InitForVulkan(m_Window->GetSDLWindow());
+	ImGui_ImplVulkan_InitInfo imguiInitInfo = ImGui_ImplVulkan_InitInfo();
+	imguiInitInfo.Instance = m_VkHardware->m_Instance;
+	imguiInitInfo.PhysicalDevice = m_VkHardware->m_PhysicalDevice;
+	imguiInitInfo.Device = m_VkHardware->m_LogicalDevice;
+	imguiInitInfo.Queue = m_VkHardware->m_GraphicsQueue;
+	imguiInitInfo.DescriptorPool = m_ImguiDescriptorPool;
+	imguiInitInfo.MinImageCount = 3;
+	imguiInitInfo.ImageCount = 3;
+	imguiInitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	ImGui_ImplVulkan_Init(&imguiInitInfo, m_DefaultPass->m_RenderPass);
+
+	SubmitToRenderer([&, this](VkCommandBuffer commandBuffer) {
+		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+	});
+	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
 void vkn::VkRenderer::LoadMeshes()

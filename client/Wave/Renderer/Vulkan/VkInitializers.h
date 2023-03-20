@@ -84,7 +84,7 @@ namespace vkn
 	/// 
 
 	/// @brief Constructs a create info struct for a descriptor pool 
-	VkDescriptorPoolCreateInfo InitDescriptorPoolCreateInfo(const uint32_t poolSizeCount, const VkDescriptorPoolSize* poolSizes, int maxSets);
+	VkDescriptorPoolCreateInfo InitDescriptorPoolCreateInfo(const uint32_t poolSizeCount, const VkDescriptorPoolSize* poolSizes, int maxSets, VkDescriptorPoolCreateFlags flags = 0);
 
 	/// @brief Constructs a layout binding for a descriptor set 
 	VkDescriptorSetLayoutBinding InitDescriptorSetLayoutBinding(VkDescriptorType type, VkShaderStageFlags stageFlags, int count = 1);
