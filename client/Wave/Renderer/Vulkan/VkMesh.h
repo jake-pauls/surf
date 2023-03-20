@@ -7,6 +7,7 @@
 #include <glm/gtx/hash.hpp>
 
 #include "VkTypes.h"
+#include "VkShaderPipeline.h"
 
 namespace vkn
 {
@@ -40,12 +41,6 @@ namespace vkn
 		void LoadFromObj(const char* filename);
 	};
 
-	struct VkTexture
-	{
-		VmaAllocatedImage m_Image;
-		VkSampler m_Sampler;
-	};
-
     struct VkMeshPushConstants
     {
         glm::mat4 m_ModelMatrix;
@@ -56,6 +51,7 @@ namespace vkn
 		glm::mat4 m_ViewMatrix;
 		glm::mat4 m_ProjectionMatrix;
 	};
+
 }
 
 namespace std

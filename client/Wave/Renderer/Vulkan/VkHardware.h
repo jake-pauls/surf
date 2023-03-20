@@ -13,6 +13,7 @@ namespace wv
 namespace vkn
 {
 	class VkModel;
+	class VkMaterial;
 	class VkRenderer;
 	class VkSwapChain;
 	class VkShaderPipeline;
@@ -36,6 +37,7 @@ namespace vkn
 	class VkHardware final
 	{
 		friend class VkModel;
+		friend class VkMaterial;
 		friend class VkRenderer;
 		friend class VkSwapChain;
 		friend class VkShaderPipeline;

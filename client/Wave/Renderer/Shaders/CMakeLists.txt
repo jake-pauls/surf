@@ -1,9 +1,11 @@
 # Shader Package
 set(SHADER_FILES 
     glsl/Triangle.vert glsl/Triangle.frag
-    glsl/TriangleMesh.vert glsl/TriangleMesh.frag
+    glsl/TexturedMesh.vert glsl/TexturedMesh.frag
+    glsl/UntexturedMesh.vert glsl/UntexturedMesh.frag
     hlsl/Triangle.vert hlsl/Triangle.frag
-    hlsl/TriangleMesh.vert hlsl/TriangleMesh.frag)
+    hlsl/TexturedMesh.vert hlsl/TexturedMesh.frag
+    hlsl/UntexturedMesh.vert hlsl/UntexturedMesh.frag)
 
 # Add shaders to the source executable
 list(TRANSFORM SHADER_FILES PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

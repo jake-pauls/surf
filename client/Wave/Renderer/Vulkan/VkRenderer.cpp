@@ -4,12 +4,6 @@
 #include <vk_mem_alloc.h>
 #include <glm/gtx/transform.hpp>
 
-#if defined(__linux__)
-#define STBI_NO_SIMD
-#endif
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #include "VkPass.h"
 #include "VkModel.h"
 #include "VkHardware.h"
@@ -27,42 +21,34 @@ void vkn::VkRenderer::Init()
 	core::Log(ELogType::Trace, "[VkRenderer] Initializing Vulkan renderer");
 
 	// Default hardware
-	{
-		m_VkHardware = new VkHardware(m_Window);
-	}
+	m_VkHardware = new VkHardware(m_Window);
 
 	// Swap chain and render passes
-	{
-		m_VkSwapChain = new VkSwapChain(*this, *m_VkHardware, m_Window);
-		m_DefaultPass = new VkPass(m_VkHardware->m_LogicalDevice, *m_VkSwapChain);
+	m_VkSwapChain = new VkSwapChain(*this, *m_VkHardware, m_Window);
+	m_DefaultPass = new VkPass(m_VkHardware->m_LogicalDevice, *m_VkSwapChain);
 
-		// Framebuffers (need to be initialized after initial renderpass)
-		m_VkSwapChain->CreateFramebuffers();
-	}
-
-	// Shader generation
-	{
-		std::string triangleVertexShader = core::FileSystem::GetShaderPath("TriangleMesh.vert.hlsl.spv").string();
-		std::string triangleFragmentShader = core::FileSystem::GetShaderPath("TriangleMesh.frag.hlsl.spv").string();
-		m_DefaultPipeline = new VkShaderPipeline(*this, *m_VkHardware, triangleVertexShader, triangleFragmentShader);
-	}
+	// Framebuffers (need to be initialized after initial renderpass)
+	m_VkSwapChain->CreateFramebuffers();
 
 	// Create command pools and sync objects
 	CreateCommands();
 	CreateSyncObjects();
 
-	// Load textures
+	// Shader creation 
 	{
-		std::string texturePath = core::FileSystem::GetAssetPath("viking_room.png").string();
-		CreateTexture(texturePath);
-		VkImageViewCreateInfo textureInfo = vkn::InitImageViewCreateInfo(VK_FORMAT_R8G8B8A8_SRGB, m_Texture.m_Image.m_Image, VK_IMAGE_ASPECT_COLOR_BIT);
-		vkCreateImageView(m_VkHardware->m_LogicalDevice, &textureInfo, nullptr, &m_Texture.m_Image.m_ImageView);
+		std::string untexturedVertexShader = core::FileSystem::GetShaderPath("UntexturedMesh.vert.hlsl.spv").string();
+		std::string untexturedFragmentShader = core::FileSystem::GetShaderPath("UntexturedMesh.frag.hlsl.spv").string();
+		std::string texturedVertexShader = core::FileSystem::GetShaderPath("TexturedMesh.vert.hlsl.spv").string();
+		std::string texturedFragmentShader = core::FileSystem::GetShaderPath("TexturedMesh.frag.hlsl.spv").string();
+
+		m_UntexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, untexturedVertexShader, untexturedFragmentShader);
+		m_TexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, texturedVertexShader, texturedFragmentShader, true);
+
+		CreateMaterial(*m_UntexturedPipeline, "Default");
+		CreateTexturedMaterial(*m_TexturedPipeline, "viking_room.png", "VikingRoomMaterial");
 	}
 
-	// Load 3D meshes
 	LoadMeshes();
-
-	CreateUniformBuffers();
 }
 
 void vkn::VkRenderer::Draw()
@@ -87,23 +73,17 @@ void vkn::VkRenderer::Teardown()
 	// Wait for logical device to finish operations before tearing down
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
-	delete m_LoadedModel;
-
 	// TODO: Implement main destruction queue as opposed to relying on destructors
+	delete m_UntexturedModel;
+	delete m_TexturedModel;
 	delete m_VkSwapChain;
-	delete m_DefaultPipeline;
+	delete m_UntexturedPipeline;
+	delete m_TexturedPipeline;
 	delete m_DefaultPass;
 
-	// TODO: Abstract uniform buffers somewhere?
-	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-	{
-		vmaDestroyBuffer(m_VkHardware->m_VmaAllocator, m_UniformBuffers[i].m_Buffer, m_UniformBuffers[i].m_Allocation);
-	}
-
-	// TODO: Abstract texture loading/destruction
-	vkDestroySampler(m_VkHardware->m_LogicalDevice, m_Texture.m_Sampler, nullptr);
-	vkDestroyImageView(m_VkHardware->m_LogicalDevice, m_Texture.m_Image.m_ImageView, nullptr);
-	vmaDestroyImage(m_VkHardware->m_VmaAllocator, m_Texture.m_Image.m_Image, m_Texture.m_Image.m_Allocation);
+	// Destroy materials
+	m_Materials.clear();
+	m_RenderableModels.clear();
 
 	// Sync objects
 	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
@@ -170,47 +150,6 @@ void vkn::VkRenderer::CreateCommands()
 
 	VkCommandBufferAllocateInfo uploadCommandBufferAllocateInfo = vkn::InitCommandBufferAllocateInfo(m_UploadContext.m_CommandPool);
 	VK_CALL(vkAllocateCommandBuffers(m_VkHardware->m_LogicalDevice, &uploadCommandBufferAllocateInfo, &m_UploadContext.m_CommandBuffer));
-}
-
-void vkn::VkRenderer::CreateUniformBuffers()
-{
-	//! UBO
-
-	const size_t uniformBufferSize = sizeof(VkMeshUniformBufferObject);
-
-	m_UniformBuffers.resize(c_MaxFramesInFlight);
-	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-	{
-		m_VkHardware->CreateVMABuffer(m_UniformBuffers[i],
-			uniformBufferSize,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-		VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_DefaultPipeline->m_DescriptorPool, &m_DefaultPipeline->m_DescriptorSetLayout);
-
-		VK_CALL(vkAllocateDescriptorSets(m_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_UniformBuffers[i].m_Descriptor));
-
-		VkDescriptorBufferInfo descriptorBufferInfo = vkn::InitDescriptorBufferInfo(m_UniformBuffers[i].m_Buffer, sizeof(VkMeshUniformBufferObject));
-		VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, m_UniformBuffers[i].m_Descriptor, &descriptorBufferInfo, 0);
-		vkUpdateDescriptorSets(m_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
-	}
-
-	//! Sampler
-
-	m_Texture.m_Sampler = VkSampler();
-	VkSamplerCreateInfo samplerCreateInfo = vkn::InitSamplerCreateInfo(VK_FILTER_NEAREST);
-	vkCreateSampler(m_VkHardware->m_LogicalDevice, &samplerCreateInfo, nullptr, &m_Texture.m_Sampler);
-
-	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_DefaultPipeline->m_DescriptorPool, &m_DefaultPipeline->m_SingleTextureSetLayout);
-	VK_CALL(vkAllocateDescriptorSets(m_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_Texture.m_Image.m_Descriptor));
-
-	VkDescriptorImageInfo textureBufferInfo = VkDescriptorImageInfo();
-	textureBufferInfo.sampler = m_Texture.m_Sampler;
-	textureBufferInfo.imageView = m_Texture.m_Image.m_ImageView;
-	textureBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	
-	VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_Texture.m_Image.m_Descriptor, &textureBufferInfo, 0);
-	vkUpdateDescriptorSets(m_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
 }
 
 void vkn::VkRenderer::SubmitToRenderer(std::function<void(VkCommandBuffer)>&& submitFunction) const
@@ -325,35 +264,62 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 	glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height), 0.1f, 200.0f);
 	projectionMatrix[1][1] *= -1;
 
-	glm::mat4 modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(core::Timer::DeltaTime() * 0.02f), glm::vec3(1.0f, 0.0f, 0.0f));
+	VkMesh* lastMesh = nullptr;
+	VkMaterial* lastMaterial = nullptr;
+	for (size_t i = 0; i < m_RenderableModels.size(); ++i)
+	{
+		VkModel*& model = m_RenderableModels[i];
+		VkMaterial* modelMaterial = model->m_Material;
+		WAVE_ASSERT(modelMaterial, "Attempting to render a model without a material");
 
-	// Bind required pipeline
-	m_DefaultPipeline->Bind(commandBuffer);
+		const VkShaderPipeline* modelPipeline = modelMaterial->GetShaderPipelinePtr();
+		std::vector<vkn::VmaAllocatedDescriptorSet>& modelUniformBuffers = model->m_UniformBuffers;
 
-	// Bind geometry
-	m_LoadedModel->Bind(commandBuffer);
+		glm::mat4& mm = model->m_ModelMatrix;
+		mm = glm::rotate(glm::mat4(1.0f), glm::radians(core::Timer::DeltaTime() * 0.02f), glm::vec3(1.0f, 0.0f, 0.0f));
 
-	// Bind texture descriptor set
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipeline->m_PipelineLayout, 1, 1, &m_Texture.m_Image.m_Descriptor, 0, nullptr);
+		// Bind material if it's different than the last
+		if (modelMaterial != lastMaterial)
+		{
+			modelPipeline->Bind(commandBuffer);
+			lastMaterial = modelMaterial;
+		}
 
-	// Submit push constants (constant uniforms)
-	VkMeshPushConstants constants;
-	constants.m_ModelMatrix = modelMatrix;
-	vkCmdPushConstants(commandBuffer, m_DefaultPipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
+		// Bind the mesh if it's different than the last
+		if (&model->m_Mesh != lastMesh)
+		{
+			model->Bind(commandBuffer);
+			lastMesh = &model->m_Mesh;
+		}
 
-	// Submit uniforms through descriptor sets
-	VkMeshUniformBufferObject uniform;
-	uniform.m_ProjectionMatrix = projectionMatrix;
-	uniform.m_ViewMatrix = viewMatrix;
+		// Bind texture if one is on the material
+		if (modelMaterial->m_IsTexturedMaterial)
+		{
+			vkCmdBindDescriptorSets(commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				modelPipeline->m_PipelineLayout, 1, 1,
+				&modelMaterial->m_Texture.m_Image.m_Descriptor, 0, nullptr);
+		}
 
-	void* data;
-	VK_CALL(vmaMapMemory(m_VkHardware->m_VmaAllocator, m_UniformBuffers[m_CurrentFrameIndex].m_Allocation, &data));
-	memcpy(data, &uniform, sizeof(VkMeshUniformBufferObject));
-	vmaUnmapMemory(m_VkHardware->m_VmaAllocator, m_UniformBuffers[m_CurrentFrameIndex].m_Allocation);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipeline->m_PipelineLayout, 0, 1, &m_UniformBuffers[m_CurrentFrameIndex].m_Descriptor, 0, nullptr);
+		// Submit push constants (constant uniforms)
+		VkMeshPushConstants constants;
+		constants.m_ModelMatrix = mm;
+		vkCmdPushConstants(commandBuffer, modelPipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
 
-	// Draw geometry
-	m_LoadedModel->Draw(commandBuffer);
+		// Submit uniforms through descriptor sets
+		VkMeshUniformBufferObject uniform;
+		uniform.m_ProjectionMatrix = projectionMatrix;
+		uniform.m_ViewMatrix = viewMatrix;
+
+		void* data;
+		VK_CALL(vmaMapMemory(m_VkHardware->m_VmaAllocator, modelUniformBuffers[m_CurrentFrameIndex].m_Allocation, &data));
+		memcpy(data, &uniform, sizeof(VkMeshUniformBufferObject));
+		vmaUnmapMemory(m_VkHardware->m_VmaAllocator, modelUniformBuffers[m_CurrentFrameIndex].m_Allocation);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, modelPipeline->m_PipelineLayout, 0, 1, &modelUniformBuffers[m_CurrentFrameIndex].m_Descriptor, 0, nullptr);
+
+		// Draw geometry
+		model->Draw(commandBuffer);
+	}
 }
 
 void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
@@ -366,98 +332,43 @@ void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
 
 void vkn::VkRenderer::LoadMeshes()
 {
-	m_LoadedMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
-	m_LoadedModel = new VkModel(*this, m_LoadedMesh);
+	m_TexturedMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
+	m_TexturedModel = new VkModel(*this, m_TexturedMesh, LookupMaterial("VikingRoomMaterial"));
+
+	m_UntexturedMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
+	m_UntexturedModel = new VkModel(*this, m_UntexturedMesh, LookupMaterial("Default"));
+
+	m_RenderableModels.push_back(m_TexturedModel);
+	m_RenderableModels.push_back(m_UntexturedModel);
 }
 
-void vkn::VkRenderer::CreateTexture(const std::string& filename)
+vkn::VkMaterial* vkn::VkRenderer::LookupMaterial(const std::string& materialName)
 {
-	int texWidth, texHeight, channels;
-	stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &channels, STBI_rgb_alpha);
-	WAVE_ASSERT(pixels, "Failed to load texture from provided image file");
+	auto it = m_Materials.find(materialName);
 
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
+	if (it == m_Materials.end())
+		return nullptr;
 
-	VmaAllocatedBuffer stagingBuffer;
-	m_VkHardware->CreateVMABuffer(stagingBuffer,
-		imageSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VMA_MEMORY_USAGE_CPU_ONLY);
+	return &(*it).second;
+}
 
-	void* texData;
-	VK_CALL(vmaMapMemory(m_VkHardware->m_VmaAllocator, stagingBuffer.m_Allocation, &texData));
-	memcpy(texData, pixels, static_cast<size_t>(imageSize));
-	vmaUnmapMemory(m_VkHardware->m_VmaAllocator, stagingBuffer.m_Allocation);
+vkn::VkMaterial* vkn::VkRenderer::CreateMaterial(const VkShaderPipeline& shaderPipeline, 
+	const std::string& materialName)
+{
+	m_Materials.emplace(std::piecewise_construct,
+		std::forward_as_tuple(materialName),
+		std::forward_as_tuple(*this, shaderPipeline));
 
-	stbi_image_free(pixels);
+	return &m_Materials[materialName];
+}
 
-	/// ----------------
+vkn::VkMaterial* vkn::VkRenderer::CreateTexturedMaterial(const VkShaderPipeline& shaderPipeline, 
+	const std::string& textureName, 
+	const std::string& materialName)
+{
+	m_Materials.emplace(std::piecewise_construct,
+		std::forward_as_tuple(materialName),
+		std::forward_as_tuple(*this, shaderPipeline, textureName.c_str()));
 
-	VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
-
-	VkExtent3D imageExtent;
-	imageExtent.width = static_cast<uint32_t>(texWidth);
-	imageExtent.height = static_cast<uint32_t>(texHeight);
-	imageExtent.depth = 1;
-	
-	VkImageCreateInfo newImageCreateInfo = vkn::InitImageCreateInfo(imageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageExtent);
-	newImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-
-	VmaAllocationCreateInfo newImageAllocationCreateInfo = VmaAllocationCreateInfo();
-	newImageAllocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-	// Allocate and create image
-	vmaCreateImage(m_VkHardware->m_VmaAllocator, &newImageCreateInfo, &newImageAllocationCreateInfo, &m_Texture.m_Image.m_Image, &m_Texture.m_Image.m_Allocation, nullptr);
-
-	/// ----------------
-
-	// Submit command to render image
-	SubmitToRenderer([=](VkCommandBuffer commandBuffer) 
-	{
-		VkImageSubresourceRange range;
-		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		range.baseMipLevel = 0;
-		range.levelCount = 1;
-		range.baseArrayLayer = 0;
-		range.layerCount = 1;
-
-		VkImageMemoryBarrier transferImageBarrier = VkImageMemoryBarrier();
-		transferImageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		transferImageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		transferImageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		transferImageBarrier.image = m_Texture.m_Image.m_Image;
-		transferImageBarrier.subresourceRange = range;
-		transferImageBarrier.srcAccessMask = 0;
-		transferImageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-		// Barrier the image into the transfer-receive layout
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &transferImageBarrier);
-
-		VkBufferImageCopy copyRegion = VkBufferImageCopy();
-		copyRegion.bufferOffset = 0;
-		copyRegion.bufferRowLength = 0;
-		copyRegion.bufferImageHeight = 0;
-		copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		copyRegion.imageSubresource.mipLevel = 0;
-		copyRegion.imageSubresource.baseArrayLayer = 0;
-		copyRegion.imageSubresource.layerCount = 1;
-		copyRegion.imageExtent = imageExtent;
-
-		// Copy the image into a staging buffer
-		vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.m_Buffer, m_Texture.m_Image.m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
-
-		VkImageMemoryBarrier readableImageBarrier = transferImageBarrier;
-		readableImageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		readableImageBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		readableImageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		readableImageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-		// Barrier the image into the shader layout
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &readableImageBarrier);
-	});
-
-	/// ----------------
-
-	// Cleanup local resources
-	vmaDestroyBuffer(m_VkHardware->m_VmaAllocator, stagingBuffer.m_Buffer, stagingBuffer.m_Allocation);
+	return &m_Materials[materialName];
 }
