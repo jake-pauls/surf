@@ -8,6 +8,7 @@
 #include <imgui_impl_vulkan.h>
 
 #include "Camera.h"
+#include "ToolPanel.h"
 
 #include "VkPass.h"
 #include "VkModel.h"
@@ -85,8 +86,8 @@ void vkn::VkRenderer::Teardown()
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
 	// TODO: Implement main destruction queue as opposed to relying on destructors
-	delete m_UntexturedModel;
-	delete m_TexturedModel;
+	//delete m_UntexturedModel;
+	delete m_LoadedModel;
 	delete m_VkSwapChain;
 	delete m_UntexturedPipeline;
 	delete m_TexturedPipeline;
@@ -227,6 +228,8 @@ void vkn::VkRenderer::EndFrame()
 
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		m_VkSwapChain->RecreateSwapchain();
+
+	ReloadMeshes();
 
 	m_IsFrameStarted = false;
 	m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % c_MaxFramesInFlight;
@@ -388,14 +391,66 @@ void vkn::VkRenderer::InitImGui()
 
 void vkn::VkRenderer::LoadMeshes()
 {
-	m_TexturedMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
-	m_TexturedModel = new VkModel(*this, m_TexturedMesh, LookupMaterial("VikingRoomMaterial"));
+	core::Log(ELogType::Info, "[VkRenderer] Loading available meshes... this might take a while");
 
-	m_UntexturedMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
-	m_UntexturedModel = new VkModel(*this, m_UntexturedMesh, LookupMaterial("Default"));
+	m_VikingRoomMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
+	m_TeapotMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
+	m_BunnyMesh.LoadFromObj(core::FileSystem::GetAssetPath("stanford_bunny.obj").string().c_str());
+	m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
+	m_DragonMesh.LoadFromObj(core::FileSystem::GetAssetPath("xyzrgb_dragon.obj").string().c_str());
 
-	m_RenderableModels.push_back(m_TexturedModel);
-	m_RenderableModels.push_back(m_UntexturedModel);
+	m_Meshes.emplace("Viking Room", m_VikingRoomMesh);
+	m_Meshes.emplace("Teapot", m_TeapotMesh);
+	m_Meshes.emplace("Bunny", m_BunnyMesh);
+	m_Meshes.emplace("Suzanne", m_SuzanneMesh);
+	m_Meshes.emplace("Dragon", m_DragonMesh);
+
+	ReloadMeshes();
+}
+
+void vkn::VkRenderer::ReloadMeshes()
+{
+	using String = core::StringHelpers;
+	const std::string& selectedModel = wv::ToolPanel::s_SelectedModel;
+
+	// Bail out if model hasn't changed
+	if (String::Equals(m_SelectedModel, selectedModel))
+		return;
+
+	// Wait for device to release command buffers
+	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
+
+	// Reassign selected model
+	m_SelectedModel = selectedModel;
+
+	// Destroy pre-existing model data
+	delete m_LoadedModel;
+	m_RenderableModels.clear();
+
+	// Allocate new model based on selection
+	if (String::Equals(m_SelectedModel, "Viking Room"))
+		m_LoadedModel = new VkModel(*this, *LookupMesh("Viking Room"), LookupMaterial("VikingRoomMaterial"));
+	else if (String::Equals(m_SelectedModel, "Teapot"))
+		m_LoadedModel = new VkModel(*this, *LookupMesh("Teapot"), LookupMaterial("Default"));
+	else if (String::Equals(m_SelectedModel, "Bunny"))
+		m_LoadedModel = new VkModel(*this, *LookupMesh("Bunny"), LookupMaterial("Default"));
+	else if (String::Equals(m_SelectedModel, "Suzanne"))
+		m_LoadedModel = new VkModel(*this, *LookupMesh("Suzanne"), LookupMaterial("Default"));
+	else if (String::Equals(m_SelectedModel, "Dragon"))
+		m_LoadedModel = new VkModel(*this, *LookupMesh("Dragon"), LookupMaterial("Default"));
+
+	// More models could be pushed back here for rendering
+	m_RenderableModels.push_back(m_LoadedModel);
+}
+
+vkn::VkMesh* vkn::VkRenderer::LookupMesh(const std::string& meshName)
+{
+	auto it = m_Meshes.find(meshName);
+
+	if (it == m_Meshes.end())
+		return nullptr;
+
+	return &(*it).second;
 }
 
 vkn::VkMaterial* vkn::VkRenderer::LookupMaterial(const std::string& materialName)

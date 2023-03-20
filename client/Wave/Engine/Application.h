@@ -1,11 +1,14 @@
 #pragma once
 
+#include <string>
+
 #include "Renderer.h"
 
 namespace wv
 {
 	class Window;
 	class Camera;
+	class ToolPanel;
 
 	class Application
 	{
@@ -25,6 +28,7 @@ namespace wv
 	private:
 		Window* m_Window = nullptr;
 		Camera* m_Camera = nullptr;
+		ToolPanel* m_ToolPanel = nullptr;
 		core::Unique<Renderer> m_Renderer = nullptr;
 
 		bool m_IsMouseLocked = 0;

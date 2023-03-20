@@ -2,7 +2,9 @@
 
 #include "Window.h"
 #include "Camera.h"
+#include "ToolPanel.h"
 #include "Renderer.h"
+#include "Vulkan/VkRenderer.h"
 
 #include <imgui.h>
 #include <imgui_impl_sdl3.h>
@@ -110,6 +112,7 @@ wv::Application::~Application()
 {
 	delete m_Window;
 	delete m_Camera;
+	delete m_ToolPanel;
 }
 
 void wv::Application::Run()
@@ -125,6 +128,9 @@ void wv::Application::Run()
 	m_Window->Init(gapi);
 	m_Renderer = Renderer::CreateRendererWithGAPI(m_Window, m_Camera, gapi);
 	m_Renderer->Init();
+
+	// Initialize the tool panel
+	m_ToolPanel = new ToolPanel(gapi);
 
 	// Initialize SDL Keys
 	bool sdlKeys[322];
@@ -179,15 +185,7 @@ void wv::Application::Run()
 			SDL_WaitEvent(&event);
 		}
 	
-		// Run ImGui
-		if (gapi == GAPI::Vulkan)
-			ImGui_ImplVulkan_NewFrame();
-		else
-			WAVE_ASSERT(false, "Graphics API not configured with ImGui");
-		ImGui_ImplSDL3_NewFrame();
-		ImGui::NewFrame();
-		ImGui::ShowDemoWindow();
-
+		m_ToolPanel->Draw();
 		m_Renderer->Draw();
 	}
 

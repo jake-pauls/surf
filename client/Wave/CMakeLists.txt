@@ -27,12 +27,14 @@ set(ENGINE_SOURCE_FILES
     Main.cpp
     Application.cpp
 	Window.cpp
-    Camera.cpp)
+    Camera.cpp
+    ToolPanel.cpp)
 
 set(ENGINE_HEADER_FILES
     Application.h
 	Window.h
-    Camera.h)
+    Camera.h
+    ToolPanel.h)
 
 list(TRANSFORM ENGINE_SOURCE_FILES PREPEND "Engine/")
 list(TRANSFORM ENGINE_HEADER_FILES PREPEND "Engine/")

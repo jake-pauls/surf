@@ -28,15 +28,14 @@ namespace wv
 		float m_ScreenHeight = 600.0f;
 
 		float m_CameraFoV = 90.0f;
-		float m_CameraDistance = 8.0f;
+		float m_CameraDistance = 1.5f;
 		float m_CameraXAngle = 90.0f;
 		float m_CameraYAngle = 30.0f;
 
-		float m_MouseSensitivity = 0.3f;
-		float m_ZoomSensitivity = 0.5f;
-		float m_FovSensitivity = 0.4f;
+		float m_MouseSensitivity = 0.25f;
+		float m_ZoomSensitivity = 0.45f;
 
-		glm::vec3 m_CameraPosition = glm::vec3(0.0f, 0.0f, -2.0f);
+		glm::vec3 m_CameraPosition = glm::vec3(0.0f, 0.0f, -1.0f);
 		glm::vec3 m_CameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 	};
 }

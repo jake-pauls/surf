@@ -69,6 +69,8 @@ namespace vkn
 		/// @param submitFunction Function using a command buffer to execute a rendering command
 		void SubmitToRenderer(std::function<void(VkCommandBuffer)>&& submitFunction) const;
 
+		void ReloadMeshes();
+
 	private:
 		/// @brief Creates required synchronization objects for the renderer
 		void CreateSyncObjects();
@@ -88,6 +90,7 @@ namespace vkn
 
 		void LoadMeshes();
 
+		VkMesh* LookupMesh(const std::string& meshName);
 		VkMaterial* LookupMaterial(const std::string& materialName);
 		VkMaterial* CreateMaterial(const VkShaderPipeline& shaderPipeline, 
 			const std::string& materialName);
@@ -127,14 +130,21 @@ namespace vkn
 		std::vector<VkFence> m_InFlightFences = {};
 
 		// Temp
+		std::string m_SelectedModel = "";
 		VkModel* m_UntexturedModel = nullptr;
-		VkModel* m_TexturedModel = nullptr;
-		VkMesh m_UntexturedMesh = {};
-		VkMesh m_TexturedMesh = {};
+		VkModel* m_LoadedModel = nullptr;
+
+		VkMesh m_VikingRoomMesh = {};
+		VkMesh m_TeapotMesh = {};
+		VkMesh m_BunnyMesh = {};
+		VkMesh m_SuzanneMesh = {};
+		VkMesh m_DragonMesh = {};
+
 
 		VkDescriptorPool m_ImguiDescriptorPool;
 
 		std::vector<VkModel*> m_RenderableModels;
+		std::unordered_map<std::string, VkMesh> m_Meshes;
 		std::unordered_map<std::string, VkMaterial> m_Materials;
 	};
 }
