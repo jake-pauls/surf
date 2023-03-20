@@ -28,7 +28,7 @@ namespace wv
 		float m_ScreenHeight = 600.0f;
 
 		float m_CameraFoV = 90.0f;
-		float m_CameraDistance = 10.0f;
+		float m_CameraDistance = 8.0f;
 		float m_CameraXAngle = 90.0f;
 		float m_CameraYAngle = 30.0f;
 

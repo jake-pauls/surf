@@ -179,11 +179,11 @@ void wv::Application::Run()
 			SDL_WaitEvent(&event);
 		}
 	
+		// Run ImGui
 		if (gapi == GAPI::Vulkan)
 			ImGui_ImplVulkan_NewFrame();
 		else
 			WAVE_ASSERT(false, "Graphics API not configured with ImGui");
-
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
 		ImGui::ShowDemoWindow();

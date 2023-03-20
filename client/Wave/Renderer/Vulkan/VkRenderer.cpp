@@ -391,7 +391,7 @@ void vkn::VkRenderer::LoadMeshes()
 	m_TexturedMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
 	m_TexturedModel = new VkModel(*this, m_TexturedMesh, LookupMaterial("VikingRoomMaterial"));
 
-	m_UntexturedMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
+	m_UntexturedMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
 	m_UntexturedModel = new VkModel(*this, m_UntexturedMesh, LookupMaterial("Default"));
 
 	m_RenderableModels.push_back(m_TexturedModel);
