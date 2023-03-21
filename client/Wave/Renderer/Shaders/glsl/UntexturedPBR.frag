@@ -7,20 +7,11 @@ layout(location = 3) in vec3 in_Normal;
 
 layout(location = 0) out vec4 o_Color;
 
-vec3 lightPositions[1] = {
-    vec3(-5.0f,  5.0f, 5.0f),
-    // vec3( 5.0f,  5.0f, 5.0f),
-    // vec3(-5.0f, -5.0f, 5.0f),
-    // vec3( 5.0f, -5.0f, 5.0f)
-};
+// TODO: Turn into uniforms
+vec3 lightPositions[1] = { vec3(-5.0f,  5.0f, 5.0f) };
+vec3 lightColors[1] = { vec3(300.0f, 300.0f, 300.0f) };
 
-vec3 lightColors[1] = {
-    vec3(300.0f, 300.0f, 300.0f),
-    // vec3(300.0f, 300.0f, 300.0f),
-    // vec3(300.0f, 300.0f, 300.0f),
-    // vec3(300.0f, 300.0f, 300.0f)
-};
-
+// TODO: Turn into uniforms
 const vec3 albedo = vec3(0.5f, 0.0f, 0.0f);
 const float metallic = 0.5f;
 const float roughness = 0.2f;

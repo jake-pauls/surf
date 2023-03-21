@@ -366,7 +366,7 @@ VkDescriptorSetAllocateInfo vkn::InitDescriptorSetAllocateInfo(const VkDescripto
 
 	info.descriptorPool = descriptorPool;
 	info.pSetLayouts = descriptorSetLayouts;
-	info.descriptorSetCount = 1;
+	info.descriptorSetCount = count;
 
 	return info;
 }

@@ -45,19 +45,34 @@ void vkn::VkRenderer::Init()
 	{
 		std::string untexturedVertexShader = core::FileSystem::GetShaderPath("UntexturedMesh.vert.hlsl.spv").string();
 		std::string untexturedFragmentShader = core::FileSystem::GetShaderPath("UntexturedMesh.frag.hlsl.spv").string();
+
 		std::string texturedVertexShader = core::FileSystem::GetShaderPath("TexturedMesh.vert.hlsl.spv").string();
 		std::string texturedFragmentShader = core::FileSystem::GetShaderPath("TexturedMesh.frag.hlsl.spv").string();
 
 		std::string uPBRVertexShader = core::FileSystem::GetShaderPath("UntexturedPBR.vert.glsl.spv").string();
 		std::string uPBRFragmentShader = core::FileSystem::GetShaderPath("UntexturedPBR.frag.glsl.spv").string();
 
+		std::string tPBRVertexShader = core::FileSystem::GetShaderPath("TexturedPBR.vert.glsl.spv").string();
+		std::string tPBRFragmentShader = core::FileSystem::GetShaderPath("TexturedPBR.frag.glsl.spv").string();
+
 		m_UntexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, untexturedVertexShader, untexturedFragmentShader);
 		m_TexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, texturedVertexShader, texturedFragmentShader, 1);
 		m_PBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, uPBRVertexShader, uPBRFragmentShader);
+		m_TexturedPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 4);
 
 		CreateMaterial(*m_UntexturedPipeline, "Default");
-		CreateMaterial(*m_PBRPipeline, "PBRMaterial");
 		CreateTexturedMaterial(*m_TexturedPipeline, { "viking_room.png" }, "VikingRoomMaterial");
+		CreateMaterial(*m_PBRPipeline, "PBRMaterial");
+
+		std::vector<std::string> rustedIronTextures = {
+			"PBR/RustedIron_Color.png",
+			"PBR/RustedIron_Normal.png",
+			"PBR/RustedIron_Metallic.png",
+			//"PBR/RustedIron_Color.png",
+			"PBR/RustedIron_Roughness.png"
+		};
+
+		CreateTexturedMaterial(*m_TexturedPBRPipeline, rustedIronTextures, "TexturedPBRMaterial");
 	}
 
 	LoadMeshes();
@@ -96,6 +111,7 @@ void vkn::VkRenderer::Teardown()
 	delete m_UntexturedPipeline;
 	delete m_TexturedPipeline;
 	delete m_PBRPipeline;
+	delete m_TexturedPBRPipeline;
 	delete m_DefaultPass;
 
 	// Destroy materials

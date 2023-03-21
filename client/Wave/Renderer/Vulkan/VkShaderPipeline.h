@@ -54,6 +54,6 @@ namespace vkn
 
         VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
         VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
-        std::vector<VkDescriptorSetLayout> m_TextureSetLayouts = {};
+        VkDescriptorSetLayout m_TextureSetLayout = {};
     };
 }

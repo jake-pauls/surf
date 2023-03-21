@@ -63,7 +63,7 @@ void wv::ToolPanel::Draw()
 		ImGui::EndCombo();
 	}
 
-	const char* materials[] = { "Default", "VikingRoomMaterial", "PBRMaterial" };
+	const char* materials[] = { "Default", "VikingRoomMaterial", "PBRMaterial", "TexturedPBRMaterial" };
 	static const char* currentMaterial = materials[0];
 	ImGui::SetNextItemWidth(comboWidth);
 	if (ImGui::BeginCombo("Material", currentMaterial))

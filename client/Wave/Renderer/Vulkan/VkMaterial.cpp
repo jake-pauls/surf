@@ -54,13 +54,10 @@ void vkn::VkMaterial::BindMaterialTextures(VkCommandBuffer commandBuffer) const
 	if (!m_IsTexturedMaterial)
 		return;
 
-	for (size_t i = 0; i < m_Textures.size(); ++i)
-	{
-		vkCmdBindDescriptorSets(commandBuffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			m_ShaderPipeline->m_PipelineLayout, 1, 1,
-			&m_Textures[i].m_Image.m_Descriptor, 0, nullptr);
-	}
+	vkCmdBindDescriptorSets(commandBuffer,
+		VK_PIPELINE_BIND_POINT_GRAPHICS,
+		m_ShaderPipeline->m_PipelineLayout, 1, 1,
+		&m_TextureDescriptorSet, 0, nullptr);
 }
 
 void vkn::VkMaterial::AllocateSamplerDescriptorSet()
@@ -70,18 +67,24 @@ void vkn::VkMaterial::AllocateSamplerDescriptorSet()
 		m_Textures[i].m_Sampler = VkSampler();
 		VkSamplerCreateInfo samplerCreateInfo = vkn::InitSamplerCreateInfo(VK_FILTER_NEAREST);
 		vkCreateSampler(c_VkHardware->m_LogicalDevice, &samplerCreateInfo, nullptr, &m_Textures[i].m_Sampler);
+	}
 
-		VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_ShaderPipeline->m_DescriptorPool, &m_ShaderPipeline->m_TextureSetLayouts[i]);
-		VK_CALL(vkAllocateDescriptorSets(c_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_Textures[i].m_Image.m_Descriptor));
+	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_ShaderPipeline->m_DescriptorPool, &m_ShaderPipeline->m_TextureSetLayout);
+	VK_CALL(vkAllocateDescriptorSets(c_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_TextureDescriptorSet));
 
+	std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+	for (size_t i = 0; i < m_Textures.size(); ++i)
+	{
 		VkDescriptorImageInfo textureBufferInfo = VkDescriptorImageInfo();
 		textureBufferInfo.sampler = m_Textures[i].m_Sampler;
 		textureBufferInfo.imageView = m_Textures[i].m_Image.m_ImageView;
 		textureBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_Textures[i].m_Image.m_Descriptor, &textureBufferInfo, 0);
-		vkUpdateDescriptorSets(c_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
+		VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_TextureDescriptorSet, &textureBufferInfo, static_cast<uint32_t>(i));
+		writeDescriptorSets.push_back(descriptorSetWrite);
 	}
+
+	vkUpdateDescriptorSets(c_VkHardware->m_LogicalDevice, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
 }
 
 void vkn::VkMaterial::CreateTexture(const std::string& filename, VkTexture* outTexture)

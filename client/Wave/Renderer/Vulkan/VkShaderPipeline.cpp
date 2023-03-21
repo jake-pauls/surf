@@ -95,7 +95,7 @@ void vkn::VkShaderPipeline::Create()
 	// Add sampler descriptor set if pipeline is textured
 	if (m_PipelineTextureCount > 0)
 	{
-		descriptorPoolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 });
+		descriptorPoolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 12 });
 	}
 
 	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vkn::InitDescriptorPoolCreateInfo(static_cast<uint32_t>(descriptorPoolSizes.size()), descriptorPoolSizes.data(), 10);
@@ -108,14 +108,16 @@ void vkn::VkShaderPipeline::Create()
 
 	if (m_PipelineTextureCount > 0)
 	{
-		m_TextureSetLayouts.resize(m_PipelineTextureCount);
-
-		for (size_t i = 0; i < m_TextureSetLayouts.size(); ++i)
+		std::vector<VkDescriptorSetLayoutBinding> textureBindings;
+		for (size_t i = 0; i < m_PipelineTextureCount; i++)
 		{
 			VkDescriptorSetLayoutBinding texUniformBinding = vkn::InitDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-			VkDescriptorSetLayoutCreateInfo texDescriptorSetLayoutCreateInfo = vkn::InitDescriptorSetLayoutCreateInfo(&texUniformBinding);
-			VK_CALL(vkCreateDescriptorSetLayout(c_VkHardware.m_LogicalDevice, &texDescriptorSetLayoutCreateInfo, nullptr, &m_TextureSetLayouts[i]));
+			texUniformBinding.binding = static_cast<uint32_t>(i);
+			textureBindings.push_back(texUniformBinding);
 		}
+
+		VkDescriptorSetLayoutCreateInfo texDescriptorSetLayoutCreateInfo = vkn::InitDescriptorSetLayoutCreateInfo(textureBindings.data(), m_PipelineTextureCount);
+		VK_CALL(vkCreateDescriptorSetLayout(c_VkHardware.m_LogicalDevice, &texDescriptorSetLayoutCreateInfo, nullptr, &m_TextureSetLayout));
 	}
 
 	// Pipeline layout w/ push constants and descriptor sets
@@ -129,12 +131,7 @@ void vkn::VkShaderPipeline::Create()
 	// This is kept separate to allow for easy access of texture set layouts in 'VkMaterial'
 	std::vector<VkDescriptorSetLayout> setLayouts = { m_DescriptorSetLayout };
 	if (m_PipelineTextureCount > 0)
-	{
-		for (size_t i = 0; i < m_PipelineTextureCount; ++i)
-		{
-			setLayouts.push_back(m_TextureSetLayouts[i]);
-		}
-	}
+		setLayouts.push_back(m_TextureSetLayout);
 
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = setLayouts.data();
@@ -168,10 +165,7 @@ void vkn::VkShaderPipeline::Create()
 
 void vkn::VkShaderPipeline::Destroy()
 {
-	for (size_t i = 0; i < m_TextureSetLayouts.size(); ++i)
-	{
-		vkDestroyDescriptorSetLayout(c_VkHardware.m_LogicalDevice, m_TextureSetLayouts[i], nullptr);
-	}
+	vkDestroyDescriptorSetLayout(c_VkHardware.m_LogicalDevice, m_TextureSetLayout, nullptr);
 
 	vkDestroyDescriptorSetLayout(c_VkHardware.m_LogicalDevice, m_DescriptorSetLayout, nullptr);
 	vkDestroyDescriptorPool(c_VkHardware.m_LogicalDevice, m_DescriptorPool, nullptr);

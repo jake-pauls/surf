@@ -119,6 +119,7 @@ namespace vkn
 		VkShaderPipeline* m_TexturedPipeline = nullptr;
 		VkShaderPipeline* m_UntexturedPipeline = nullptr;
 		VkShaderPipeline* m_PBRPipeline = nullptr;
+		VkShaderPipeline* m_TexturedPBRPipeline = nullptr;
 
 		// Frame Management
 		bool m_IsFrameStarted = false;

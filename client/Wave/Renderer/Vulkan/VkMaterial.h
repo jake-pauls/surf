@@ -48,7 +48,10 @@ namespace vkn
 			const VkRenderer* c_VkRenderer = nullptr;
 			const VkHardware* c_VkHardware = nullptr;
 			const VkShaderPipeline* m_ShaderPipeline = nullptr;
+
 			std::vector<VkTexture> m_Textures = {};
+			VkDescriptorSet m_TextureDescriptorSet;
+
 			bool m_IsTexturedMaterial = false;
 	};
 }
