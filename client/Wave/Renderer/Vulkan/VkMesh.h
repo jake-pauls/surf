@@ -43,6 +43,7 @@ namespace vkn
 
     struct VkMeshPushConstants
     {
+		glm::vec4 m_CameraPosition;
         glm::mat4 m_ModelMatrix;
     };
 
@@ -51,7 +52,6 @@ namespace vkn
 		glm::mat4 m_ViewMatrix;
 		glm::mat4 m_ProjectionMatrix;
 	};
-
 }
 
 namespace std

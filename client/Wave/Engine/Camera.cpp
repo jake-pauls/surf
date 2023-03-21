@@ -10,9 +10,9 @@ wv::Camera::Camera()
 void wv::Camera::Update()
 {
 	m_CameraPosition = glm::vec3(
-		glm::cos(glm::radians(m_CameraXAngle)) * glm::cos(glm::radians(m_CameraYAngle)),
-		glm::sin(glm::radians(m_CameraYAngle)),
-		glm::sin(glm::radians(m_CameraXAngle) * glm::cos(glm::radians(m_CameraYAngle)))
+		glm::cos(glm::radians(m_Yaw)) * glm::cos(glm::radians(m_Pitch)),
+		glm::sin(glm::radians(m_Pitch)),
+		glm::sin(glm::radians(m_Yaw) * glm::cos(glm::radians(m_Pitch)))
 	);
 
 	m_CameraPosition *= glm::vec3(m_CameraDistance);
@@ -25,20 +25,8 @@ void wv::Camera::Update()
 
 void wv::Camera::Orbit(float xOffset, float yOffset)
 {
-	m_CameraXAngle += xOffset * m_MouseSensitivity;
-	m_CameraYAngle -= yOffset * m_MouseSensitivity;
-
-	while (m_CameraXAngle >= 360.0f)
-		m_CameraXAngle -= 360.0f;
-
-	while (m_CameraXAngle <= 0.0f)
-		m_CameraXAngle += 360.0f;
-
-	if (m_CameraYAngle >= 90.0f)
-		m_CameraYAngle = 89.0f;
-
-	if (m_CameraYAngle <= -90.0f)
-		m_CameraYAngle = -89.0f;
+	m_Yaw += xOffset * m_MouseSensitivity;
+	m_Pitch -= yOffset * m_MouseSensitivity;
 
 	Update();
 }
@@ -47,8 +35,10 @@ void wv::Camera::Zoom(float yOffset)
 {
 	m_CameraDistance -= yOffset * m_ZoomSensitivity;
 
-	if (m_CameraDistance < 1.0f)
-		m_CameraDistance = 1.0f;
+	if (m_CameraDistance < 0.5f)
+		m_CameraDistance = 0.5f;
+	if (m_CameraDistance > 45.0f)
+		m_CameraDistance = 45.0f;
 
 	Update();
 }
@@ -69,7 +59,7 @@ glm::mat4 wv::Camera::GetViewMatrix() const
 
 glm::mat4 wv::Camera::GetProjectionMatrix() const
 {
-	glm::mat4 projection = glm::perspective(m_CameraFoV, m_ScreenWidth / m_ScreenHeight, 0.1f, 200.0f);
+	glm::mat4 projection = glm::perspective(m_CameraFoV, m_ScreenWidth / m_ScreenHeight, 0.1f, 100.0f);
 	projection[1][1] *= -1;
 
 	return projection;

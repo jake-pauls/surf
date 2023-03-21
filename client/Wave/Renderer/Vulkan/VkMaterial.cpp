@@ -12,55 +12,79 @@ vkn::VkMaterial::VkMaterial(const VkRenderer& renderer, const VkShaderPipeline& 
 	: c_VkRenderer(&renderer)
 	, c_VkHardware(renderer.m_VkHardware)
 	, m_ShaderPipeline(&shaderPipeline) 
-	, m_Texture()
 	, m_IsTexturedMaterial(false)
 { 
 }
 
-vkn::VkMaterial::VkMaterial(const VkRenderer& renderer, const VkShaderPipeline& shaderPipeline, const std::string& textureName)
+vkn::VkMaterial::VkMaterial(const VkRenderer& renderer, const VkShaderPipeline& shaderPipeline, const std::vector<std::string>& textureNames)
 	: c_VkRenderer(&renderer)
 	, c_VkHardware(renderer.m_VkHardware)
 	, m_ShaderPipeline(&shaderPipeline)
 	, m_IsTexturedMaterial(true)
 {
-	std::string texturePath = core::FileSystem::GetAssetPath(textureName.c_str()).string();
-	CreateTexture(texturePath);
+	m_Textures.resize(textureNames.size());
 
-	VkImageViewCreateInfo textureInfo = vkn::InitImageViewCreateInfo(VK_FORMAT_R8G8B8A8_SRGB, m_Texture.m_Image.m_Image, VK_IMAGE_ASPECT_COLOR_BIT);
-	vkCreateImageView(c_VkHardware->m_LogicalDevice, &textureInfo, nullptr, &m_Texture.m_Image.m_ImageView);
+	for (size_t i = 0; i < textureNames.size(); ++i)
+	{ 
+		std::string texturePath = core::FileSystem::GetAssetPath(textureNames[i].c_str()).string();
+		CreateTexture(texturePath, &m_Textures[i]);
 
-	AllocateDescriptorSets();
+		VkImageViewCreateInfo textureInfo = vkn::InitImageViewCreateInfo(VK_FORMAT_R8G8B8A8_SRGB, m_Textures[i].m_Image.m_Image, VK_IMAGE_ASPECT_COLOR_BIT);
+		vkCreateImageView(c_VkHardware->m_LogicalDevice, &textureInfo, nullptr, &m_Textures[i].m_Image.m_ImageView);
+	}
+
+	AllocateSamplerDescriptorSet();
 }
 
 vkn::VkMaterial::~VkMaterial()
 {
 	if (m_IsTexturedMaterial)
 	{
-		vkDestroySampler(c_VkHardware->m_LogicalDevice, m_Texture.m_Sampler, nullptr);
-		vkDestroyImageView(c_VkHardware->m_LogicalDevice, m_Texture.m_Image.m_ImageView, nullptr);
-		vmaDestroyImage(c_VkHardware->m_VmaAllocator, m_Texture.m_Image.m_Image, m_Texture.m_Image.m_Allocation);
+		for (size_t i = 0; i < m_Textures.size(); ++i)
+		{
+			vkDestroySampler(c_VkHardware->m_LogicalDevice, m_Textures[i].m_Sampler, nullptr);
+			vkDestroyImageView(c_VkHardware->m_LogicalDevice, m_Textures[i].m_Image.m_ImageView, nullptr);
+			vmaDestroyImage(c_VkHardware->m_VmaAllocator, m_Textures[i].m_Image.m_Image, m_Textures[i].m_Image.m_Allocation);
+		}
 	}
 }
 
-void vkn::VkMaterial::AllocateDescriptorSets()
+void vkn::VkMaterial::BindMaterialTextures(VkCommandBuffer commandBuffer) const
 {
-	m_Texture.m_Sampler = VkSampler();
-	VkSamplerCreateInfo samplerCreateInfo = vkn::InitSamplerCreateInfo(VK_FILTER_NEAREST);
-	vkCreateSampler(c_VkHardware->m_LogicalDevice, &samplerCreateInfo, nullptr, &m_Texture.m_Sampler);
+	if (!m_IsTexturedMaterial)
+		return;
 
-	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_ShaderPipeline->m_DescriptorPool, &m_ShaderPipeline->m_SingleTextureSetLayout);
-	VK_CALL(vkAllocateDescriptorSets(c_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_Texture.m_Image.m_Descriptor));
-
-	VkDescriptorImageInfo textureBufferInfo = VkDescriptorImageInfo();
-	textureBufferInfo.sampler = m_Texture.m_Sampler;
-	textureBufferInfo.imageView = m_Texture.m_Image.m_ImageView;
-	textureBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_Texture.m_Image.m_Descriptor, &textureBufferInfo, 0);
-	vkUpdateDescriptorSets(c_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
+	for (size_t i = 0; i < m_Textures.size(); ++i)
+	{
+		vkCmdBindDescriptorSets(commandBuffer,
+			VK_PIPELINE_BIND_POINT_GRAPHICS,
+			m_ShaderPipeline->m_PipelineLayout, 1, 1,
+			&m_Textures[i].m_Image.m_Descriptor, 0, nullptr);
+	}
 }
 
-void vkn::VkMaterial::CreateTexture(const std::string& filename)
+void vkn::VkMaterial::AllocateSamplerDescriptorSet()
+{
+	for (size_t i = 0; i < m_Textures.size(); ++i)
+	{
+		m_Textures[i].m_Sampler = VkSampler();
+		VkSamplerCreateInfo samplerCreateInfo = vkn::InitSamplerCreateInfo(VK_FILTER_NEAREST);
+		vkCreateSampler(c_VkHardware->m_LogicalDevice, &samplerCreateInfo, nullptr, &m_Textures[i].m_Sampler);
+
+		VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_ShaderPipeline->m_DescriptorPool, &m_ShaderPipeline->m_TextureSetLayouts[i]);
+		VK_CALL(vkAllocateDescriptorSets(c_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_Textures[i].m_Image.m_Descriptor));
+
+		VkDescriptorImageInfo textureBufferInfo = VkDescriptorImageInfo();
+		textureBufferInfo.sampler = m_Textures[i].m_Sampler;
+		textureBufferInfo.imageView = m_Textures[i].m_Image.m_ImageView;
+		textureBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_Textures[i].m_Image.m_Descriptor, &textureBufferInfo, 0);
+		vkUpdateDescriptorSets(c_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
+	}
+}
+
+void vkn::VkMaterial::CreateTexture(const std::string& filename, VkTexture* outTexture)
 {
 	int texWidth, texHeight, channels;
 	stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &channels, STBI_rgb_alpha);
@@ -97,7 +121,7 @@ void vkn::VkMaterial::CreateTexture(const std::string& filename)
 	newImageAllocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
 	// Allocate and create image
-	vmaCreateImage(c_VkHardware->m_VmaAllocator, &newImageCreateInfo, &newImageAllocationCreateInfo, &m_Texture.m_Image.m_Image, &m_Texture.m_Image.m_Allocation, nullptr);
+	vmaCreateImage(c_VkHardware->m_VmaAllocator, &newImageCreateInfo, &newImageAllocationCreateInfo, &outTexture->m_Image.m_Image, &outTexture->m_Image.m_Allocation, nullptr);
 
 	/// ----------------
 
@@ -115,7 +139,7 @@ void vkn::VkMaterial::CreateTexture(const std::string& filename)
 		transferImageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 		transferImageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		transferImageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		transferImageBarrier.image = m_Texture.m_Image.m_Image;
+		transferImageBarrier.image = outTexture->m_Image.m_Image;
 		transferImageBarrier.subresourceRange = range;
 		transferImageBarrier.srcAccessMask = 0;
 		transferImageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -134,7 +158,7 @@ void vkn::VkMaterial::CreateTexture(const std::string& filename)
 		copyRegion.imageExtent = imageExtent;
 
 		// Copy the image into a staging buffer
-		vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.m_Buffer, m_Texture.m_Image.m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+		vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.m_Buffer, outTexture->m_Image.m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
 		VkImageMemoryBarrier readableImageBarrier = transferImageBarrier;
 		readableImageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;

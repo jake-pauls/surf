@@ -26,7 +26,7 @@ namespace vkn
             const VkHardware& hardware,
             const std::string& vertexShader, 
             const std::string& fragmentShader,
-            bool isTexturedPipeline = false);
+            const int textureCount = 0);
 
         ~VkShaderPipeline() override;
 
@@ -45,7 +45,7 @@ namespace vkn
         const VkRenderer& c_VkRenderer;
         const VkHardware& c_VkHardware;
         const VkRenderPass& c_RenderPass;
-        const bool m_IsTexturedPipeline = false;
+        const int m_PipelineTextureCount = 0;
 
         std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages = {};
 
@@ -54,6 +54,6 @@ namespace vkn
 
         VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
         VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
-        VkDescriptorSetLayout m_SingleTextureSetLayout = VK_NULL_HANDLE;
+        std::vector<VkDescriptorSetLayout> m_TextureSetLayouts = {};
     };
 }

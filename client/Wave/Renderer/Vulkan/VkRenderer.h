@@ -95,7 +95,7 @@ namespace vkn
 		VkMaterial* CreateMaterial(const VkShaderPipeline& shaderPipeline, 
 			const std::string& materialName);
 		VkMaterial* CreateTexturedMaterial(const VkShaderPipeline& shaderPipeline, 
-			const std::string& textureName, 
+			const std::vector<std::string>& textureNames, 
 			const std::string& materialName);
 
 	public:
@@ -118,6 +118,7 @@ namespace vkn
 		VkPass* m_DefaultPass = nullptr;
 		VkShaderPipeline* m_TexturedPipeline = nullptr;
 		VkShaderPipeline* m_UntexturedPipeline = nullptr;
+		VkShaderPipeline* m_PBRPipeline = nullptr;
 
 		// Frame Management
 		bool m_IsFrameStarted = false;
@@ -131,7 +132,7 @@ namespace vkn
 
 		// Temp
 		std::string m_SelectedModel = "";
-		VkModel* m_UntexturedModel = nullptr;
+		std::string m_SelectedMaterial = "";
 		VkModel* m_LoadedModel = nullptr;
 
 		VkMesh m_VikingRoomMesh = {};
@@ -139,7 +140,7 @@ namespace vkn
 		VkMesh m_BunnyMesh = {};
 		VkMesh m_SuzanneMesh = {};
 		VkMesh m_DragonMesh = {};
-
+		VkMesh m_SphereMesh = {};
 
 		VkDescriptorPool m_ImguiDescriptorPool;
 

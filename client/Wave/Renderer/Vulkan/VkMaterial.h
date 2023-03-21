@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "VkTypes.h"
 #include "VkInitializers.h"
 
@@ -28,25 +30,25 @@ namespace vkn
 
 			explicit VkMaterial(const VkRenderer& renderer, 
 				const VkShaderPipeline& shaderPipeline, 
-				const std::string& textureName);
+				const std::vector<std::string>& textureNames);
 
 			~VkMaterial();
 
+			void BindMaterialTextures(VkCommandBuffer commandBuffer) const;
+
 			inline const VkShaderPipeline* GetShaderPipelinePtr() const { return m_ShaderPipeline; }
 			
-			inline VkTexture& GetTextureRef() { return m_Texture; }
-
 			inline constexpr bool IsTexturedMaterial() const { return m_IsTexturedMaterial; }
 
 		private:
-			void AllocateDescriptorSets();
-			void CreateTexture(const std::string& filename);
+			void AllocateSamplerDescriptorSet();
+			void CreateTexture(const std::string& filename, VkTexture* outTexture);
 
 		private:
-			const VkRenderer* c_VkRenderer;
-			const VkHardware* c_VkHardware;
-			const VkShaderPipeline* m_ShaderPipeline;
-			VkTexture m_Texture = {};
+			const VkRenderer* c_VkRenderer = nullptr;
+			const VkHardware* c_VkHardware = nullptr;
+			const VkShaderPipeline* m_ShaderPipeline = nullptr;
+			std::vector<VkTexture> m_Textures = {};
 			bool m_IsTexturedMaterial = false;
 	};
 }

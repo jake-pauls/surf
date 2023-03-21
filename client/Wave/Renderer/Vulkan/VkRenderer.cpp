@@ -48,11 +48,16 @@ void vkn::VkRenderer::Init()
 		std::string texturedVertexShader = core::FileSystem::GetShaderPath("TexturedMesh.vert.hlsl.spv").string();
 		std::string texturedFragmentShader = core::FileSystem::GetShaderPath("TexturedMesh.frag.hlsl.spv").string();
 
+		std::string uPBRVertexShader = core::FileSystem::GetShaderPath("UntexturedPBR.vert.glsl.spv").string();
+		std::string uPBRFragmentShader = core::FileSystem::GetShaderPath("UntexturedPBR.frag.glsl.spv").string();
+
 		m_UntexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, untexturedVertexShader, untexturedFragmentShader);
-		m_TexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, texturedVertexShader, texturedFragmentShader, true);
+		m_TexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, texturedVertexShader, texturedFragmentShader, 1);
+		m_PBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, uPBRVertexShader, uPBRFragmentShader);
 
 		CreateMaterial(*m_UntexturedPipeline, "Default");
-		CreateTexturedMaterial(*m_TexturedPipeline, "viking_room.png", "VikingRoomMaterial");
+		CreateMaterial(*m_PBRPipeline, "PBRMaterial");
+		CreateTexturedMaterial(*m_TexturedPipeline, { "viking_room.png" }, "VikingRoomMaterial");
 	}
 
 	LoadMeshes();
@@ -86,11 +91,11 @@ void vkn::VkRenderer::Teardown()
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
 	// TODO: Implement main destruction queue as opposed to relying on destructors
-	//delete m_UntexturedModel;
 	delete m_LoadedModel;
 	delete m_VkSwapChain;
 	delete m_UntexturedPipeline;
 	delete m_TexturedPipeline;
+	delete m_PBRPipeline;
 	delete m_DefaultPass;
 
 	// Destroy materials
@@ -279,8 +284,6 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 	// Update camera extent every frame if it's changed
 	m_Camera->SetScreenDimensions(static_cast<float>(extent.width), static_cast<float>(extent.height));
 
-	// WIP
-
 	VkMesh* lastMesh = nullptr;
 	VkMaterial* lastMaterial = nullptr;
 	for (size_t i = 0; i < m_RenderableModels.size(); ++i)
@@ -308,19 +311,17 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 			lastMesh = &model->m_Mesh;
 		}
 
-		// Bind texture if one is on the material
+		// Bind textures if they exist on the material
 		if (modelMaterial->m_IsTexturedMaterial)
 		{
-			vkCmdBindDescriptorSets(commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				modelPipeline->m_PipelineLayout, 1, 1,
-				&modelMaterial->m_Texture.m_Image.m_Descriptor, 0, nullptr);
+			modelMaterial->BindMaterialTextures(commandBuffer);
 		}
 
 		// Submit push constants (constant uniforms)
 		VkMeshPushConstants constants;
+		constants.m_CameraPosition = glm::vec4(m_Camera->GetPosition(), 0.0f);
 		constants.m_ModelMatrix = mm;
-		vkCmdPushConstants(commandBuffer, modelPipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
+		vkCmdPushConstants(commandBuffer, modelPipeline->m_PipelineLayout, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), 0, sizeof(VkMeshPushConstants), &constants);
 
 		// Submit uniforms through descriptor sets
 		VkMeshUniformBufferObject uniform;
@@ -394,16 +395,18 @@ void vkn::VkRenderer::LoadMeshes()
 	core::Log(ELogType::Info, "[VkRenderer] Loading available meshes... this might take a while");
 
 	m_VikingRoomMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
-	m_TeapotMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
-	m_BunnyMesh.LoadFromObj(core::FileSystem::GetAssetPath("stanford_bunny.obj").string().c_str());
-	m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
-	m_DragonMesh.LoadFromObj(core::FileSystem::GetAssetPath("xyzrgb_dragon.obj").string().c_str());
+	//m_TeapotMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
+	//m_BunnyMesh.LoadFromObj(core::FileSystem::GetAssetPath("stanford_bunny.obj").string().c_str());
+	//m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
+	//m_DragonMesh.LoadFromObj(core::FileSystem::GetAssetPath("xyzrgb_dragon.obj").string().c_str());
+	m_SphereMesh.LoadFromObj(core::FileSystem::GetAssetPath("sphere.obj").string().c_str());
 
 	m_Meshes.emplace("Viking Room", m_VikingRoomMesh);
 	m_Meshes.emplace("Teapot", m_TeapotMesh);
 	m_Meshes.emplace("Bunny", m_BunnyMesh);
 	m_Meshes.emplace("Suzanne", m_SuzanneMesh);
 	m_Meshes.emplace("Dragon", m_DragonMesh);
+	m_Meshes.emplace("Sphere", m_SphereMesh);
 
 	ReloadMeshes();
 }
@@ -412,34 +415,44 @@ void vkn::VkRenderer::ReloadMeshes()
 {
 	using String = core::StringHelpers;
 	const std::string& selectedModel = wv::ToolPanel::s_SelectedModel;
+	const std::string& selectedMaterial = wv::ToolPanel::s_SelectedMaterial;
 
-	// Bail out if model hasn't changed
-	if (String::Equals(m_SelectedModel, selectedModel))
+	// Bail out if model or material is unchanged
+	if (String::Equals(m_SelectedModel, selectedModel) && String::Equals(m_SelectedMaterial, selectedMaterial))
 		return;
 
 	// Wait for device to release command buffers
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
 	// Reassign selected model
-	m_SelectedModel = selectedModel;
+	if (m_SelectedModel != selectedModel)
+		m_SelectedModel = selectedModel;
+
+	if (m_SelectedMaterial != selectedMaterial)
+		m_SelectedMaterial = selectedMaterial;
+
+	// Lookup mesh and material and verify they exist
+	VkMesh* targetMesh = LookupMesh(m_SelectedModel);
+	if (!targetMesh)
+	{
+		core::Log(ELogType::Warn, "Failed to update mesh because \"{}\" doesn't seem exist", m_SelectedModel);
+		return;
+	}
+
+	VkMaterial* targetMaterial = LookupMaterial(m_SelectedMaterial);
+	if (!targetMaterial)
+	{
+		core::Log(ELogType::Warn, "Failed to update material because \"{}\" doesn't seem to exist", m_SelectedMaterial);
+		return;
+	}
 
 	// Destroy pre-existing model data
 	delete m_LoadedModel;
 	m_RenderableModels.clear();
 
-	// Allocate new model based on selection
-	if (String::Equals(m_SelectedModel, "Viking Room"))
-		m_LoadedModel = new VkModel(*this, *LookupMesh("Viking Room"), LookupMaterial("VikingRoomMaterial"));
-	else if (String::Equals(m_SelectedModel, "Teapot"))
-		m_LoadedModel = new VkModel(*this, *LookupMesh("Teapot"), LookupMaterial("Default"));
-	else if (String::Equals(m_SelectedModel, "Bunny"))
-		m_LoadedModel = new VkModel(*this, *LookupMesh("Bunny"), LookupMaterial("Default"));
-	else if (String::Equals(m_SelectedModel, "Suzanne"))
-		m_LoadedModel = new VkModel(*this, *LookupMesh("Suzanne"), LookupMaterial("Default"));
-	else if (String::Equals(m_SelectedModel, "Dragon"))
-		m_LoadedModel = new VkModel(*this, *LookupMesh("Dragon"), LookupMaterial("Default"));
+	m_LoadedModel = new VkModel(*this, *targetMesh, targetMaterial);
 
-	// More models could be pushed back here for rendering
+	// More models could be pushed back here for rendering if needed
 	m_RenderableModels.push_back(m_LoadedModel);
 }
 
@@ -474,12 +487,12 @@ vkn::VkMaterial* vkn::VkRenderer::CreateMaterial(const VkShaderPipeline& shaderP
 }
 
 vkn::VkMaterial* vkn::VkRenderer::CreateTexturedMaterial(const VkShaderPipeline& shaderPipeline, 
-	const std::string& textureName, 
+	const std::vector<std::string>& textureNames, 
 	const std::string& materialName)
 {
 	m_Materials.emplace(std::piecewise_construct,
 		std::forward_as_tuple(materialName),
-		std::forward_as_tuple(*this, shaderPipeline, textureName.c_str()));
+		std::forward_as_tuple(*this, shaderPipeline, textureNames));
 
 	return &m_Materials[materialName];
 }

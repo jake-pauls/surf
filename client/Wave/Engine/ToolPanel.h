@@ -18,6 +18,9 @@ namespace wv
 		/// @brief String for the model currently selected in the tool panel
 		static std::string s_SelectedModel;
 
+		/// @brief String for the material currently selected in the tool panel
+		static std::string s_SelectedMaterial;
+
 	private:
 		std::function<void(void)> m_ImGuiNewFrameFunction;
 	};

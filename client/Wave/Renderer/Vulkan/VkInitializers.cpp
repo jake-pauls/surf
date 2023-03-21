@@ -288,13 +288,24 @@ VkPipelineViewportStateCreateInfo vkn::InitPipelineViewportStateCreateInfo(int v
 ///	Push Constants
 /// 
 
-VkPushConstantRange vkn::InitPushConstantRange(const uint32_t size)
+VkPushConstantRange vkn::InitVertexPushConstantRange(const uint32_t size, const uint32_t offset /* = 0 */)
 {
 	VkPushConstantRange range = VkPushConstantRange();
 	range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 	range.size = size;
-	range.offset = 0;
+	range.offset = offset;
+	
+	return range;
+}
+
+VkPushConstantRange vkn::InitFragmentPushConstantRange(const uint32_t size, const uint32_t offset /* = 0 */)
+{
+	VkPushConstantRange range = VkPushConstantRange();
+	range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	range.size = size;
+	range.offset = offset;
 	
 	return range;
 }

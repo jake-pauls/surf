@@ -1,9 +1,9 @@
 # Shader Package
 set(SHADER_FILES 
-    glsl/Triangle.vert glsl/Triangle.frag
     glsl/TexturedMesh.vert glsl/TexturedMesh.frag
     glsl/UntexturedMesh.vert glsl/UntexturedMesh.frag
-    hlsl/Triangle.vert hlsl/Triangle.frag
+    glsl/UntexturedPBR.vert glsl/UntexturedPBR.frag
+    glsl/TexturedPBR.vert glsl/TexturedPBR.frag
     hlsl/TexturedMesh.vert hlsl/TexturedMesh.frag
     hlsl/UntexturedMesh.vert hlsl/UntexturedMesh.frag)
 

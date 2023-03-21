@@ -19,6 +19,7 @@ struct UniformBufferObject
 
 struct PushConstants 
 {
+	float4 m_CameraPosition;
 	row_major float4x4 m_ModelMatrix;
 };
 

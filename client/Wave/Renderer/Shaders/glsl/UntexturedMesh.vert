@@ -14,6 +14,7 @@ layout(binding = 0) uniform UniformBufferObject
 
 layout(push_constant) uniform PushConstants 
 {
+    vec4 m_CameraPosition;
     mat4 m_ModelMatrix;
 } u_PCS;
 

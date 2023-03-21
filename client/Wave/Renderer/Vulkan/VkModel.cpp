@@ -133,28 +133,6 @@ void vkn::VkModel::AllocateDescriptorSets()
 		VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, m_UniformBuffers[i].m_Descriptor, &descriptorBufferInfo, 0);
 		vkUpdateDescriptorSets(c_VkHardware.m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
 	}
-
-	//! Texture Sampler
-
-	//if (m_Material->IsTexturedMaterial())
-	//{
-	//	VkTexture& materialTexture = m_Material->GetTextureRef();
-
-	//	materialTexture.m_Sampler = VkSampler();
-	//	VkSamplerCreateInfo samplerCreateInfo = vkn::InitSamplerCreateInfo(VK_FILTER_NEAREST);
-	//	vkCreateSampler(c_VkHardware.m_LogicalDevice, &samplerCreateInfo, nullptr, &materialTexture.m_Sampler);
-
-	//	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(modelPipeline->m_DescriptorPool, &modelPipeline->m_SingleTextureSetLayout);
-	//	VK_CALL(vkAllocateDescriptorSets(c_VkHardware.m_LogicalDevice, &descriptorSetAllocInfo, &materialTexture.m_Image.m_Descriptor));
-
-	//	VkDescriptorImageInfo textureBufferInfo = VkDescriptorImageInfo();
-	//	textureBufferInfo.sampler = materialTexture.m_Sampler;
-	//	textureBufferInfo.imageView = materialTexture.m_Image.m_ImageView;
-	//	textureBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-	//	VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, materialTexture.m_Image.m_Descriptor, &textureBufferInfo, 0);
-	//	vkUpdateDescriptorSets(c_VkHardware.m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
-	//}
 }
 
 void vkn::VkModel::Bind(VkCommandBuffer commandBuffer) const

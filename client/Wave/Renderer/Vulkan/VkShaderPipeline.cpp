@@ -12,12 +12,12 @@ vkn::VkShaderPipeline::VkShaderPipeline(const VkRenderer& renderer,
 	const VkHardware& hardware,
 	const std::string& vertexShader, 
 	const std::string& fragmentShader,
-	bool isTexturedPipeline /* = false */) 
+	const int textureCount /* = 0 */) 
 	: wv::Shader(vertexShader, fragmentShader)
 	, c_VkRenderer(renderer)
 	, c_VkHardware(hardware)
 	, c_RenderPass(renderer.m_DefaultPass->m_RenderPass)
-	, m_IsTexturedPipeline(isTexturedPipeline)
+	, m_PipelineTextureCount(textureCount)
 {
 	core::Log(ELogType::Trace, "[VkShaderPipeline] Creating shader pipeline");
 
@@ -84,7 +84,8 @@ void vkn::VkShaderPipeline::Create()
 	dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
 
 	// Initialize push constants 
-	VkPushConstantRange pushConstantRange = vkn::InitPushConstantRange(sizeof(VkMeshPushConstants));
+	VkPushConstantRange pushConstantRange = vkn::InitVertexPushConstantRange(sizeof(VkMeshPushConstants));
+	pushConstantRange.stageFlags = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	// Initialize descriptor sets/pools
 	std::vector<VkDescriptorPoolSize> descriptorPoolSizes = {
@@ -92,8 +93,10 @@ void vkn::VkShaderPipeline::Create()
 	};
 
 	// Add sampler descriptor set if pipeline is textured
-	if (m_IsTexturedPipeline)
+	if (m_PipelineTextureCount > 0)
+	{
 		descriptorPoolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10 });
+	}
 
 	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = vkn::InitDescriptorPoolCreateInfo(static_cast<uint32_t>(descriptorPoolSizes.size()), descriptorPoolSizes.data(), 10);
 	VK_CALL(vkCreateDescriptorPool(c_VkHardware.m_LogicalDevice, &descriptorPoolCreateInfo, nullptr, &m_DescriptorPool));
@@ -103,22 +106,35 @@ void vkn::VkShaderPipeline::Create()
 	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = vkn::InitDescriptorSetLayoutCreateInfo(&uboLayoutBinding);
 	VK_CALL(vkCreateDescriptorSetLayout(c_VkHardware.m_LogicalDevice, &descriptorSetLayoutCreateInfo, nullptr, &m_DescriptorSetLayout));
 
-	if (m_IsTexturedPipeline)
+	if (m_PipelineTextureCount > 0)
 	{
-		VkDescriptorSetLayoutBinding texUniformBinding = vkn::InitDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-		VkDescriptorSetLayoutCreateInfo texDescriptorSetLayoutCreateInfo = vkn::InitDescriptorSetLayoutCreateInfo(&texUniformBinding);
-		VK_CALL(vkCreateDescriptorSetLayout(c_VkHardware.m_LogicalDevice, &texDescriptorSetLayoutCreateInfo, nullptr, &m_SingleTextureSetLayout));
+		m_TextureSetLayouts.resize(m_PipelineTextureCount);
+
+		for (size_t i = 0; i < m_TextureSetLayouts.size(); ++i)
+		{
+			VkDescriptorSetLayoutBinding texUniformBinding = vkn::InitDescriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+			VkDescriptorSetLayoutCreateInfo texDescriptorSetLayoutCreateInfo = vkn::InitDescriptorSetLayoutCreateInfo(&texUniformBinding);
+			VK_CALL(vkCreateDescriptorSetLayout(c_VkHardware.m_LogicalDevice, &texDescriptorSetLayoutCreateInfo, nullptr, &m_TextureSetLayouts[i]));
+		}
 	}
 
 	// Pipeline layout w/ push constants and descriptor sets
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = vkn::InitPipelineLayoutCreateInfo();
+
+	// Append push constant ranges
 	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
 	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
 
 	// Add texture set layout if pipeline is textured
+	// This is kept separate to allow for easy access of texture set layouts in 'VkMaterial'
 	std::vector<VkDescriptorSetLayout> setLayouts = { m_DescriptorSetLayout };
-	if (m_IsTexturedPipeline)
-		setLayouts.push_back(m_SingleTextureSetLayout);
+	if (m_PipelineTextureCount > 0)
+	{
+		for (size_t i = 0; i < m_PipelineTextureCount; ++i)
+		{
+			setLayouts.push_back(m_TextureSetLayouts[i]);
+		}
+	}
 
 	pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
 	pipelineLayoutCreateInfo.pSetLayouts = setLayouts.data();
@@ -152,7 +168,11 @@ void vkn::VkShaderPipeline::Create()
 
 void vkn::VkShaderPipeline::Destroy()
 {
-	vkDestroyDescriptorSetLayout(c_VkHardware.m_LogicalDevice, m_SingleTextureSetLayout, nullptr);
+	for (size_t i = 0; i < m_TextureSetLayouts.size(); ++i)
+	{
+		vkDestroyDescriptorSetLayout(c_VkHardware.m_LogicalDevice, m_TextureSetLayouts[i], nullptr);
+	}
+
 	vkDestroyDescriptorSetLayout(c_VkHardware.m_LogicalDevice, m_DescriptorSetLayout, nullptr);
 	vkDestroyDescriptorPool(c_VkHardware.m_LogicalDevice, m_DescriptorPool, nullptr);
 

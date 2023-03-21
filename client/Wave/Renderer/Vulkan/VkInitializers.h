@@ -76,8 +76,11 @@ namespace vkn
 	///	Push Constants
 	/// 
 
-	/// @brief Constructs a push constant range struct
-	VkPushConstantRange InitPushConstantRange(const uint32_t size);
+	/// @brief Constructs a push constant range struct for a vertex shader
+	VkPushConstantRange InitVertexPushConstantRange(const uint32_t size, const uint32_t offset = 0);
+
+	/// @brief Constructs a push constant range struct for a fragment shader
+	VkPushConstantRange InitFragmentPushConstantRange(const uint32_t size, const uint32_t offset = 0);
 
 	///
 	///	Descriptor Sets/Pools
