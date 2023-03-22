@@ -20,6 +20,9 @@ wv::ToolPanel::ToolPanel(Renderer::GraphicsAPI gapi)
 	case Renderer::GraphicsAPI::DirectX:
 		WAVE_ASSERT(false, "DirectX is unimplemented");
 		break;
+	case Renderer::GraphicsAPI::OpenGL:
+		WAVE_ASSERT(false, "OpenGL is unimplemented");
+		break;
 	case Renderer::GraphicsAPI::Vulkan:
 		m_ImGuiNewFrameFunction = &ImGui_ImplVulkan_NewFrame;
 		break;

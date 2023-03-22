@@ -2,6 +2,8 @@
 #include "surf/Define.h"
 #include "surf/Interp.h"
 
+#include <stdlib.h>
+
 /// @brief Static variable to determine is a valid cfg.surf file has been loaded via the interpreter
 static int s_CfgIsValidLoaded = SURF_FALSE;
 
@@ -35,7 +37,7 @@ surf_Cfg surf_CfgLoad(const char* surfDir)
 	cfg.Slang = surf_CfgGetSlang();
 	cfg.Method = surf_CfgGetMethod();
 
-	if (surf_CfgIsNil(&cfg))
+	if (surf_CfgIsInvalid(&cfg))
 	{
 		SURF_API_CLIENT_LOG("One or more of the provided values in cfg.surf was nil, the API will not perform as intended until they're filled out");
 	}
@@ -109,7 +111,7 @@ surf_Method surf_CfgGetMethod()
 	return SURF_METHOD_NIL;
 }
 
-int surf_CfgIsNil(const surf_Cfg* cfg)
+int surf_CfgIsInvalid(const surf_Cfg* cfg)
 {
 	return cfg->Gapi == SURF_GAPI_NIL 
 		|| cfg->Slang == SURF_SLANG_NIL 

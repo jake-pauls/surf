@@ -288,7 +288,7 @@ void surf_InterpRegisterSymbol(const char* id, surf_fun_t fun)
     surf_SymbolTableInsert(s_SymbolTable, id, fun);
 }
 
-void surf_InterpUnregisterSymbol(const char* id)
+void surf_InterpDeregisterSymbol(const char* id)
 {
     if (s_SymbolTable == NULL)
         return;

@@ -97,9 +97,9 @@ void surf_InterpBindV4(const char* name, float f1, float f2, float f3, float f4)
 /// @param fun Callback function to be called when 'ref id()' is executed in a surf script
 void surf_InterpRegisterSymbol(const char* id, surf_fun_t fun);
 
-/// @brief Unregisters a symbol in the surf API 
+/// @brief Deregisters a symbol in the surf API 
 /// @param id The identifier for the symbol being unregistered
-void surf_InterpUnregisterSymbol(const char* id);
+void surf_InterpDeregisterSymbol(const char* id);
 
 /// @brief INTERNAL: Parses a returned buffer from the interpreter for a reflected function and executes it's associated callback in the symbol table
 /// @param buffer String buffer containing the reflected function in surf

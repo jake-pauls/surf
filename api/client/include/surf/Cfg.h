@@ -59,6 +59,6 @@ surf_Method surf_CfgGetMethod();
 
 /// @brief Checks if a provided surf configuration is invalid or nil (all required configuration variables are provided)
 /// @return True if the config is nil, false if the config has an invalid configuration field 
-int surf_CfgIsNil(const surf_Cfg* cfg);
+int surf_CfgIsInvalid(const surf_Cfg* cfg);
 
 #endif /* Cfg_h */

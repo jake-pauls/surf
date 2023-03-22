@@ -14,7 +14,8 @@ namespace wv
         {
             None = 0,
             DirectX = 1,
-            Vulkan = 2
+            Vulkan = 2,
+            OpenGL = 3
         };
 
     private:

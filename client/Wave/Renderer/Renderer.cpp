@@ -12,6 +12,8 @@ core::Unique<wv::Renderer> wv::Renderer::CreateRendererWithGAPI(Window* window, 
 	case Renderer::GraphicsAPI::DirectX:
 		WAVE_ASSERT(false, "DirectX is unimplemented");
 		return nullptr;
+	case Renderer::GraphicsAPI::OpenGL:
+		WAVE_ASSERT(false, "OpenGL is unimplemented");
 	case Renderer::GraphicsAPI::Vulkan:
 		return core::CreateUnique<vkn::VkRenderer>(window, camera);
 	};

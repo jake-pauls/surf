@@ -3,6 +3,7 @@
 #include "Window.h"
 #include "Camera.h"
 #include "ToolPanel.h"
+#include "SurfEngine.h"
 #include "Renderer.h"
 #include "Vulkan/VkRenderer.h"
 
@@ -43,69 +44,6 @@ wv::Application::Application()
 	: m_Window(new Window)
 	, m_Camera(new Camera)
 {
-	//core::Log(ELogType::Debug, "Starting surf bridge...");
-	//surf_ApiResult result = surf_StartBridge();
-	//WAVE_ASSERT(result != SURF_API_ERROR, "Failed to connect to the surf API");
-
-	//// Config definition
-	//std::string scriptDir = core::FileSystem::GetScriptsDirectory().string();
-	//surf_Cfg cfg = surf_CfgLoad(scriptDir.c_str());
-	//if (surf_CfgIsNil(&cfg))
-	//	core::Log(ELogType::Warn, "Bitch its nil");
-
-	//// Example line of surf
-	//const char* buffer = "let x: v2 = (1, 2);";
-	//char* out = surf_InterpLine(buffer);
-	//core::Log(ELogType::Debug, "Sent: {}", buffer);
-	//core::Log(ELogType::Debug, "Received: {}", out);
-	//surf_InterpFreeString(out);
-
-	//// Symbol registration
-	//surf_InterpRegisterSymbol("myFunc", (surf_fun_t) &Fun);
-	//const char* testBuffer = "ref myFunc();";
-	//char* reflectResult = surf_InterpLine(testBuffer);
-	//surf_InterpFreeString(reflectResult);
-
-	//surf_InterpRegisterSymbol("anotherFun", (surf_fun_t) &AnotherFun);
-	//const char* anotherTestBuffer = "ref anotherFun(1:int, 2.02:flt, (1,2):v2, (1,2,3):v3, (1.23,2.345,34.54,439.2):v4, \"test\":str);";
-	//char* anotherReflectResult = surf_InterpLine(anotherTestBuffer);
-	//surf_InterpFreeString(anotherReflectResult);
-
-	//surf_InterpBindInt("anInt", 12345);
-	//surf_InterpBindFlt("aFlt", (float) 1.2034);
-	//surf_InterpBindStr("aStr", "strstr");
-
-	//surf_InterpBindV2("aV2", 1.02f, 2.02f);
-	//surf_InterpBindV3("aV3", 1.02f, 2.02f, 3.02f);
-	//surf_InterpBindV4("aV4", 1.02f, 2.02f, 3.02f, 4.02f);
-
-	//int anInt;
-	//if (surf_InterpGetInt("anInt", &anInt))
-	//	core::Log(ELogType::Warn, "anInt: {}", anInt);
-
-	//float aFlt;
-	//if (surf_InterpGetFlt("aFlt", &aFlt))
-	//	core::Log(ELogType::Warn, "aFlt: {}", aFlt);
-
-	//char* aStr;
-	//if (surf_InterpGetStr("aStr", &aStr))
-	//	core::Log(ELogType::Warn, "aStr: {}", aStr);
-	//surf_InterpFreeString(aStr);
-
-	//surf_V2 aV2;
-	//if (surf_InterpGetV2("aV2", &aV2))
-	//	core::Log(ELogType::Warn, "aV2: x->{} y->{}", aV2.x, aV2.y);
-
-	//surf_V3 aV3;
-	//if (surf_InterpGetV3("aV3", &aV3))
-	//	core::Log(ELogType::Warn, "aV3: x->{} y->{} z->{}", aV3.x, aV3.y, aV3.z);
-
-	//surf_V4 aV4;
-	//if (surf_InterpGetV4("aV4", &aV4))
-	//	core::Log(ELogType::Warn, "aV4: x->{} y->{} z->{} w->{}", aV4.x, aV4.y, aV4.z, aV4.w);
-
-	//result = surf_DestroyBridge();
-	//WAVE_ASSERT(result != SURF_API_ERROR, "Failed to destroy surf bridge");
 }
 
 wv::Application::~Application()
@@ -119,10 +57,58 @@ void wv::Application::Run()
 {
 	core::Log(ELogType::Info, "[Application] Starting the wave");
 
-	// Create rendering context, for now it's Vulkan
-	// TODO: Determining this at runtime would be sick
-	using GAPI = Renderer::GraphicsAPI;
-	GAPI gapi = GAPI::Vulkan;
+	// Start the surf runner
+	SurfEngine::Start();
+
+	// Example line of surf
+	const char* buffer = "let x: v2 = (1, 2);";
+	std::string out = SurfEngine::InterpLine(buffer);
+	core::Log(ELogType::Debug, "Sent: {}", buffer);
+	core::Log(ELogType::Debug, "Received: {}", out);
+
+	if (SurfEngine::InterpFile("demo.surf"))
+		core::Log(ELogType::Debug, "Interpreted demo.surf!");
+
+	// Symbol registration/unregistration
+	SurfEngine::RegisterFunction("myFunc", (surf_fun_t) &Fun);
+	SurfEngine::InterpLine("ref myFunc();");
+	SurfEngine::DeregisterFunction("myFunc");
+
+	SurfEngine::BindInt("anInt", 12345);
+	SurfEngine::BindFlt("aFlt", 1.2345f);
+	SurfEngine::BindStr("aStr", "SurfEngine bound this str");
+	SurfEngine::BindV2("aV2", { 2.02f, 2.02f });
+
+	int anInt = SurfEngine::GetInt("anInt");
+	core::Log(ELogType::Warn, "anInt: {}", anInt);
+
+	float aFlt = SurfEngine::GetFlt("aFlt");
+	core::Log(ELogType::Warn, "aFlt: {}", aFlt);
+
+	std::string aStr = SurfEngine::GetStr("aStr");
+	core::Log(ELogType::Warn, "aStr: {}", aStr);
+
+	glm::vec2 aV2 = SurfEngine::GetV2("aV2");
+	core::Log(ELogType::Warn, "aV2: x -> {}  y -> {}", aV2.x, aV2.y);
+
+	// Serve the surf configuration's rendering API
+	Renderer::GraphicsAPI gapi;
+	surf_Cfg cfg = SurfEngine::GetSurfCfg();
+	switch (cfg.Gapi)
+	{
+	case SURF_GAPI_VULKAN:
+		gapi = Renderer::GraphicsAPI::Vulkan;
+		break;
+	case SURF_GAPI_DIRECTX:
+		gapi = Renderer::GraphicsAPI::DirectX;
+		break;
+	case SURF_GAPI_OPENGL:
+		gapi = Renderer::GraphicsAPI::OpenGL;
+		break;
+	case SURF_GAPI_NIL:
+		WAVE_ASSERT(false, "surf's configuration reported an unknown graphics API");
+		break;
+	}
 
 	// Initialize the window and it's corresponding graphics context
 	m_Window->Init(gapi);
@@ -199,6 +185,8 @@ void wv::Application::Teardown() const
 	m_Renderer->Teardown();
 
 	m_Window->Teardown();
+
+	SurfEngine::Destroy();
 }
 
 void wv::Application::UpdateControls(bool* keys)
