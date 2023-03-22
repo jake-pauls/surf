@@ -47,8 +47,17 @@ namespace vkn
         glm::mat4 m_ModelMatrix;
     };
 
+	/// @brief Represents the uniforms passed to the default UBO in shaders
+	/// @note Vectors are padded together to reduce the complexity of the descriptor sets
 	struct VkMeshUniformBufferObject
 	{
+		// PBR
+		glm::vec4 m_LightPosition;
+		glm::vec4 m_LightColor;
+		glm::vec4 m_Albedo;
+		// x - metallic, y - roughness, z - ao, w - unused
+		glm::vec4 m_PBRSettings;
+		// View
 		glm::mat4 m_ViewMatrix;
 		glm::mat4 m_ProjectionMatrix;
 	};

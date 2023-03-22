@@ -43,11 +43,11 @@ void vkn::VkRenderer::Init()
 
 	// Shader creation 
 	{
-		std::string untexturedVertexShader = core::FileSystem::GetShaderPath("UntexturedMesh.vert.hlsl.spv").string();
-		std::string untexturedFragmentShader = core::FileSystem::GetShaderPath("UntexturedMesh.frag.hlsl.spv").string();
+		std::string untexturedVertexShader = core::FileSystem::GetShaderPath("UntexturedMesh.vert.glsl.spv").string();
+		std::string untexturedFragmentShader = core::FileSystem::GetShaderPath("UntexturedMesh.frag.glsl.spv").string();
 
-		std::string texturedVertexShader = core::FileSystem::GetShaderPath("TexturedMesh.vert.hlsl.spv").string();
-		std::string texturedFragmentShader = core::FileSystem::GetShaderPath("TexturedMesh.frag.hlsl.spv").string();
+		std::string texturedVertexShader = core::FileSystem::GetShaderPath("TexturedMesh.vert.glsl.spv").string();
+		std::string texturedFragmentShader = core::FileSystem::GetShaderPath("TexturedMesh.frag.glsl.spv").string();
 
 		std::string uPBRVertexShader = core::FileSystem::GetShaderPath("UntexturedPBR.vert.glsl.spv").string();
 		std::string uPBRFragmentShader = core::FileSystem::GetShaderPath("UntexturedPBR.frag.glsl.spv").string();
@@ -58,7 +58,7 @@ void vkn::VkRenderer::Init()
 		m_UntexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, untexturedVertexShader, untexturedFragmentShader);
 		m_TexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, texturedVertexShader, texturedFragmentShader, 1);
 		m_PBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, uPBRVertexShader, uPBRFragmentShader);
-		m_TexturedPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 4);
+		m_TexturedPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
 
 		CreateMaterial(*m_UntexturedPipeline, "Default");
 		CreateTexturedMaterial(*m_TexturedPipeline, { "viking_room.png" }, "VikingRoomMaterial");
@@ -68,8 +68,9 @@ void vkn::VkRenderer::Init()
 			"PBR/RustedIron_Color.png",
 			"PBR/RustedIron_Normal.png",
 			"PBR/RustedIron_Metallic.png",
-			//"PBR/RustedIron_Color.png",
-			"PBR/RustedIron_Roughness.png"
+			"PBR/RustedIron_Roughness.png",
+			//"PBR/RustedIron_AO.png", A0 is dampening the entire texture
+			"PBR/RustedIron_Color.png",
 		};
 
 		CreateTexturedMaterial(*m_TexturedPBRPipeline, rustedIronTextures, "TexturedPBRMaterial");
@@ -340,7 +341,20 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 		vkCmdPushConstants(commandBuffer, modelPipeline->m_PipelineLayout, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), 0, sizeof(VkMeshPushConstants), &constants);
 
 		// Submit uniforms through descriptor sets
+		// Padding properties together in shaders to reduce complexity of descriptor sets
 		VkMeshUniformBufferObject uniform;
+
+		// PBR uniforms
+		uniform.m_LightPosition = glm::vec4(-5.0f, 2.0f, 5.0f, 0.0f);
+		uniform.m_LightColor = glm::vec4(300.0f, 300.0f, 300.0f, 0.0f);
+		uniform.m_Albedo = glm::vec4(0.5f, 0.5f, 0.0f, 0.0f);
+		// x - metallic, y - roughness, z - ao, w - unused
+		const float metallic = 1.0f;
+		const float roughness = 1.0f;
+		const float ao = 1.0f;
+		uniform.m_PBRSettings = glm::vec4(metallic, roughness, ao, 0.0f);
+
+		// View uniforms
 		uniform.m_ProjectionMatrix = m_Camera->GetProjectionMatrix();
 		uniform.m_ViewMatrix = m_Camera->GetViewMatrix();
 
@@ -418,10 +432,10 @@ void vkn::VkRenderer::LoadMeshes()
 	m_SphereMesh.LoadFromObj(core::FileSystem::GetAssetPath("sphere.obj").string().c_str());
 
 	m_Meshes.emplace("Viking Room", m_VikingRoomMesh);
-	m_Meshes.emplace("Teapot", m_TeapotMesh);
-	m_Meshes.emplace("Bunny", m_BunnyMesh);
-	m_Meshes.emplace("Suzanne", m_SuzanneMesh);
-	m_Meshes.emplace("Dragon", m_DragonMesh);
+	//m_Meshes.emplace("Teapot", m_TeapotMesh);
+	//m_Meshes.emplace("Bunny", m_BunnyMesh);
+	//m_Meshes.emplace("Suzanne", m_SuzanneMesh);
+	//m_Meshes.emplace("Dragon", m_DragonMesh);
 	m_Meshes.emplace("Sphere", m_SphereMesh);
 
 	ReloadMeshes();
@@ -466,6 +480,7 @@ void vkn::VkRenderer::ReloadMeshes()
 	delete m_LoadedModel;
 	m_RenderableModels.clear();
 
+	// Allocate new model with target mesh/material
 	m_LoadedModel = new VkModel(*this, *targetMesh, targetMaterial);
 
 	// More models could be pushed back here for rendering if needed

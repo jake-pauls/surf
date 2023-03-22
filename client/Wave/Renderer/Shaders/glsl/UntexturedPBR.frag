@@ -7,17 +7,19 @@ layout(location = 3) in vec3 in_Normal;
 
 layout(location = 0) out vec4 o_Color;
 
-// TODO: Turn into uniforms
-vec3 lightPositions[1] = { vec3(-5.0f,  5.0f, 5.0f) };
-vec3 lightColors[1] = { vec3(300.0f, 300.0f, 300.0f) };
-
-// TODO: Turn into uniforms
-const vec3 albedo = vec3(0.5f, 0.0f, 0.0f);
-const float metallic = 0.5f;
-const float roughness = 0.2f;
-const float ao = 1.0f;
-
 const float PI = 3.14159265359;
+
+layout(binding = 0) uniform UniformBufferObject
+{
+    // PBR
+    vec4 m_LightPosition;
+    vec4 m_LightColor;
+    vec4 m_Albedo;
+    vec4 m_PBRSettings; 
+    // View
+    mat4 m_ViewMatrix;
+    mat4 m_ProjectionMatrix;
+} u_UBO;
 
 layout(push_constant) uniform PushConstants 
 {
@@ -67,6 +69,14 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 
 void main()
 {
+    // Unpack uniform values
+    vec3 lightPosition = u_UBO.m_LightPosition.xyz;
+    vec3 lightColor = u_UBO.m_LightColor.xyz;
+    vec3 albedo = u_UBO.m_Albedo.xyz;
+    const float metallic = u_UBO.m_PBRSettings.x;
+    const float roughness = u_UBO.m_PBRSettings.y;
+    const float ao = u_UBO.m_PBRSettings.z;
+
     vec3 N = normalize(in_Normal);
     vec3 V = normalize(u_PCS.m_CameraPosition.xyz - in_WorldPosition);
 
@@ -76,35 +86,33 @@ void main()
 
     // Reflectance equation
     vec3 Lo = vec3(0.0f);
-    for (int i = 0; i < 1; ++i)
-    {
-        // Per-light radiance
-        vec3 L = normalize(lightPositions[i] - in_WorldPosition);
-        vec3 H = normalize(V + L);
-        float distance = length(lightPositions[i] - in_WorldPosition);
-        float attenuation = 1.0f / (distance * distance);
-        vec3 radiance = lightColors[i] * attenuation;
 
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, roughness);
-        float G = GeometrySmith(N, V, L, roughness);
-        vec3 F = FresnelSchlick(clamp(dot(H, V), 0.0f, 1.0f), F0);
+    // Per-light radiance
+    vec3 L = normalize(lightPosition - in_WorldPosition);
+    vec3 H = normalize(V + L);
+    float distance = length(lightPosition - in_WorldPosition);
+    float attenuation = 1.0f / (distance * distance);
+    vec3 radiance = lightColor * attenuation;
 
-        vec3 numerator = NDF * G * F;
-        float denominator = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f) + 0.0001;
-        vec3 specular = numerator / denominator;
+    // Cook-Torrance BRDF
+    float NDF = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = FresnelSchlick(clamp(dot(H, V), 0.0f, 1.0f), F0);
 
-        // kS = Fresnel
-        vec3 kS = F;
-        vec3 kD = vec3(1.0f) - kS;
-        kD *= 1.0f - metallic;
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f) + 0.0001;
+    vec3 specular = numerator / denominator;
 
-        // Scale light
-        float NdotL = max(dot(N, L), 0.0f);
+    // kS = Fresnel
+    vec3 kS = F;
+    vec3 kD = vec3(1.0f) - kS;
+    kD *= 1.0f - metallic;
 
-        // Add outgoing radiance
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-    }
+    // Scale light
+    float NdotL = max(dot(N, L), 0.0f);
+
+    // Add outgoing radiance
+    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
     // Ambient lighting
     vec3 ambient = vec3(0.03f) * albedo * ao;

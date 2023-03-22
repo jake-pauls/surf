@@ -31,7 +31,6 @@ void wv::ToolPanel::Draw()
 	m_ImGuiNewFrameFunction();
 	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
-	ImGui::ShowDemoWindow();
 
 	ImGui::Begin("wave. tool panel");
 	ImGui::SetWindowSize(ImVec2(350.0f, 100.0f), ImGuiCond_FirstUseEver);
@@ -43,7 +42,7 @@ void wv::ToolPanel::Draw()
 	const float comboWidth = width * 0.5f;
 
 	// Note: 'VkRenderer' matches against these strings when selecting new meshes
-	const char* models[] = { "Sphere", "Viking Room", /* "Teapot",  "Bunny", "Suzanne", "Dragon", */ };
+	const char* models[] = { "Sphere", "Viking Room", /* "Teapot",  "Bunny", "Suzanne", "Dragon" */ };
 	static const char* currentItem = models[0];
 	ImGui::SetNextItemWidth(comboWidth);
 	if (ImGui::BeginCombo("Model", currentItem))

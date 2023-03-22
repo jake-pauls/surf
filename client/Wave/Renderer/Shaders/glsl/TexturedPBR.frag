@@ -25,7 +25,7 @@ layout(set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
 layout(set = 1, binding = 1) uniform sampler2D u_NormalMap;
 layout(set = 1, binding = 2) uniform sampler2D u_MetallicMap;
 layout(set = 1, binding = 3) uniform sampler2D u_RoughnessMap;
-// layout(set = 1, binding = 4) uniform sampler2D u_AOMap;
+layout(set = 1, binding = 4) uniform sampler2D u_AOMap;
 
 const float PI = 3.14159265359;
 
@@ -35,8 +35,7 @@ layout(push_constant) uniform PushConstants
     mat4 m_ModelMatrix;
 } u_PCS;
 
-// TODO: edit out?
-vec3 GetNormalFromMap()
+vec3 GetNormalsFromMap()
 {
     vec3 tangentNormal = texture(u_NormalMap, in_TexCoord).xyz * 2.0f - 1.0f;
 
@@ -98,11 +97,9 @@ void main()
     vec3 albedo = pow(texture(u_AlbedoMap, in_TexCoord).rgb, vec3(2.2f));
     float metallic = texture(u_MetallicMap, in_TexCoord).r;
     float roughness = texture(u_RoughnessMap, in_TexCoord).r;
+    float ao = texture(u_AOMap, in_TexCoord).r;
 
-    // Default ambient occulsion
-    float ao = 1.0f;
-
-    vec3 N = GetNormalFromMap();
+    vec3 N = GetNormalsFromMap();
     vec3 V = normalize(u_PCS.m_CameraPosition.xyz - in_WorldPosition);
 
     // Reflectance at normal incidence

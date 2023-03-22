@@ -8,6 +8,12 @@ layout(location = 0) out vec3 o_FragColor;
 
 layout(binding = 0) uniform UniformBufferObject
 {
+    // PBR
+    vec4 m_LightPosition;
+    vec4 m_LightColor;
+    vec4 m_Albedo;
+    vec4 m_PBRSettings; 
+    // View
     mat4 m_ViewMatrix;
     mat4 m_ProjectionMatrix;
 } u_UBO;
