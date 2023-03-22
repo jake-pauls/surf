@@ -16,7 +16,7 @@ let rec typeof env = function
   | Let (x, t, e1) -> typeof_let env x t e1
   | Unop (uop, e1) -> typeof_unop env uop e1
   | Binop (bop, e1, e2) -> typeof_binop env bop e1 e2
-  | Put e -> typeof env e
+  | (Put e | Spt e) -> typeof env e
 
 (** [typeof_let env stype t e1] type checking for the expression [e1] in the [env] given a
     passed type [t], will infer a float or an int despite the expression if [t] specified

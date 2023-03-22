@@ -1,6 +1,19 @@
 #ifndef Utils_h
 #define Utils_h
 
+#include <sys/types.h>
+
+/// @brief Retrieves the last modified timestamp for a passed filepath
+/// @param filepath Path of the file to get the last modified timestamp for
+/// @return Last modified timestamp
+time_t GetFileLastModifiedTime(const char* filepath);
+
+/// @brief Checks if the passed filepath has been modified since a particular timestamp
+/// @param filepath Path of the file to check
+/// @param lastModifiedTime Last modified time of the file
+/// @return True if the file has been modified since the passed timestamp, false otherwise
+int IsFileModified(const char* filepath, time_t lastModifiedTime);
+
 /// @brief Splits a string with a provided delimeter
 /// @param str String to split
 /// @param delimeter Delimeter to split the string against

@@ -5,32 +5,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-/// @brief Represents a 'null' or deleted symbol in the table
+/// @brief Represents a 'null' or deleted item in the table
 static surf_HashTableItem HashTableDeletedItem = { NULL, NULL };
 
-static surf_HashTableItem* surf_HashTableCreateItem(const char* id, void* fun)
+static surf_HashTableItem* surf_HashTableCreateItem(const char* id, void* value)
 {
-    surf_HashTableItem* symbol = malloc(sizeof(surf_HashTableItem));
+    surf_HashTableItem* item = malloc(sizeof(surf_HashTableItem));
 
-    if (symbol != NULL)
+    if (item != NULL)
     {
-		symbol->Identifier = STRDUP(id);
-		symbol->Value = fun;
+		item->Identifier = STRDUP(id);
+		item->Value = value;
     }
 
-    return symbol;
+    return item;
 }
 
-static void surf_HashTableDeleteValue(surf_HashTableItem* symbol)
+static void surf_HashTableDeleteValue(surf_HashTableItem* item)
 {
-    if (symbol == NULL)
+    if (item == NULL)
         return;
 
-    free(symbol->Identifier);
-    symbol->Identifier = NULL;
+    free(item->Identifier);
+    item->Identifier = NULL;
 
-    free(symbol);
-    symbol = NULL;
+    free(item);
+    item = NULL;
 }
 
 static surf_HashTable* surf_HashTableCreateWithSize(const unsigned int size)
@@ -56,37 +56,37 @@ void surf_HashTableDestroy(surf_HashTable* table)
 {
     for (size_t i = 0; i < table->Size; ++i) 
     {
-        surf_HashTableItem* symbol = table->Items[i];
-        if (symbol != &HashTableDeletedItem)
-            surf_HashTableDeleteValue(symbol);
+        surf_HashTableItem* item = table->Items[i];
+        if (item != &HashTableDeletedItem)
+            surf_HashTableDeleteValue(item);
     }
 
     free(table);
     table = NULL;
 }
 
-static void surf_SymbolTableRehash(surf_HashTable* table) 
+static void surf_HashTableRehash(surf_HashTable* table) 
 {
     // Copy data into fresh hash table with size
-    surf_HashTable* newSymbolTable = surf_HashTableCreateWithSize(table->Size * 2);
+    surf_HashTable* newHashTable = surf_HashTableCreateWithSize(table->Size * 2);
     for (size_t i = 0; i < table->Size; ++i) 
     {
         surf_HashTableItem* item = table->Items[i];
         if (item != NULL && item != &HashTableDeletedItem) 
-            surf_HashTableInsert(newSymbolTable, item->Identifier, item->Value);
+            surf_HashTableInsert(newHashTable, item->Identifier, item->Value);
     }
 
-    table->Count = newSymbolTable->Count;
+    table->Count = newHashTable->Count;
 
     const unsigned int tmpSize = table->Size;
-    table->Size = newSymbolTable->Size;
-    newSymbolTable->Size = tmpSize;
+    table->Size = newHashTable->Size;
+    newHashTable->Size = tmpSize;
 
     surf_HashTableItem** tmpSymbols = table->Items;
-    table->Items = newSymbolTable->Items;
-    newSymbolTable->Items = tmpSymbols;
+    table->Items = newHashTable->Items;
+    newHashTable->Items = tmpSymbols;
 
-    surf_HashTableDestroy(newSymbolTable);
+    surf_HashTableDestroy(newHashTable);
 }
 
 unsigned int surf_HashTableGetHash(const char* id, unsigned int size)
@@ -104,7 +104,7 @@ void surf_HashTableInsert(surf_HashTable* table, const char* id, void* fun)
     // Check if table is above 70% capacity, double it if it needs more space
     const unsigned int loadFactor = table->Count * 100 / table->Size;
     if (loadFactor > 70)
-        surf_SymbolTableRehash(table);
+        surf_HashTableRehash(table);
 
     surf_HashTableItem* newSymbol = surf_HashTableCreateItem(id, fun);
     unsigned int index = surf_HashTableGetHash(id, table->Size);
@@ -132,7 +132,7 @@ void surf_HashTableInsert(surf_HashTable* table, const char* id, void* fun)
 
         // Rehash if same item is probed
         if (index == initial)
-            surf_SymbolTableRehash(table);
+            surf_HashTableRehash(table);
     }
 
     table->Items[index] = newSymbol;

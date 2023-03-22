@@ -40,9 +40,10 @@ let rec step env exp =
   | Vec4 (e1, e2, e3, e4) when is_value e1 && is_value e2 -> Vec4 (e1, e2, step env e3, e4)
   | Vec4 (e1, e2, e3, e4) when is_value e1 -> Vec4 (e1, step env e2, e3, e4)
   | Vec4 (e1, e2, e3, e4) -> Vec4 (step env e1, e2, e3, e4)
-  (* Put statements can immediately return their expressions *)
-  | Put e when is_value e -> e
-  | Put e -> step env e
+  (* Put/Str statements can immediately return their expressions *)
+  | (Put e | Spt e) when is_value e -> e
+  | (Put e | Spt e) -> step env e
+
 
 (** [step_unop uop v] takes a single step to perform a unary operation *)
 and step_unop uop v =

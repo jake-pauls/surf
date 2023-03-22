@@ -7,20 +7,6 @@ layout(location = 3) in vec3 in_Normal;
 
 layout(location = 0) out vec4 o_Color;
 
-vec3 lightPositions[4] = {
-    vec3(-5.0f,  5.0f, 5.0f),
-    vec3( 5.0f,  5.0f, 5.0f),
-    vec3(-5.0f, -5.0f, 5.0f),
-    vec3( 5.0f, -5.0f, 5.0f)
-};
-
-vec3 lightColors[4] = {
-    vec3(300.0f, 300.0f, 300.0f),
-    vec3(300.0f, 300.0f, 300.0f),
-    vec3(300.0f, 300.0f, 300.0f),
-    vec3(300.0f, 300.0f, 300.0f)
-};
-
 layout(set = 1, binding = 0) uniform sampler2D u_AlbedoMap;
 layout(set = 1, binding = 1) uniform sampler2D u_NormalMap;
 layout(set = 1, binding = 2) uniform sampler2D u_MetallicMap;
@@ -28,6 +14,18 @@ layout(set = 1, binding = 3) uniform sampler2D u_RoughnessMap;
 layout(set = 1, binding = 4) uniform sampler2D u_AOMap;
 
 const float PI = 3.14159265359;
+
+layout(binding = 0) uniform UniformBufferObject
+{
+    // PBR
+    vec4 m_LightPosition;
+    vec4 m_LightColor;
+    vec4 m_Albedo;
+    vec4 m_PBRSettings;
+    // View
+    mat4 m_ViewMatrix;
+    mat4 m_ProjectionMatrix;
+} u_UBO;
 
 layout(push_constant) uniform PushConstants 
 {
@@ -99,6 +97,9 @@ void main()
     float roughness = texture(u_RoughnessMap, in_TexCoord).r;
     float ao = texture(u_AOMap, in_TexCoord).r;
 
+    vec3 lightPosition = u_UBO.m_LightPosition.xyz;
+    vec3 lightColor = u_UBO.m_LightColor.xyz;
+
     vec3 N = GetNormalsFromMap();
     vec3 V = normalize(u_PCS.m_CameraPosition.xyz - in_WorldPosition);
 
@@ -108,35 +109,33 @@ void main()
 
     // Reflectance equation
     vec3 Lo = vec3(0.0f);
-    for (int i = 0; i < 4; ++i)
-    {
-        // Per-light radiance
-        vec3 L = normalize(lightPositions[i] - in_WorldPosition);
-        vec3 H = normalize(V + L);
-        float distance = length(lightPositions[i] - in_WorldPosition);
-        float attenuation = 1.0f / (distance * distance);
-        vec3 radiance = lightColors[i] * attenuation;
 
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, roughness);
-        float G = GeometrySmith(N, V, L, roughness);
-        vec3 F = FresnelSchlick(clamp(dot(H, V), 0.0f, 1.0f), F0);
+    // Radiance
+    vec3 L = normalize(lightPosition - in_WorldPosition);
+    vec3 H = normalize(V + L);
+    float distance = length(lightPosition - in_WorldPosition);
+    float attenuation = 1.0f / (distance * distance);
+    vec3 radiance = lightColor * attenuation;
 
-        vec3 numerator = NDF * G * F;
-        float denominator = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f) + 0.0001;
-        vec3 specular = numerator / denominator;
+    // Cook-Torrance BRDF
+    float NDF = DistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = FresnelSchlick(clamp(dot(H, V), 0.0f, 1.0f), F0);
 
-        // kS = Fresnel
-        vec3 kS = F;
-        vec3 kD = vec3(1.0f) - kS;
-        kD *= 1.0f - metallic;
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0f * max(dot(N, V), 0.0f) * max(dot(N, L), 0.0f) + 0.0001;
+    vec3 specular = numerator / denominator;
 
-        // Scale light
-        float NdotL = max(dot(N, L), 0.0f);
+    // kS = Fresnel
+    vec3 kS = F;
+    vec3 kD = vec3(1.0f) - kS;
+    kD *= 1.0f - metallic;
 
-        // Add outgoing radiance
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-    }
+    // Scale light
+    float NdotL = max(dot(N, L), 0.0f);
+
+    // Add outgoing radiance
+    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
     // Ambient lighting
     vec3 ambient = vec3(0.03f) * albedo * ao;

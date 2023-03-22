@@ -12,12 +12,12 @@
 #include <imgui_impl_vulkan.h>
 #include <surf/surf.h>
 
-void Fun(surf_argpack_t argpack) 
+void surf_SampleFunction(surf_argpack_t argpack) 
 { 
 	core::Log(ELogType::Debug, "fun(): a simple function callback");
 }
 
-void AnotherFun(surf_argpack_t argpack) 
+void surf_AnotherSampleFunction(surf_argpack_t argpack) 
 { 
 	int aInt = surf_ArgpackGetInt(argpack, 0);
 	float aFlt = surf_ArgpackGetFlt(argpack, 1);
@@ -60,36 +60,8 @@ void wv::Application::Run()
 	// Start the surf runner
 	SurfEngine::Start();
 
-	// Example line of surf
-	const char* buffer = "let x: v2 = (1, 2);";
-	std::string out = SurfEngine::InterpLine(buffer);
-	core::Log(ELogType::Debug, "Sent: {}", buffer);
-	core::Log(ELogType::Debug, "Received: {}", out);
-
-	if (SurfEngine::InterpFile("demo.surf"))
-		core::Log(ELogType::Debug, "Interpreted demo.surf!");
-
-	// Symbol registration/unregistration
-	SurfEngine::RegisterFunction("myFunc", (surf_fun_t) &Fun);
-	SurfEngine::InterpLine("ref myFunc();");
-	SurfEngine::DeregisterFunction("myFunc");
-
-	SurfEngine::BindInt("anInt", 12345);
-	SurfEngine::BindFlt("aFlt", 1.2345f);
-	SurfEngine::BindStr("aStr", "SurfEngine bound this str");
-	SurfEngine::BindV2("aV2", { 2.02f, 2.02f });
-
-	int anInt = SurfEngine::GetInt("anInt");
-	core::Log(ELogType::Warn, "anInt: {}", anInt);
-
-	float aFlt = SurfEngine::GetFlt("aFlt");
-	core::Log(ELogType::Warn, "aFlt: {}", aFlt);
-
-	std::string aStr = SurfEngine::GetStr("aStr");
-	core::Log(ELogType::Warn, "aStr: {}", aStr);
-
-	glm::vec2 aV2 = SurfEngine::GetV2("aV2");
-	core::Log(ELogType::Warn, "aV2: x -> {}  y -> {}", aV2.x, aV2.y);
+	SurfEngine::RegisterFunction("myFun", (surf_fun_t) &surf_SampleFunction);
+	SurfEngine::InterpLine("ref myFun();");
 
 	// Serve the surf configuration's rendering API
 	Renderer::GraphicsAPI gapi;

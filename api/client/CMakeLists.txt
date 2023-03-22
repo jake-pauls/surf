@@ -2,7 +2,7 @@ set(SOURCE_FILES
     src/Bridge.c
     src/Interp.c
     src/Cfg.c
-    src/SymbolTable.c
+    src/HashTable.c
     src/Argpack.c
     src/Vec.c
     src/Algorithm.c
@@ -12,7 +12,7 @@ set(HEADER_FILES
     include/surf/Bridge.h
     include/surf/Interp.h
     include/surf/Cfg.h
-    include/surf/SymbolTable.h
+    include/surf/HashTable.h
     include/surf/Utils.h
     include/surf/Argpack.h
     include/surf/Vec.h

@@ -7,6 +7,27 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+#include <sys/stat.h>
+
+time_t GetFileLastModifiedTime(const char* filepath)
+{
+    struct stat fileStat;
+    int err = stat(filepath, &fileStat);
+    if (err != 0)
+        SURF_API_CLIENT_LOG("Failed to retrieve file stats for %s", filepath);
+
+    return fileStat.st_mtime;
+}
+
+int IsFileModified(const char* filepath, time_t lastModifiedTime) 
+{
+    struct stat fileStat;
+    int err = stat(filepath, &fileStat);
+    if (err != 0) 
+        SURF_API_CLIENT_LOG("Failed to retrieve file stats for %s", filepath);
+
+    return fileStat.st_mtime > lastModifiedTime;
+}
 
 char** StringSplit(char* str, const char delimeter)
 {

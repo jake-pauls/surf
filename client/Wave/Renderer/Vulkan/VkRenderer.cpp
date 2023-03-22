@@ -9,6 +9,7 @@
 
 #include "Camera.h"
 #include "ToolPanel.h"
+#include "SurfEngine.h"
 
 #include "VkPass.h"
 #include "VkModel.h"
@@ -27,6 +28,8 @@ void vkn::VkRenderer::Init()
 {
 	core::Log(ELogType::Trace, "[VkRenderer] Initializing Vulkan renderer");
 
+	ExecuteSurfCommands();
+	
 	// Default hardware
 	m_VkHardware = new VkHardware(m_Window);
 
@@ -89,6 +92,9 @@ void vkn::VkRenderer::Draw()
 
 	// Draw ImGui
 	ImGui::Render();
+
+	// Execute surf commands
+	ExecuteSurfCommands();
 
 	BeginRenderPass(commandBuffer);
 
@@ -341,18 +347,15 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 		vkCmdPushConstants(commandBuffer, modelPipeline->m_PipelineLayout, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), 0, sizeof(VkMeshPushConstants), &constants);
 
 		// Submit uniforms through descriptor sets
-		// Padding properties together in shaders to reduce complexity of descriptor sets
+		// Currently padding/striping properties together in shaders to reduce complexity of descriptor sets
 		VkMeshUniformBufferObject uniform;
 
-		// PBR uniforms
-		uniform.m_LightPosition = glm::vec4(-5.0f, 2.0f, 5.0f, 0.0f);
-		uniform.m_LightColor = glm::vec4(300.0f, 300.0f, 300.0f, 0.0f);
-		uniform.m_Albedo = glm::vec4(0.5f, 0.5f, 0.0f, 0.0f);
+		// PBR uniforms  
+		uniform.m_LightPosition = glm::vec4(m_SurfLightPosition, 0.0f);
+		uniform.m_LightColor = glm::vec4(m_SurfLightColor, 0.0f);
+		uniform.m_Albedo = glm::vec4(m_SurfAlbedo, 0.0f);
 		// x - metallic, y - roughness, z - ao, w - unused
-		const float metallic = 1.0f;
-		const float roughness = 1.0f;
-		const float ao = 1.0f;
-		uniform.m_PBRSettings = glm::vec4(metallic, roughness, ao, 0.0f);
+		uniform.m_PBRSettings = glm::vec4(m_SurfMetallic, m_SurfRoughness, m_SurfAO, 0.0f);
 
 		// View uniforms
 		uniform.m_ProjectionMatrix = m_Camera->GetProjectionMatrix();
@@ -378,6 +381,18 @@ void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
 	vkCmdEndRenderPass(commandBuffer);
+}
+
+void vkn::VkRenderer::ExecuteSurfCommands()
+{
+	// Load PBR surf script and retrieve it's variables
+	wv::SurfEngine::InterpFile("pbr.surf");
+	m_SurfAlbedo = wv::SurfEngine::GetV3("pbr_albedo");
+	m_SurfMetallic = wv::SurfEngine::GetFlt("pbr_metallic");
+	m_SurfRoughness = wv::SurfEngine::GetFlt("pbr_roughness");
+	m_SurfAO = wv::SurfEngine::GetFlt("pbr_ao");
+	m_SurfLightPosition = wv::SurfEngine::GetV3("pbr_light_position");
+	m_SurfLightColor = wv::SurfEngine::GetV3("pbr_light_color");
 }
 
 void vkn::VkRenderer::InitImGui()

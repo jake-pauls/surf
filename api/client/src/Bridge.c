@@ -1,6 +1,6 @@
 #include "surf/Bridge.h"
 #include "surf/Define.h"
-#include "surf/SymbolTable.h"
+#include "surf/HashTable.h"
 #include "surf/Interp.h"
 
 #ifdef WIN32
@@ -89,7 +89,7 @@ surf_ApiResult surf_DestroyBridge()
     // TODO: Depending on this to reassign to SURF_API_ERROR is kind of unsafe...
     result = surf_InternalCloseSocket(s_ApiSocket);
 
-    // Destroy symbols if any were registered
+    // Destroy items if any were registered in the interpreter's tables
     surf_InternalInterpDestroy();
 
 #ifdef WIN32

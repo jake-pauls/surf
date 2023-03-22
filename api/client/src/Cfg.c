@@ -12,25 +12,25 @@ int surf_CfgIsValidLoaded()
 	return s_CfgIsValidLoaded;
 }
 
-surf_Cfg surf_CfgLoad(const char* surfDir)
+surf_Cfg surf_CfgLoad(const char* cfgSurfFilepath)
 {
 	const char* cfgFileName = "cfg.surf";
 
 	// Define a null configuration
 	surf_Cfg cfg = { SURF_GAPI_NIL, SURF_SLANG_NIL, SURF_METHOD_NIL };
 
-	char* buffer;
-	const char* fmt = "%s/%s";
-	int _ = ASPRINTF(&buffer, fmt, surfDir, cfgFileName);
-
-	int result = surf_InterpFile(buffer);
-	if (!result)
+	if (!strstr(cfgSurfFilepath, cfgFileName))
 	{
-		SURF_API_CLIENT_LOG("No cfg.surf file was found in: %s", surfDir);
+		SURF_API_CLIENT_LOG("Attempted to load an invalid configuration file: %s - should this be 'cfg.surf'?", cfgSurfFilepath);
 		return cfg;
 	}
 
-	free(buffer);
+	int result = surf_InterpFile(cfgSurfFilepath);
+	if (!result)
+	{
+		SURF_API_CLIENT_LOG("Failed to interpret configuration file: %s", cfgSurfFilepath);
+		return cfg;
+	}
 
 	// Retrieve the config
 	cfg.Gapi = surf_CfgGetGapi();

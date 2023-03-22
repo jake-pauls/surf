@@ -140,10 +140,10 @@ void wv::SurfEngine::MStart()
 	surf_ApiResult result = surf_StartBridge();
 	WAVE_ASSERT(result != SURF_API_ERROR, "Failed to connect to the surf API, calls to the surf API and surf-dependent features will not work");
 
-	std::string scriptDir = core::FileSystem::GetSurfScriptsDirectory().string();
+	std::string cfgSurf = core::FileSystem::GetSurfScriptPath("cfg.surf").string();
 
 	// Provide surf a scripts directory to find a 'cfg.surf' file
-	s_SurfCfg = surf_CfgLoad(scriptDir.c_str());
+	s_SurfCfg = surf_CfgLoad(cfgSurf.c_str());
 	if (surf_CfgIsInvalid(&s_SurfCfg))
 		core::Log(ELogType::Warn, "'cfg.surf' either wasn't found or has an invalid configuration");
 }
