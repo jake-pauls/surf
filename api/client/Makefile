@@ -25,7 +25,10 @@ TEST_OUT_DIR := $(BUILD_DIR)/tests
 INCLUDE_DIR := ./include
 SURF_INTERP_DIR := ../../surf
 
+VENDOR_DIR := ../vendor
 VENDOR_BUILD_DIR := ../build/vendor
+MT_BUILD_DIR := $(VENDOR_BUILD_DIR)/minitrace
+MT_INCLUDE_DIR := $(VENDOR_DIR)/minitrace
 CHECK_BUILD_DIR := $(VENDOR_BUILD_DIR)/check
 CHECK_INCLUDE_DIR := $(CHECK_BUILD_DIR)/src
 
@@ -54,6 +57,8 @@ endif
 CC := gcc
 CFLAGS := -I$(INCLUDE_DIR) -D$(PLATFORM)
 
+MT_INCLUDES := -I$(MT_INCLUDE_DIR)
+MT_LINKS := -L$(MT_BUILD_DIR) -lminitrace
 CHECK_INCLUDES := -I$(CHECK_BUILD_DIR) -I$(CHECK_INCLUDE_DIR)
 CHECK_LINKS := -L$(CHECK_INCLUDE_DIR) -lcheck -pthread -L$(BUILD_DIR) -lsurf -lws2_32
 
@@ -81,10 +86,10 @@ tests: $(TEST_EXE)
 	$(TEST_EXE)
 
 $(TEST_EXE): $(TEST_OBJS) $(UNIT_TEST_OBJS) | $(BUILD_DIR)
-	$(CC) $(CFLAGS) $(CHECK_INCLUDES) $^ -o $(TEST_EXE) $(CHECK_LINKS)
+	$(CC) $(CFLAGS) $(CHECK_INCLUDES) $^ -o $(TEST_EXE) $(CHECK_LINKS) 
 
 $(SRC_OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(SRC_OBJ_DIR)
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ $(MT_LINKS)
 
 $(TEST_OBJ_DIR)/%.o: $(TEST_DIR)/%.c | $(OBJ_DIR) $(TEST_OBJ_DIR)
 	$(CC) $(CFLAGS) $(CHECK_INCLUDES) -c $< -o $@

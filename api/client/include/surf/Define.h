@@ -41,7 +41,7 @@
 /// @brief Wrapper for 'false'
 #define SURF_FALSE 0
 
-#ifdef _SURF_DEBUG
+#ifdef _DEBUG
 	#include <minitrace.h>
 	#define SURF_PROFILE_INIT() mtr_init("surf.trace.json");   \
 							    MTR_META_PROCESS_NAME("surf"); \
