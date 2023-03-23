@@ -31,6 +31,9 @@
 /// @brief Server port number - this should match the number the surf server exists on
 #define SURF_API_PORT "3030"
 
+/// @brief Maximum number of attempts to try and make a connection to the server
+#define SURF_BRIDGE_MAX_CONNECTION_ATTEMPTS 3
+
 /// @brief Transmission/reading buffer size 
 /// @todo Write more wrappers to determine buffer sizes (ie: don't rely on this)
 #define SURF_MAX_BUFFER_SIZE 256
@@ -41,7 +44,7 @@
 /// @brief Wrapper for 'false'
 #define SURF_FALSE 0
 
-#ifdef _DEBUG
+#ifdef _PROFILE_ENABLED
 	#include <minitrace.h>
 	#define SURF_PROFILE_INIT() mtr_init("surf.trace.json");   \
 							    MTR_META_PROCESS_NAME("surf"); \

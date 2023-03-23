@@ -37,4 +37,8 @@ int surf_InternalReceiveSocket(char* outBuffer, size_t outBufferLen, int flags);
 /// @return surf API result indicating if cleaning up the socket succeeded
 surf_ApiResult surf_InternalCloseSocket(int socket);
 
+/// @brief INTERNAL: Checks if the bridge is currently connected
+/// @return True if the bridge is connected, false otherwise
+int surf_InternalIsBridgeConnected();
+
 #endif /* Bridge_h */

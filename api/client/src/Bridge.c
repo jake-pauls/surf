@@ -16,6 +16,9 @@ int g_APIPid;
 /// @brief Single socket used to connect to the API
 static int s_ApiSocket = -1;
 
+/// @brief Boolean representing the connection status of the bridge
+static int s_IsBridgeConnected = SURF_FALSE;
+
 surf_ApiResult surf_StartBridge()
 {
     SURF_PROFILE_INIT();
@@ -49,14 +52,13 @@ surf_ApiResult surf_StartBridge()
         return SURF_API_ERROR;
     }
 
-    int isConnected = SURF_FALSE;
     int attempts = 0;
 
     // Passing "localhost" returns all available local addresses, iterate to find the right one
     for (pNextAddr = pAddrInfo; pAddrInfo != NULL; pNextAddr = pAddrInfo->ai_next)
     {
         // Bail out if more than five addresses were tried, should be enough in most cases
-        if (attempts > 5)
+        if (attempts > SURF_BRIDGE_MAX_CONNECTION_ATTEMPTS)
             break;
 
         attempts++;
@@ -79,7 +81,7 @@ surf_ApiResult surf_StartBridge()
         }
 
         // Break if connection was successful
-        isConnected = SURF_TRUE;
+        s_IsBridgeConnected = SURF_TRUE;
         break;
     }
 
@@ -87,7 +89,7 @@ surf_ApiResult surf_StartBridge()
     freeaddrinfo(pAddrInfo);
 
     SURF_PROFILE_END_STEP("initialization", "connection");
-    return isConnected ? SURF_API_SUCCESS : SURF_API_ERROR;
+    return s_IsBridgeConnected ? SURF_API_SUCCESS : SURF_API_ERROR;
 }
 
 surf_ApiResult surf_DestroyBridge()
@@ -143,4 +145,9 @@ surf_ApiResult surf_InternalCloseSocket(int socket)
 
     SURF_PROFILE_END_STEP("socket", "closing socket");
     return result;
+}
+
+int surf_InternalIsBridgeConnected()
+{
+    return s_IsBridgeConnected;
 }

@@ -27,6 +27,13 @@ set_directory_properties(PROPERTIES VS_STARTUP_PROJECT wave)
 add_compile_options("$<$<CONFIG:DEBUG>:-D_WAVE_DEBUG>")
 add_compile_options("$<$<CONFIG:DEBUG>:-D_WAVE_ENABLE_LOGGING>")
 
+# Add profiling if flag is specified
+set(ENABLE_PROFILING OFF CACHE BOOL "enables profiling for the surf API")
+if(${ENABLE_PROFILING})
+    message(STATUS "[surf] Enabled profiling")
+    add_compile_options("$<$<CONFIG:DEBUG>:-D_PROFILE_ENABLED>")
+endif()
+
 # Build surf client project
 add_subdirectory(api)
 add_subdirectory(client)

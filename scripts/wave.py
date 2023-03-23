@@ -11,9 +11,9 @@ def build_wave() -> None:
     # Argument is 'debug' by default 
     build_cfg = "debug"
     if len(sys.argv) > 2:
-        build_cfg = sys.argv[1].lower()
+        build_cfg = sys.argv[2].lower()
 
-    build_cfgs = ["debug", "release"]
+    build_cfgs = ["debug", "release", "profile"]
     if build_cfg not in build_cfgs:
         log("No build configuration passed, using 'Debug'")
     
@@ -31,8 +31,12 @@ def build_wave() -> None:
     if build_cfg == "release":
         cfg = "RELEASE"
 
+    profile_arg = "OFF"
+    if build_cfg == "profile":
+        profile_arg = "ON"
+
     log(f"Using CMake to create build artifacts in {cfg}")
-    cmake_cmd = subprocess.run(["cmake", f"-DCMAKE_BUILD_TYPE={cfg}", ".."], shell=use_shell)
+    cmake_cmd = subprocess.run(["cmake", f"-DENABLE_PROFILING:BOOL={profile_arg}", f"-DCMAKE_BUILD_TYPE={cfg}", ".."], shell=use_shell)
 
     # Ensure subprocess ran properly
     if cmake_cmd.returncode == 0:

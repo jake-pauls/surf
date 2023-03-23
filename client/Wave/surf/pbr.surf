@@ -8,4 +8,4 @@ let pbr_roughness: flt = 1.0;
 let pbr_ao: flt = 1.0;
 
 let pbr_light_position: v3 = (-5.0, 2.0, 5.0);
-let pbr_light_color: v3 = (300.0, 300.0, 300.0);
+let pbr_light_color: v3 = (255.0, 255.0, 255.0);

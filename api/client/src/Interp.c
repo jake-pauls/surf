@@ -24,6 +24,13 @@ char* surf_InterpLine(const char* line)
 {
     SURF_PROFILE_START_STEP("interp", "interpret line");
 
+    // Bail out if API isn't connected to the bridge yet
+    if (!surf_InternalIsBridgeConnected())
+    {
+        SURF_PROFILE_END_STEP("interp", "interpret line");
+        return NULL;
+    }
+
     // Bail out of all interpreter requests if no cfg.surf file is present 
     // TODO: Find a way to do this that is less ironic?
     if (!surf_CfgIsValidLoaded() && !strstr(line, "cfg"))
@@ -75,7 +82,8 @@ int surf_UnmanagedInterpFile(const char* filepath)
     while (fgets(str, SURF_MAX_BUFFER_SIZE, handle))
     {
         // TODO: This is kind of unsafe...
-        surf_InterpLine(str);
+        char* res = surf_InterpLine(str);
+        surf_InterpFreeString(res);
     }
 
     fclose(handle);

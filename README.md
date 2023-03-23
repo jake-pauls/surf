@@ -6,9 +6,9 @@
 </p>
 
 ## Setup
-Not going to lie, setting this project up is dense. I've tried to abstract as much of it away as possible but some caveats and hiccups will remain.
+Setting this project up manually is quite dense. I've tried to abstract as much of it away as possible but some caveats and hiccups will remain.
 
-The setup below uses a simple set of custom python scripts to run the build commands I've set out for each project. For project-specific compilation/execution steps not explicitly covered by those scripts, please refer to each sub-project's respective README.
+The setup below uses a simple set of custom python scripts to run the build commands I've set out for each package (interpreter, api, and client app). For package-specific compilation/execution steps not explicitly covered by those scripts, please refer to each folder's respective README.
 
 Note that at the moment there is only support for running this in a **Windows** environment, with the server running on **MinGW** in **Cygwin** and the client running through **MSVC**.
 
@@ -24,7 +24,7 @@ Note that at the moment there is only support for running this in a **Windows** 
 $ git clone --recursive git@github.com:jake-pauls/surf.git
 ```
 
-5. In Cygwin, run the build scripts for the interpreter (requires OCaml/dune).
+5. In Cygwin, run the build scripts for the interpreter (requires OCaml/opam/dune).
 ```
 # mingw/cygwin
 $ python ./scripts/surf.py surf
@@ -38,8 +38,11 @@ $ python ./scripts/surf.py api
 
 7. In Powershell, run the build scripts for the client CMake project. This step also builds the surf API's **client** side of the library.
 ```
-# powershell
+# powershell - debug
 $ python ./scripts/surf.py wave
+
+# powershell - client with profiling
+$ python ./scripts/surf.py wave profile
 ```
 
 8. In Cygwin, start the server.
