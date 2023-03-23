@@ -25,3 +25,6 @@
 [submodule "client/Vendor/imgui"]
 	path = client/Vendor/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "api/vendor/minitrace"]
+	path = api/vendor/minitrace
+	url = https://github.com/hrydgard/minitrace.git

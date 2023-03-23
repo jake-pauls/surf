@@ -95,7 +95,7 @@ void main()
     vec3 albedo = pow(texture(u_AlbedoMap, in_TexCoord).rgb, vec3(2.2f));
     float metallic = texture(u_MetallicMap, in_TexCoord).r;
     float roughness = texture(u_RoughnessMap, in_TexCoord).r;
-    float ao = texture(u_AOMap, in_TexCoord).r;
+    // float ao = texture(u_AOMap, in_TexCoord).r;
 
     vec3 lightPosition = u_UBO.m_LightPosition.xyz;
     vec3 lightColor = u_UBO.m_LightColor.xyz;

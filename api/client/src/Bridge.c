@@ -10,11 +10,18 @@
 
 #include <stdio.h>
 
+/// @brief PID for profiling 
+int g_APIPid;
+
 /// @brief Single socket used to connect to the API
 static int s_ApiSocket = -1;
 
 surf_ApiResult surf_StartBridge()
 {
+    SURF_PROFILE_INIT();
+    SURF_PROFILE_START("surf", "api runtime", g_APIPid);
+    SURF_PROFILE_START_STEP("initialization", "connection");
+
     int status;
     struct addrinfo pHints, *pAddrInfo, *pNextAddr;
  
@@ -79,11 +86,14 @@ surf_ApiResult surf_StartBridge()
     // Free address info once connected
     freeaddrinfo(pAddrInfo);
 
+    SURF_PROFILE_END_STEP("initialization", "connection");
     return isConnected ? SURF_API_SUCCESS : SURF_API_ERROR;
 }
 
 surf_ApiResult surf_DestroyBridge()
 {
+    SURF_PROFILE_START_STEP("destruction", "disconnection");
+
     int result = SURF_API_SUCCESS;
 
     // TODO: Depending on this to reassign to SURF_API_ERROR is kind of unsafe...
@@ -96,17 +106,22 @@ surf_ApiResult surf_DestroyBridge()
     result = WSACleanup();
 #endif
 
+    SURF_PROFILE_END_STEP("destruction", "disconnection");
+    SURF_PROFILE_END("surf", "api runtime", g_APIPid);
+    SURF_PROFILE_DESTROY();
     return result;
 }
 
 int surf_InternalSendSocket(const char* buffer, size_t bufferLen, int flags)
 {
+    SURF_PROFILE_START_STEP("socket", "sending/receiving data from server");
     return send(s_ApiSocket, buffer, bufferLen, flags);
 }
 
 int surf_InternalReceiveSocket(char* buffer, size_t bufferLen, int flags)
 {
     int bytes = recv(s_ApiSocket, buffer, bufferLen, flags);
+    SURF_PROFILE_END_STEP("socket", "sending/receiving data from server");
 
     // Add null-termination to string
     buffer[bytes - 1] = '\0';
@@ -116,6 +131,7 @@ int surf_InternalReceiveSocket(char* buffer, size_t bufferLen, int flags)
 
 surf_ApiResult surf_InternalCloseSocket(int socket)
 {
+    SURF_PROFILE_START_STEP("socket", "closing socket");
     surf_ApiResult result = SURF_API_SUCCESS;
 
     if (socket != -1)
@@ -125,5 +141,6 @@ surf_ApiResult surf_InternalCloseSocket(int socket)
         result = close(socket);
 #endif
 
+    SURF_PROFILE_END_STEP("socket", "closing socket");
     return result;
 }

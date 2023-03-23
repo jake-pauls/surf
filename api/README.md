@@ -42,4 +42,5 @@ $ nc localhost 3030
 ```
 
 ### Dependencies
-* [Check](https://libcheck.github.io/check/)
+* [check](https://libcheck.github.io/check/)
+* [minitrace](https://github.com/hrydgard/minitrace)

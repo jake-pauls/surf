@@ -14,6 +14,7 @@ int surf_CfgIsValidLoaded()
 
 surf_Cfg surf_CfgLoad(const char* cfgSurfFilepath)
 {
+	SURF_PROFILE_START_STEP("config", "load config");
 	const char* cfgFileName = "cfg.surf";
 
 	// Define a null configuration
@@ -46,6 +47,7 @@ surf_Cfg surf_CfgLoad(const char* cfgSurfFilepath)
 		s_CfgIsValidLoaded = SURF_TRUE;
 	}
 
+	SURF_PROFILE_END_STEP("config", "load config");
 	return cfg;
 }
 

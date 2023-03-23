@@ -45,7 +45,7 @@ void wv::ToolPanel::Draw()
 	const float comboWidth = width * 0.5f;
 
 	// Note: 'VkRenderer' matches against these strings when selecting new meshes
-	const char* models[] = { "Sphere", "Viking Room", "Rock" /* "Teapot",  "Bunny", "Suzanne", "Dragon" */};
+	const char* models[] = { "Sphere", "Viking Room", "Rock", "Teapot",  "Bunny", "Suzanne", "Dragon" };
 	static const char* currentItem = models[0];
 	ImGui::SetNextItemWidth(comboWidth);
 	if (ImGui::BeginCombo("Model", currentItem))

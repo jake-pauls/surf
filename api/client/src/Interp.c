@@ -22,10 +22,15 @@ time_t surf_InterpLookupFileTime(const char* filepath)
 
 char* surf_InterpLine(const char* line)
 {
+    SURF_PROFILE_START_STEP("interp", "interpret line");
+
     // Bail out of all interpreter requests if no cfg.surf file is present 
     // TODO: Find a way to do this that is less ironic?
     if (!surf_CfgIsValidLoaded() && !strstr(line, "cfg"))
+    {
+        SURF_PROFILE_END_STEP("interp", "interpret line");
         return NULL;
+    }
 
     int _ = surf_InternalSendSocket(line, strlen(line), 0);
 
@@ -56,6 +61,7 @@ char* surf_InterpLine(const char* line)
     }
     free(dupLine);
 
+    SURF_PROFILE_END_STEP("interp", "interpret line");
     return STRDUP(buffer);
 }
 
@@ -308,10 +314,14 @@ void surf_InterpBindV4(const char* name, float f1, float f2, float f3, float f4)
 
 void surf_InterpRegisterSymbol(const char* id, void* fun)
 {
+    SURF_PROFILE_START_STEP("interp", "register symbol");
+
     if (!s_SymbolTable)
         s_SymbolTable = surf_HashTableCreate();
 
     surf_HashTableInsert(s_SymbolTable, id, fun);
+
+    SURF_PROFILE_END_STEP("interp", "register symbol");
 }
 
 void surf_InterpDeregisterSymbol(const char* id)
@@ -325,11 +335,13 @@ void surf_InterpDeregisterSymbol(const char* id)
 void surf_InternalExecuteReflectionCallback(const char* buffer)
 {
     // Prevent retrieving reflected functions if they don't exist
-    if (s_SymbolTable == NULL)
+    if (!s_SymbolTable)
     {
         SURF_API_CLIENT_LOG("Attempted to reflect a function in surf, but no functions have been registered in the API");
         return;
     }
+
+    SURF_PROFILE_START_STEP("interp", "reflection callback");
 
     char* dupBuffer = STRDUP(buffer);
 	const char space = ' ';
@@ -340,8 +352,11 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
 
     // Exit out if function isn't found
     surf_fun_t callback = (surf_fun_t) surf_HashTableLookup(s_SymbolTable, identifier);
-    if (callback == NULL)
+    if (!callback)
+    {
+        SURF_PROFILE_END_STEP("interp", "reflection callback");
         return;
+    }
 
     // Retrieve the length of the args to check for argument pack
     int splitLen = -1;
@@ -353,6 +368,7 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
 		callback(NULL);
         free(args);
         free(dupBuffer);
+        SURF_PROFILE_END_STEP("interp", "reflection callback");
         return;
     } 
 
@@ -416,14 +432,20 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
 	free(vArgs);
     free(args);
     free(dupBuffer);
+
+	SURF_PROFILE_END_STEP("interp", "reflection callback");
 }
 
 void surf_InternalInterpDestroy()
 {
+    SURF_PROFILE_START_STEP("destruction", "tearing down environment");
+
     if (s_SymbolTable)
 		surf_HashTableDestroy(s_SymbolTable);
 
     if (s_FileTimeTable)
         surf_HashTableDestroy(s_FileTimeTable);
+
+    SURF_PROFILE_END_STEP("destruction", "tearing down environment");
 }
 

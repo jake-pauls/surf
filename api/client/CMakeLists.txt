@@ -26,7 +26,7 @@ add_library(surf::api ALIAS ${PROJECT_NAME})
 
 # Link WinSock on Win32
 if(WIN32)
-    target_link_libraries(${PROJECT_NAME} Ws2_32)
+    target_link_libraries(${PROJECT_NAME} Ws2_32 minitrace)
 endif()
 
 # Add the applicable include targets

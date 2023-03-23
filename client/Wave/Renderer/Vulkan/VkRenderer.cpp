@@ -213,7 +213,7 @@ void vkn::VkRenderer::CreatePipelines()
 	m_RustPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
 	m_BambooPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
 	m_SandPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
-	m_RockPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 4);
+	m_RockPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
 
 	CreateMaterial(*m_UntexturedPipeline, "Default");
 	CreateTexturedMaterial(*m_TexturedPipeline, { "viking_room.png" }, "Viking Room");
@@ -224,7 +224,7 @@ void vkn::VkRenderer::CreatePipelines()
 		"PBR/Rust/Rust_Normal.png",
 		"PBR/Rust/Rust_Metallic.png",
 		"PBR/Rust/Rust_Roughness.png",
-		//"PBR/Rust/Rust_AO.png", 
+		// "PBR/Rust/Rust_AO.png",
 		"PBR/Rust/Rust_Albedo.png",
 	};
 
@@ -235,8 +235,8 @@ void vkn::VkRenderer::CreatePipelines()
 		"PBR/Bamboo/Bamboo_Normal.png",
 		"PBR/Bamboo/Bamboo_Metallic.png",
 		"PBR/Bamboo/Bamboo_Roughness.png",
-		//"PBR/Bamboo/Bamboo_AO.png",
-		"PBR/Bamboo/Bamboo_Albedo.png",
+		//"PBR/Bamboo/Bamboo_AO.png"
+		"PBR/Bamboo/Bamboo_Albedo.png"
 	};
 
 	CreateTexturedMaterial(*m_BambooPBRPipeline, bambooTextures, "Bamboo (PBR)");
@@ -246,8 +246,8 @@ void vkn::VkRenderer::CreatePipelines()
 		"PBR/Sand/Sand_Normal.png",
 		"PBR/Sand/Sand_Metallic.png",
 		"PBR/Sand/Sand_Roughness.png",
-		//"PBR/Sand/Sand_AO.png",
-		"PBR/Sand/Sand_Albedo.png",
+		//"PBR/Sand/Sand_AO.png"
+		"PBR/Sand/Sand_Albedo.png"
 	};
 
 	CreateTexturedMaterial(*m_SandPBRPipeline, sandTextures, "Sand (PBR)");
@@ -257,7 +257,8 @@ void vkn::VkRenderer::CreatePipelines()
 		"PBR/Rock/Rock_Normal.png",
 		"PBR/Rock/Rock_Metallic.png",
 		"PBR/Sand/Sand_Roughness.png", // Rock didn't come with roughness map
-		//"PBR/Rock/Rock_AO.png",
+		//"PBR/Rock/Rock_AO.png"
+		"PBR/Rock/Rock_Albedo.png"
 	};
 
 	CreateTexturedMaterial(*m_RockPBRPipeline, rockTextures, "Rock (PBR)");
@@ -515,21 +516,23 @@ void vkn::VkRenderer::LoadMeshes()
 {
 	core::Log(ELogType::Info, "[VkRenderer] Loading available meshes... this might take a while");
 
+	m_SphereMesh.LoadFromObj(core::FileSystem::GetAssetPath("sphere.obj").string().c_str());
 	m_VikingRoomMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
 	m_RockMesh.LoadFromObj(core::FileSystem::GetAssetPath("rock.obj").string().c_str());
-	//m_TeapotMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
-	//m_BunnyMesh.LoadFromObj(core::FileSystem::GetAssetPath("stanford_bunny.obj").string().c_str());
-	//m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
-	//m_DragonMesh.LoadFromObj(core::FileSystem::GetAssetPath("xyzrgb_dragon.obj").string().c_str());
-	m_SphereMesh.LoadFromObj(core::FileSystem::GetAssetPath("sphere.obj").string().c_str());
 
+	m_TeapotMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
+	m_BunnyMesh.LoadFromObj(core::FileSystem::GetAssetPath("stanford_bunny.obj").string().c_str());
+	m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
+	m_DragonMesh.LoadFromObj(core::FileSystem::GetAssetPath("xyzrgb_dragon.obj").string().c_str());
+
+	m_Meshes.emplace("Sphere", m_SphereMesh);
 	m_Meshes.emplace("Viking Room", m_VikingRoomMesh);
 	m_Meshes.emplace("Rock", m_RockMesh);
-	//m_Meshes.emplace("Teapot", m_TeapotMesh);
-	//m_Meshes.emplace("Bunny", m_BunnyMesh);
-	//m_Meshes.emplace("Suzanne", m_SuzanneMesh);
-	//m_Meshes.emplace("Dragon", m_DragonMesh);
-	m_Meshes.emplace("Sphere", m_SphereMesh);
+
+	m_Meshes.emplace("Teapot", m_TeapotMesh);
+	m_Meshes.emplace("Bunny", m_BunnyMesh);
+	m_Meshes.emplace("Suzanne", m_SuzanneMesh);
+	m_Meshes.emplace("Dragon", m_DragonMesh);
 
 	ReloadMeshes();
 }
