@@ -11,4 +11,5 @@ Vulkan-based rendering engine that leverages the surf API to communicate script 
 * [spdlog](https://github.com/gabime/spdlog)
 * [Catch2](https://github.com/catchorg/Catch2)
 * [glm](https://github.com/g-truc/glm)
-* [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader.git)
+* [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader)
+* [imgui](https://github.com/ocornut/imgui)

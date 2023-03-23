@@ -2,17 +2,19 @@
 
 #include "Vulkan/VkRendererContext.h"
 
-core::Unique<wv::RendererContext> wv::RendererContext::CreateRendererContext(wv::Window* window, wv::Renderer::GraphicsAPI api)
+core::Unique<wv::RendererContext> wv::RendererContext::CreateRendererContext(wv::Window* window, surf_Gapi gapi)
 {
-	switch (api)
+	switch (gapi)
 	{
-	case Renderer::GraphicsAPI::None:
+	case SURF_GAPI_NIL:
 		WAVE_ASSERT(false, "No rendering API selected");
 		return nullptr;
-	case Renderer::GraphicsAPI::DirectX:
+	case SURF_GAPI_DIRECTX:
 		WAVE_ASSERT(false, "DirectX is unimplemented");
 		return nullptr;
-	case Renderer::GraphicsAPI::Vulkan:
+	case SURF_GAPI_OPENGL:
+		WAVE_ASSERT(false, "OpenGL is unimplemented");
+	case SURF_GAPI_VULKAN:
 		return core::CreateUnique<vkn::VkRendererContext>(window);
 	}
 

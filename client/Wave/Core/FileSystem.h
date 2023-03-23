@@ -18,7 +18,6 @@ namespace core
         static inline Path GetRootDirectory() 
         { 
 #if defined(WIN32)
-            // TODO: MAX_PATH may not be long enough for long paths
             char buffer[MAX_PATH];
             GetModuleFileNameA(NULL, buffer, MAX_PATH);
             return std::filesystem::path(buffer).parent_path();
@@ -43,12 +42,12 @@ namespace core
         /// @return Standard path object to the retrieved file
         static inline Path GetAssetPath(const char* filename) { return GetAssetsDirectory() / filename; }
 
-        /// @brief Wrapper to retrieve path to the scripts directory
-        static inline Path GetScriptsDirectory() { return GetRootDirectory() / "Scripts"; }
+        /// @brief Wrapper to retrieve path to the surf scripts directory
+        static inline Path GetSurfScriptsDirectory() { return GetRootDirectory() / "surf"; }
 
-        /// @brief Wrapper to retrieve a script in the scripts directory
-        /// @param filename Filename of the script to retrieve
+        /// @brief Wrapper to retrieve a script in the surf directory
+        /// @param filename Filename of the surf script to retrieve
         /// @return Standard path object to the retrieved file
-        static inline Path GetScriptPath(const char* filename) { return GetScriptsDirectory() / filename; }
+        static inline Path GetSurfScriptPath(const char* filename) { return GetSurfScriptsDirectory() / filename; }
     };
 }

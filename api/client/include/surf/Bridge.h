@@ -10,7 +10,7 @@ typedef enum surf_ApiResult
 	SURF_API_SUCCESS = 0,
 } surf_ApiResult;
 
-/// @brief Starts bridge between client and server surf API
+/// @brief Starts bridge between client and server surf API, will timeout if server is not found
 /// @return surf API result indicating if the connection succeeded or not
 surf_ApiResult surf_StartBridge();
 

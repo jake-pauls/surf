@@ -3,12 +3,13 @@
 #define VMA_IMPLEMENTATION
 #include <vk_mem_alloc.h>
 #include <glm/gtx/transform.hpp>
+#include <imgui.h>
+#include <imgui_impl_sdl3.h>
+#include <imgui_impl_vulkan.h>
 
-#if defined(__linux__)
-#define STBI_NO_SIMD
-#endif
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "Camera.h"
+#include "ToolPanel.h"
+#include "SurfEngine.h"
 
 #include "VkPass.h"
 #include "VkModel.h"
@@ -17,8 +18,30 @@
 #include "VkShaderPipeline.h"
 #include "VkInitializers.h"
 
-vkn::VkRenderer::VkRenderer(wv::Window* window)
+void surf_SampleCFunction(surf_argpack_t argpack) 
+{ 
+	core::Log(ELogType::Debug, "callback: surf_SampleCFunction");
+}
+
+void surf_SampleCFunctionWithArgs(surf_argpack_t argpack) 
+{ 
+	int aInt = surf_ArgpackGetInt(argpack, 0);
+	float aFlt = surf_ArgpackGetFlt(argpack, 1);
+
+	// TODO: Strings can only be placed as the last arg of an argpack 
+	//		 Presumably for alignment reasons?
+	char* aStr = surf_ArgpackGetStr(argpack, 2);
+
+	core::Log(ELogType::Debug, "callback: surf_SampleCFunctionWithArgs {} {} {}", aInt, aFlt, aStr);
+}
+
+///  
+///
+///
+
+vkn::VkRenderer::VkRenderer(wv::Window* window, wv::Camera* camera)
 	: m_Window(window)
+	, m_Camera(camera)
 {
 }
 
@@ -26,43 +49,29 @@ void vkn::VkRenderer::Init()
 {
 	core::Log(ELogType::Trace, "[VkRenderer] Initializing Vulkan renderer");
 
+	RegisterSurfSymbols();
+	UpdateSurfCommands();
+
 	// Default hardware
-	{
-		m_VkHardware = new VkHardware(m_Window);
-	}
+	m_VkHardware = new VkHardware(m_Window);
 
 	// Swap chain and render passes
-	{
-		m_VkSwapChain = new VkSwapChain(*this, *m_VkHardware, m_Window);
-		m_DefaultPass = new VkPass(m_VkHardware->m_LogicalDevice, *m_VkSwapChain);
+	m_VkSwapChain = new VkSwapChain(*this, *m_VkHardware, m_Window);
+	m_DefaultPass = new VkPass(m_VkHardware->m_LogicalDevice, *m_VkSwapChain);
 
-		// Framebuffers (need to be initialized after initial renderpass)
-		m_VkSwapChain->CreateFramebuffers();
-	}
-
-	// Shader generation
-	{
-		std::string triangleVertexShader = core::FileSystem::GetShaderPath("TriangleMesh.vert.hlsl.spv").string();
-		std::string triangleFragmentShader = core::FileSystem::GetShaderPath("TriangleMesh.frag.hlsl.spv").string();
-		m_DefaultPipeline = new VkShaderPipeline(*this, *m_VkHardware, triangleVertexShader, triangleFragmentShader);
-	}
+	// Framebuffers (need to be initialized after initial renderpass)
+	m_VkSwapChain->CreateFramebuffers();
 
 	// Create command pools and sync objects
 	CreateCommands();
 	CreateSyncObjects();
 
-	// Load textures
-	{
-		std::string texturePath = core::FileSystem::GetAssetPath("viking_room.png").string();
-		CreateTexture(texturePath);
-		VkImageViewCreateInfo textureInfo = vkn::InitImageViewCreateInfo(VK_FORMAT_R8G8B8A8_SRGB, m_Texture.m_Image.m_Image, VK_IMAGE_ASPECT_COLOR_BIT);
-		vkCreateImageView(m_VkHardware->m_LogicalDevice, &textureInfo, nullptr, &m_Texture.m_Image.m_ImageView);
-	}
+	// Shader creation 
+	CreatePipelines();
 
-	// Load 3D meshes
 	LoadMeshes();
 
-	CreateUniformBuffers();
+	InitImGui();
 }
 
 void vkn::VkRenderer::Draw()
@@ -70,6 +79,12 @@ void vkn::VkRenderer::Draw()
 	VkCommandBuffer commandBuffer = BeginFrame();
 	if (commandBuffer == VK_NULL_HANDLE) 
 		return;
+
+	// Draw ImGui
+	ImGui::Render();
+
+	// Execute surf commands
+	UpdateSurfCommands();
 
 	BeginRenderPass(commandBuffer);
 
@@ -87,25 +102,29 @@ void vkn::VkRenderer::Teardown()
 	// Wait for logical device to finish operations before tearing down
 	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
-	delete m_LoadedModel;
-
 	// TODO: Implement main destruction queue as opposed to relying on destructors
+	delete m_LoadedModel;
 	delete m_VkSwapChain;
-	delete m_DefaultPipeline;
+
+	delete m_UntexturedPipeline;
+	delete m_TexturedPipeline;
+	delete m_PBRPipeline;
+	delete m_RustPBRPipeline;
+	delete m_BambooPBRPipeline;
+	delete m_SandPBRPipeline;
+	delete m_RockPBRPipeline;
+
 	delete m_DefaultPass;
 
-	// TODO: Abstract uniform buffers somewhere?
-	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-	{
-		vmaDestroyBuffer(m_VkHardware->m_VmaAllocator, m_UniformBuffers[i].m_Buffer, m_UniformBuffers[i].m_Allocation);
-	}
+	// Destroy materials
+	m_Materials.clear();
+	m_RenderableModels.clear();
 
-	// TODO: Abstract texture loading/destruction
-	vkDestroySampler(m_VkHardware->m_LogicalDevice, m_Texture.m_Sampler, nullptr);
-	vkDestroyImageView(m_VkHardware->m_LogicalDevice, m_Texture.m_Image.m_ImageView, nullptr);
-	vmaDestroyImage(m_VkHardware->m_VmaAllocator, m_Texture.m_Image.m_Image, m_Texture.m_Image.m_Allocation);
+	// Destroy ImGui
+	vkDestroyDescriptorPool(m_VkHardware->m_LogicalDevice, m_ImguiDescriptorPool, nullptr);
+	ImGui_ImplVulkan_Shutdown();
 
-	// Sync objects
+	// Destroy sync objects
 	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
 	{
 		vkDestroySemaphore(m_VkHardware->m_LogicalDevice, m_ImageAvailableSemaphores[i], nullptr);
@@ -113,12 +132,12 @@ void vkn::VkRenderer::Teardown()
 		vkDestroyFence(m_VkHardware->m_LogicalDevice, m_InFlightFences[i], nullptr);
 	}
 
-	// Upload context
+	// Destroy upload context
 	vkDestroyFence(m_VkHardware->m_LogicalDevice, m_UploadContext.m_UploadFence, nullptr);
 	vkFreeCommandBuffers(m_VkHardware->m_LogicalDevice, m_UploadContext.m_CommandPool, 1, &m_UploadContext.m_CommandBuffer);
 	vkDestroyCommandPool(m_VkHardware->m_LogicalDevice, m_UploadContext.m_CommandPool, nullptr);
 
-	// Command buffers/pools
+	// Destroy command buffers/pools
 	vkFreeCommandBuffers(m_VkHardware->m_LogicalDevice, m_CommandPool, static_cast<uint32_t>(m_CommandBuffers.size()), m_CommandBuffers.data());
 	m_CommandBuffers.clear();
 	vkDestroyCommandPool(m_VkHardware->m_LogicalDevice, m_CommandPool, nullptr);
@@ -172,45 +191,77 @@ void vkn::VkRenderer::CreateCommands()
 	VK_CALL(vkAllocateCommandBuffers(m_VkHardware->m_LogicalDevice, &uploadCommandBufferAllocateInfo, &m_UploadContext.m_CommandBuffer));
 }
 
-void vkn::VkRenderer::CreateUniformBuffers()
+void vkn::VkRenderer::CreatePipelines()
 {
-	//! UBO
+	core::Log(ELogType::Info, "[VkRenderer] Loading shaders... this might take a while");
 
-	const size_t uniformBufferSize = sizeof(VkMeshUniformBufferObject);
+	std::string untexturedVertexShader = core::FileSystem::GetShaderPath("UntexturedMesh.vert.hlsl.spv").string();
+	std::string untexturedFragmentShader = core::FileSystem::GetShaderPath("UntexturedMesh.frag.hlsl.spv").string();
 
-	m_UniformBuffers.resize(c_MaxFramesInFlight);
-	for (size_t i = 0; i < c_MaxFramesInFlight; ++i)
-	{
-		m_VkHardware->CreateVMABuffer(m_UniformBuffers[i],
-			uniformBufferSize,
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			VMA_MEMORY_USAGE_CPU_TO_GPU);
+	std::string texturedVertexShader = core::FileSystem::GetShaderPath("TexturedMesh.vert.hlsl.spv").string();
+	std::string texturedFragmentShader = core::FileSystem::GetShaderPath("TexturedMesh.frag.hlsl.spv").string();
 
-		VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_DefaultPipeline->m_DescriptorPool, &m_DefaultPipeline->m_DescriptorSetLayout);
+	std::string uPBRVertexShader = core::FileSystem::GetShaderPath("UntexturedPBR.vert.glsl.spv").string();
+	std::string uPBRFragmentShader = core::FileSystem::GetShaderPath("UntexturedPBR.frag.glsl.spv").string();
 
-		VK_CALL(vkAllocateDescriptorSets(m_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_UniformBuffers[i].m_Descriptor));
+	std::string tPBRVertexShader = core::FileSystem::GetShaderPath("TexturedPBR.vert.glsl.spv").string();
+	std::string tPBRFragmentShader = core::FileSystem::GetShaderPath("TexturedPBR.frag.glsl.spv").string();
 
-		VkDescriptorBufferInfo descriptorBufferInfo = vkn::InitDescriptorBufferInfo(m_UniformBuffers[i].m_Buffer, sizeof(VkMeshUniformBufferObject));
-		VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, m_UniformBuffers[i].m_Descriptor, &descriptorBufferInfo, 0);
-		vkUpdateDescriptorSets(m_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
-	}
+	m_UntexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, untexturedVertexShader, untexturedFragmentShader);
+	m_TexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, texturedVertexShader, texturedFragmentShader, 1);
+	m_PBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, uPBRVertexShader, uPBRFragmentShader);
+	m_RustPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
+	m_BambooPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
+	m_SandPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
+	m_RockPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
 
-	//! Sampler
+	CreateMaterial(*m_UntexturedPipeline, "Default");
+	CreateTexturedMaterial(*m_TexturedPipeline, { "viking_room.png" }, "Viking Room");
+	CreateMaterial(*m_PBRPipeline, "PBR Default");
 
-	m_Texture.m_Sampler = VkSampler();
-	VkSamplerCreateInfo samplerCreateInfo = vkn::InitSamplerCreateInfo(VK_FILTER_NEAREST);
-	vkCreateSampler(m_VkHardware->m_LogicalDevice, &samplerCreateInfo, nullptr, &m_Texture.m_Sampler);
+	std::vector<std::string> rustedIronTextures = {
+		"PBR/Rust/Rust_Albedo.png",
+		"PBR/Rust/Rust_Normal.png",
+		"PBR/Rust/Rust_Metallic.png",
+		"PBR/Rust/Rust_Roughness.png",
+		// "PBR/Rust/Rust_AO.png",
+		"PBR/Rust/Rust_Albedo.png",
+	};
 
-	VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(m_DefaultPipeline->m_DescriptorPool, &m_DefaultPipeline->m_SingleTextureSetLayout);
-	VK_CALL(vkAllocateDescriptorSets(m_VkHardware->m_LogicalDevice, &descriptorSetAllocInfo, &m_Texture.m_Image.m_Descriptor));
+	CreateTexturedMaterial(*m_RustPBRPipeline, rustedIronTextures, "Rust (PBR)");
 
-	VkDescriptorImageInfo textureBufferInfo = VkDescriptorImageInfo();
-	textureBufferInfo.sampler = m_Texture.m_Sampler;
-	textureBufferInfo.imageView = m_Texture.m_Image.m_ImageView;
-	textureBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	
-	VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetImage(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_Texture.m_Image.m_Descriptor, &textureBufferInfo, 0);
-	vkUpdateDescriptorSets(m_VkHardware->m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
+	std::vector<std::string> bambooTextures = {
+		"PBR/Bamboo/Bamboo_Albedo.png",
+		"PBR/Bamboo/Bamboo_Normal.png",
+		"PBR/Bamboo/Bamboo_Metallic.png",
+		"PBR/Bamboo/Bamboo_Roughness.png",
+		//"PBR/Bamboo/Bamboo_AO.png"
+		"PBR/Bamboo/Bamboo_Albedo.png"
+	};
+
+	CreateTexturedMaterial(*m_BambooPBRPipeline, bambooTextures, "Bamboo (PBR)");
+
+	std::vector<std::string> sandTextures = {
+		"PBR/Sand/Sand_Albedo.png",
+		"PBR/Sand/Sand_Normal.png",
+		"PBR/Sand/Sand_Metallic.png",
+		"PBR/Sand/Sand_Roughness.png",
+		//"PBR/Sand/Sand_AO.png"
+		"PBR/Sand/Sand_Albedo.png"
+	};
+
+	CreateTexturedMaterial(*m_SandPBRPipeline, sandTextures, "Sand (PBR)");
+
+	std::vector<std::string> rockTextures = {
+		"PBR/Rock/Rock_Albedo.png",
+		"PBR/Rock/Rock_Normal.png",
+		"PBR/Rock/Rock_Metallic.png",
+		"PBR/Sand/Sand_Roughness.png", // Rock didn't come with roughness map
+		//"PBR/Rock/Rock_AO.png"
+		"PBR/Rock/Rock_Albedo.png"
+	};
+
+	CreateTexturedMaterial(*m_RockPBRPipeline, rockTextures, "Rock (PBR)");
 }
 
 void vkn::VkRenderer::SubmitToRenderer(std::function<void(VkCommandBuffer)>&& submitFunction) const
@@ -274,6 +325,8 @@ void vkn::VkRenderer::EndFrame()
 	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		m_VkSwapChain->RecreateSwapchain();
 
+	ReloadMeshes();
+
 	m_IsFrameStarted = false;
 	m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % c_MaxFramesInFlight;
 }
@@ -319,41 +372,72 @@ void vkn::VkRenderer::DrawCommandBuffer(VkCommandBuffer commandBuffer)
 {
 	const VkExtent2D extent = m_VkSwapChain->m_SwapChainExtent;
 
-	// MVP/Uniform Testing
-	glm::vec3 cameraPosition = { 0.0f, 0.0f, -2.0f };
-	glm::mat4 viewMatrix = glm::translate(glm::mat4(1.0f), cameraPosition);
-	glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), static_cast<float>(extent.width) / static_cast<float>(extent.height), 0.1f, 200.0f);
-	projectionMatrix[1][1] *= -1;
+	// Update camera extent every frame if it's changed
+	m_Camera->SetScreenDimensions(static_cast<float>(extent.width), static_cast<float>(extent.height));
 
-	glm::mat4 modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(core::Timer::DeltaTime() * 0.02f), glm::vec3(1.0f, 0.0f, 0.0f));
+	VkMesh* lastMesh = nullptr;
+	VkMaterial* lastMaterial = nullptr;
+	for (size_t i = 0; i < m_RenderableModels.size(); ++i)
+	{
+		VkModel*& model = m_RenderableModels[i];
+		VkMaterial* modelMaterial = model->m_Material;
+		WAVE_ASSERT(modelMaterial, "Attempting to render a model without a material");
 
-	// Bind required pipeline
-	m_DefaultPipeline->Bind(commandBuffer);
+		const VkShaderPipeline* modelPipeline = modelMaterial->GetShaderPipelinePtr();
+		std::vector<vkn::VmaAllocatedDescriptorSet>& modelUniformBuffers = model->m_UniformBuffers;
 
-	// Bind geometry
-	m_LoadedModel->Bind(commandBuffer);
+		glm::mat4& mm = model->m_ModelMatrix;
 
-	// Bind texture descriptor set
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipeline->m_PipelineLayout, 1, 1, &m_Texture.m_Image.m_Descriptor, 0, nullptr);
+		// Bind material if it's different than the last
+		if (modelMaterial != lastMaterial)
+		{
+			modelPipeline->Bind(commandBuffer);
+			lastMaterial = modelMaterial;
+		}
 
-	// Submit push constants (constant uniforms)
-	VkMeshPushConstants constants;
-	constants.m_ModelMatrix = modelMatrix;
-	vkCmdPushConstants(commandBuffer, m_DefaultPipeline->m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkMeshPushConstants), &constants);
+		// Bind the mesh if it's different than the last
+		if (&model->m_Mesh != lastMesh)
+		{
+			model->Bind(commandBuffer);
+			lastMesh = &model->m_Mesh;
+		}
 
-	// Submit uniforms through descriptor sets
-	VkMeshUniformBufferObject uniform;
-	uniform.m_ProjectionMatrix = projectionMatrix;
-	uniform.m_ViewMatrix = viewMatrix;
+		// Bind textures if they exist on the material
+		if (modelMaterial->m_IsTexturedMaterial)
+		{
+			modelMaterial->BindMaterialTextures(commandBuffer);
+		}
 
-	void* data;
-	VK_CALL(vmaMapMemory(m_VkHardware->m_VmaAllocator, m_UniformBuffers[m_CurrentFrameIndex].m_Allocation, &data));
-	memcpy(data, &uniform, sizeof(VkMeshUniformBufferObject));
-	vmaUnmapMemory(m_VkHardware->m_VmaAllocator, m_UniformBuffers[m_CurrentFrameIndex].m_Allocation);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_DefaultPipeline->m_PipelineLayout, 0, 1, &m_UniformBuffers[m_CurrentFrameIndex].m_Descriptor, 0, nullptr);
+		// Submit push constants (constant uniforms)
+		VkMeshPushConstants constants;
+		constants.m_CameraPosition = glm::vec4(m_Camera->GetPosition(), 0.0f);
+		constants.m_ModelMatrix = mm;
+		vkCmdPushConstants(commandBuffer, modelPipeline->m_PipelineLayout, (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT), 0, sizeof(VkMeshPushConstants), &constants);
 
-	// Draw geometry
-	m_LoadedModel->Draw(commandBuffer);
+		// Submit uniforms through descriptor sets
+		// Currently padding/striping properties together in shaders to reduce complexity of descriptor sets
+		VkMeshUniformBufferObject uniform;
+
+		// PBR uniforms  
+		uniform.m_LightPosition = glm::vec4(m_SurfLightPosition, 0.0f);
+		uniform.m_LightColor = glm::vec4(m_SurfLightColor, 0.0f);
+		uniform.m_Albedo = glm::vec4(m_SurfAlbedo, 0.0f);
+		// x - metallic, y - roughness, z - ao, w - unused
+		uniform.m_PBRSettings = glm::vec4(m_SurfMetallic, m_SurfRoughness, m_SurfAO, 0.0f);
+
+		// View uniforms
+		uniform.m_ProjectionMatrix = m_Camera->GetProjectionMatrix();
+		uniform.m_ViewMatrix = m_Camera->GetViewMatrix();
+
+		void* data;
+		VK_CALL(vmaMapMemory(m_VkHardware->m_VmaAllocator, modelUniformBuffers[m_CurrentFrameIndex].m_Allocation, &data));
+		memcpy(data, &uniform, sizeof(VkMeshUniformBufferObject));
+		vmaUnmapMemory(m_VkHardware->m_VmaAllocator, modelUniformBuffers[m_CurrentFrameIndex].m_Allocation);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, modelPipeline->m_PipelineLayout, 0, 1, &modelUniformBuffers[m_CurrentFrameIndex].m_Descriptor, 0, nullptr);
+
+		// Draw geometry
+		model->Draw(commandBuffer);
+	}
 }
 
 void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
@@ -361,103 +445,184 @@ void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
 	WAVE_ASSERT(m_IsFrameStarted, "Cannot end render pass without a frame in progress");
 	WAVE_ASSERT(commandBuffer == GetCurrentCommandBuffer(), "Cannot render pass on a command buffer from a different frame");
 
+	// Pass command buffer information to ImGui
+	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
 	vkCmdEndRenderPass(commandBuffer);
+}
+
+void vkn::VkRenderer::RegisterSurfSymbols()
+{
+	wv::SurfEngine::RegisterFunction("surf_SampleCFunction", (surf_fun_t) &surf_SampleCFunction);
+	wv::SurfEngine::RegisterFunction("surf_SampleCFunctionWithArgs", (surf_fun_t) &surf_SampleCFunctionWithArgs);
+}
+
+void vkn::VkRenderer::UpdateSurfCommands()
+{
+	// Load PBR surf script and retrieve it's variables
+	bool pbrSurfUpdates = wv::SurfEngine::InterpFile("pbr.surf");
+	if (pbrSurfUpdates)
+	{
+		m_SurfAlbedo = wv::SurfEngine::GetV3("pbr_albedo");
+		m_SurfMetallic = wv::SurfEngine::GetFlt("pbr_metallic");
+		m_SurfRoughness = wv::SurfEngine::GetFlt("pbr_roughness");
+		m_SurfAO = wv::SurfEngine::GetFlt("pbr_ao");
+		m_SurfLightPosition = wv::SurfEngine::GetV3("pbr_light_position");
+		m_SurfLightColor = wv::SurfEngine::GetV3("pbr_light_color");
+	}
+
+	// Run C function callback surf script
+	wv::SurfEngine::InterpFile("fun.surf");
+}
+
+void vkn::VkRenderer::InitImGui()
+{
+	VkDescriptorPoolSize imguiDescriptorPoolSizes[] =
+	{
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+	};
+
+	VkDescriptorPoolCreateInfo imguiPoolInfo = vkn::InitDescriptorPoolCreateInfo(static_cast<uint32_t>(std::size(imguiDescriptorPoolSizes)), 
+		imguiDescriptorPoolSizes, 1000, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT);
+	VK_CALL(vkCreateDescriptorPool(m_VkHardware->m_LogicalDevice, &imguiPoolInfo, nullptr, &m_ImguiDescriptorPool));
+
+	ImGui::CreateContext();
+	ImGui_ImplSDL3_InitForVulkan(m_Window->GetSDLWindow());
+	ImGui_ImplVulkan_InitInfo imguiInitInfo = ImGui_ImplVulkan_InitInfo();
+	imguiInitInfo.Instance = m_VkHardware->m_Instance;
+	imguiInitInfo.PhysicalDevice = m_VkHardware->m_PhysicalDevice;
+	imguiInitInfo.Device = m_VkHardware->m_LogicalDevice;
+	imguiInitInfo.Queue = m_VkHardware->m_GraphicsQueue;
+	imguiInitInfo.DescriptorPool = m_ImguiDescriptorPool;
+	imguiInitInfo.MinImageCount = 3;
+	imguiInitInfo.ImageCount = 3;
+	imguiInitInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	ImGui_ImplVulkan_Init(&imguiInitInfo, m_DefaultPass->m_RenderPass);
+
+	SubmitToRenderer([&, this](VkCommandBuffer commandBuffer) {
+		ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+	});
+	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
 void vkn::VkRenderer::LoadMeshes()
 {
-	m_LoadedMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
-	m_LoadedModel = new VkModel(*this, m_LoadedMesh);
+	core::Log(ELogType::Info, "[VkRenderer] Loading available meshes... this might take a while");
+
+	m_SphereMesh.LoadFromObj(core::FileSystem::GetAssetPath("sphere.obj").string().c_str());
+	m_VikingRoomMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
+	m_RockMesh.LoadFromObj(core::FileSystem::GetAssetPath("rock.obj").string().c_str());
+
+	m_TeapotMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
+	m_BunnyMesh.LoadFromObj(core::FileSystem::GetAssetPath("stanford_bunny.obj").string().c_str());
+	m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
+	m_DragonMesh.LoadFromObj(core::FileSystem::GetAssetPath("xyzrgb_dragon.obj").string().c_str());
+
+	m_Meshes.emplace("Sphere", m_SphereMesh);
+	m_Meshes.emplace("Viking Room", m_VikingRoomMesh);
+	m_Meshes.emplace("Rock", m_RockMesh);
+
+	m_Meshes.emplace("Teapot", m_TeapotMesh);
+	m_Meshes.emplace("Bunny", m_BunnyMesh);
+	m_Meshes.emplace("Suzanne", m_SuzanneMesh);
+	m_Meshes.emplace("Dragon", m_DragonMesh);
+
+	ReloadMeshes();
 }
 
-void vkn::VkRenderer::CreateTexture(const std::string& filename)
+void vkn::VkRenderer::ReloadMeshes()
 {
-	int texWidth, texHeight, channels;
-	stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &channels, STBI_rgb_alpha);
-	WAVE_ASSERT(pixels, "Failed to load texture from provided image file");
+	using String = core::StringHelpers;
+	const std::string& selectedModel = wv::ToolPanel::s_SelectedModel;
+	const std::string& selectedMaterial = wv::ToolPanel::s_SelectedMaterial;
 
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
+	// Bail out if model or material is unchanged
+	if (String::Equals(m_SelectedModel, selectedModel) && String::Equals(m_SelectedMaterial, selectedMaterial))
+		return;
 
-	VmaAllocatedBuffer stagingBuffer;
-	m_VkHardware->CreateVMABuffer(stagingBuffer,
-		imageSize,
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VMA_MEMORY_USAGE_CPU_ONLY);
+	// Wait for device to release command buffers
+	VK_CALL(vkDeviceWaitIdle(m_VkHardware->m_LogicalDevice));
 
-	void* texData;
-	VK_CALL(vmaMapMemory(m_VkHardware->m_VmaAllocator, stagingBuffer.m_Allocation, &texData));
-	memcpy(texData, pixels, static_cast<size_t>(imageSize));
-	vmaUnmapMemory(m_VkHardware->m_VmaAllocator, stagingBuffer.m_Allocation);
+	// Reassign selected model
+	if (m_SelectedModel != selectedModel)
+		m_SelectedModel = selectedModel;
 
-	stbi_image_free(pixels);
+	if (m_SelectedMaterial != selectedMaterial)
+		m_SelectedMaterial = selectedMaterial;
 
-	/// ----------------
-
-	VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
-
-	VkExtent3D imageExtent;
-	imageExtent.width = static_cast<uint32_t>(texWidth);
-	imageExtent.height = static_cast<uint32_t>(texHeight);
-	imageExtent.depth = 1;
-	
-	VkImageCreateInfo newImageCreateInfo = vkn::InitImageCreateInfo(imageFormat, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, imageExtent);
-	newImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-
-	VmaAllocationCreateInfo newImageAllocationCreateInfo = VmaAllocationCreateInfo();
-	newImageAllocationCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-
-	// Allocate and create image
-	vmaCreateImage(m_VkHardware->m_VmaAllocator, &newImageCreateInfo, &newImageAllocationCreateInfo, &m_Texture.m_Image.m_Image, &m_Texture.m_Image.m_Allocation, nullptr);
-
-	/// ----------------
-
-	// Submit command to render image
-	SubmitToRenderer([=](VkCommandBuffer commandBuffer) 
+	// Lookup mesh and material and verify they exist
+	VkMesh* targetMesh = LookupMesh(m_SelectedModel);
+	if (!targetMesh)
 	{
-		VkImageSubresourceRange range;
-		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		range.baseMipLevel = 0;
-		range.levelCount = 1;
-		range.baseArrayLayer = 0;
-		range.layerCount = 1;
+		core::Log(ELogType::Warn, "Failed to update mesh because \"{}\" doesn't seem exist", m_SelectedModel);
+		return;
+	}
 
-		VkImageMemoryBarrier transferImageBarrier = VkImageMemoryBarrier();
-		transferImageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		transferImageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		transferImageBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		transferImageBarrier.image = m_Texture.m_Image.m_Image;
-		transferImageBarrier.subresourceRange = range;
-		transferImageBarrier.srcAccessMask = 0;
-		transferImageBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	VkMaterial* targetMaterial = LookupMaterial(m_SelectedMaterial);
+	if (!targetMaterial)
+	{
+		core::Log(ELogType::Warn, "Failed to update material because \"{}\" doesn't seem to exist", m_SelectedMaterial);
+		return;
+	}
 
-		// Barrier the image into the transfer-receive layout
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &transferImageBarrier);
+	// Destroy pre-existing model data
+	delete m_LoadedModel;
+	m_RenderableModels.clear();
 
-		VkBufferImageCopy copyRegion = VkBufferImageCopy();
-		copyRegion.bufferOffset = 0;
-		copyRegion.bufferRowLength = 0;
-		copyRegion.bufferImageHeight = 0;
-		copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		copyRegion.imageSubresource.mipLevel = 0;
-		copyRegion.imageSubresource.baseArrayLayer = 0;
-		copyRegion.imageSubresource.layerCount = 1;
-		copyRegion.imageExtent = imageExtent;
+	// Allocate new model with target mesh/material
+	m_LoadedModel = new VkModel(*this, *targetMesh, targetMaterial);
 
-		// Copy the image into a staging buffer
-		vkCmdCopyBufferToImage(commandBuffer, stagingBuffer.m_Buffer, m_Texture.m_Image.m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+	// More models could be pushed back here for rendering if needed
+	m_RenderableModels.push_back(m_LoadedModel);
+}
 
-		VkImageMemoryBarrier readableImageBarrier = transferImageBarrier;
-		readableImageBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		readableImageBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		readableImageBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-		readableImageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+vkn::VkMesh* vkn::VkRenderer::LookupMesh(const std::string& meshName)
+{
+	auto it = m_Meshes.find(meshName);
 
-		// Barrier the image into the shader layout
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &readableImageBarrier);
-	});
+	if (it == m_Meshes.end())
+		return nullptr;
 
-	/// ----------------
+	return &(*it).second;
+}
 
-	// Cleanup local resources
-	vmaDestroyBuffer(m_VkHardware->m_VmaAllocator, stagingBuffer.m_Buffer, stagingBuffer.m_Allocation);
+vkn::VkMaterial* vkn::VkRenderer::LookupMaterial(const std::string& materialName)
+{
+	auto it = m_Materials.find(materialName);
+
+	if (it == m_Materials.end())
+		return nullptr;
+
+	return &(*it).second;
+}
+
+vkn::VkMaterial* vkn::VkRenderer::CreateMaterial(const VkShaderPipeline& shaderPipeline, 
+	const std::string& materialName)
+{
+	m_Materials.emplace(std::piecewise_construct,
+		std::forward_as_tuple(materialName),
+		std::forward_as_tuple(*this, shaderPipeline));
+
+	return &m_Materials[materialName];
+}
+
+vkn::VkMaterial* vkn::VkRenderer::CreateTexturedMaterial(const VkShaderPipeline& shaderPipeline, 
+	const std::vector<std::string>& textureNames, 
+	const std::string& materialName)
+{
+	m_Materials.emplace(std::piecewise_construct,
+		std::forward_as_tuple(materialName),
+		std::forward_as_tuple(*this, shaderPipeline, textureNames));
+
+	return &m_Materials[materialName];
 }

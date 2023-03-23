@@ -4,21 +4,33 @@
 #include "VkTypes.h"
 #include "VkRenderer.h"
 #include "VkHardware.h"
+#include "VkInitializers.h"
 
-vkn::VkModel::VkModel(const VkRenderer& renderer, const VkMesh& mesh)
+vkn::VkModel::VkModel(const VkRenderer& renderer, const VkMesh& mesh, VkMaterial* material)
 	: c_VkRenderer(renderer)
 	, c_VkHardware(*renderer.m_VkHardware)
 	, m_Mesh(mesh)
+	, m_Material(material)
+	, m_ModelMatrix(glm::mat4(1.0f))
 {
 	AllocateVertexBuffer();
 	AllocateIndexBuffer();
+	AllocateDescriptorSets();
 }
 
 vkn::VkModel::~VkModel()
 {
+	core::Log(ELogType::Trace, "[VkModel] Destroying a model's vertex, index, and uniform buffers");
+
 	vmaDestroyBuffer(c_VkHardware.m_VmaAllocator, m_VertexBuffer.m_Buffer, m_VertexBuffer.m_Allocation);
 	if (HasIndexBuffer())
 		vmaDestroyBuffer(c_VkHardware.m_VmaAllocator, m_IndexBuffer.m_Buffer, m_IndexBuffer.m_Allocation);
+
+	// Destroy model uniform buffers
+	for (size_t i = 0; i < c_VkRenderer.c_MaxFramesInFlight; ++i)
+	{
+		vmaDestroyBuffer(c_VkHardware.m_VmaAllocator, m_UniformBuffers[i].m_Buffer, m_UniformBuffers[i].m_Allocation);
+	}
 }
 
 void vkn::VkModel::AllocateVertexBuffer()
@@ -95,6 +107,32 @@ void vkn::VkModel::AllocateIndexBuffer()
 
 	// Destroy staging buffer
 	vmaDestroyBuffer(c_VkHardware.m_VmaAllocator, stagingBuffer.m_Buffer, stagingBuffer.m_Allocation);
+}
+
+void vkn::VkModel::AllocateDescriptorSets()
+{
+	//! UBO
+	//! All mesh shaders have UBOs at the moment
+	
+	const size_t uniformBufferSize = sizeof(VkMeshUniformBufferObject);
+	const VkShaderPipeline* modelPipeline = m_Material->GetShaderPipelinePtr();
+
+	m_UniformBuffers.resize(c_VkRenderer.c_MaxFramesInFlight);
+	for (size_t i = 0; i < c_VkRenderer.c_MaxFramesInFlight; ++i)
+	{
+		c_VkHardware.CreateVMABuffer(m_UniformBuffers[i],
+			uniformBufferSize,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VMA_MEMORY_USAGE_CPU_TO_GPU);
+
+		VkDescriptorSetAllocateInfo descriptorSetAllocInfo = vkn::InitDescriptorSetAllocateInfo(modelPipeline->m_DescriptorPool, &modelPipeline->m_DescriptorSetLayout);
+
+		VK_CALL(vkAllocateDescriptorSets(c_VkHardware.m_LogicalDevice, &descriptorSetAllocInfo, &m_UniformBuffers[i].m_Descriptor));
+
+		VkDescriptorBufferInfo descriptorBufferInfo = vkn::InitDescriptorBufferInfo(m_UniformBuffers[i].m_Buffer, sizeof(VkMeshUniformBufferObject));
+		VkWriteDescriptorSet descriptorSetWrite = vkn::InitWriteDescriptorSetBuffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, m_UniformBuffers[i].m_Descriptor, &descriptorBufferInfo, 0);
+		vkUpdateDescriptorSets(c_VkHardware.m_LogicalDevice, 1, &descriptorSetWrite, 0, nullptr);
+	}
 }
 
 void vkn::VkModel::Bind(VkCommandBuffer commandBuffer) const

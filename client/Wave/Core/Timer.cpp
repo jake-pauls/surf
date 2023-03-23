@@ -4,18 +4,24 @@
 
 namespace core
 {
-    uint64_t Timer::m_LastTick = 0;
-    uint64_t Timer::m_DeltaTime = 0;
+    uint64_t Timer::m_Now = SDL_GetPerformanceCounter();
+    uint64_t Timer::m_Last = 0;
+    double Timer::m_DeltaTime = 0;
 }
 
 void core::Timer::Tick()
 {
-    uint64_t ticks = SDL_GetTicks();
-    m_DeltaTime = ticks - m_LastTick / (uint64_t) 1000;
-    m_LastTick = ticks;
+    m_Last = m_Now;
+    m_Now = SDL_GetPerformanceCounter();
+    m_DeltaTime = (double)((m_Now - m_Last) * 1000 / (double)SDL_GetPerformanceFrequency());
 }
 
-uint64_t core::Timer::DeltaTime()
+double core::Timer::DeltaTime()
 {
     return m_DeltaTime;
+}
+
+float core::Timer::DeltaTimeF()
+{
+    return static_cast<float>(m_DeltaTime);
 }

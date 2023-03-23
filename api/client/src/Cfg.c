@@ -2,6 +2,8 @@
 #include "surf/Define.h"
 #include "surf/Interp.h"
 
+#include <stdlib.h>
+
 /// @brief Static variable to determine is a valid cfg.surf file has been loaded via the interpreter
 static int s_CfgIsValidLoaded = SURF_FALSE;
 
@@ -10,32 +12,33 @@ int surf_CfgIsValidLoaded()
 	return s_CfgIsValidLoaded;
 }
 
-surf_Cfg surf_CfgLoad(const char* surfDir)
+surf_Cfg surf_CfgLoad(const char* cfgSurfFilepath)
 {
+	SURF_PROFILE_START_STEP("config", "load config");
 	const char* cfgFileName = "cfg.surf";
 
 	// Define a null configuration
 	surf_Cfg cfg = { SURF_GAPI_NIL, SURF_SLANG_NIL, SURF_METHOD_NIL };
 
-	char* buffer;
-	const char* fmt = "%s/%s";
-	int _ = ASPRINTF(&buffer, fmt, surfDir, cfgFileName);
-
-	int result = surf_InterpFile(buffer);
-	if (!result)
+	if (!strstr(cfgSurfFilepath, cfgFileName))
 	{
-		SURF_API_CLIENT_LOG("No cfg.surf file was found in: %s", surfDir);
+		SURF_API_CLIENT_LOG("Attempted to load an invalid configuration file: %s - should this be 'cfg.surf'?", cfgSurfFilepath);
 		return cfg;
 	}
 
-	free(buffer);
+	int result = surf_InterpFile(cfgSurfFilepath);
+	if (!result)
+	{
+		SURF_API_CLIENT_LOG("Failed to interpret configuration file: %s", cfgSurfFilepath);
+		return cfg;
+	}
 
 	// Retrieve the config
 	cfg.Gapi = surf_CfgGetGapi();
 	cfg.Slang = surf_CfgGetSlang();
 	cfg.Method = surf_CfgGetMethod();
 
-	if (surf_CfgIsNil(&cfg))
+	if (surf_CfgIsInvalid(&cfg))
 	{
 		SURF_API_CLIENT_LOG("One or more of the provided values in cfg.surf was nil, the API will not perform as intended until they're filled out");
 	}
@@ -44,6 +47,7 @@ surf_Cfg surf_CfgLoad(const char* surfDir)
 		s_CfgIsValidLoaded = SURF_TRUE;
 	}
 
+	SURF_PROFILE_END_STEP("config", "load config");
 	return cfg;
 }
 
@@ -109,7 +113,7 @@ surf_Method surf_CfgGetMethod()
 	return SURF_METHOD_NIL;
 }
 
-int surf_CfgIsNil(const surf_Cfg* cfg)
+int surf_CfgIsInvalid(const surf_Cfg* cfg)
 {
 	return cfg->Gapi == SURF_GAPI_NIL 
 		|| cfg->Slang == SURF_SLANG_NIL 

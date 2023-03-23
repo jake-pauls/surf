@@ -9,6 +9,5 @@ int main(int argc, char* argv[])
     delete app;
 
     core::KillLogging();
-
     return 0;
 }

@@ -4,6 +4,7 @@
 #include <string>
 
 #include <SDL3/SDL.h>
+#include <surf/surf.h>
 
 #include "RendererContext.h"
 
@@ -42,7 +43,7 @@ namespace wv
 		explicit Window(const WindowProperties& props = WindowProperties());
 
 		/// @brief Initializes the window in SDL, sets default settings from passed properties 
-		void Init(Renderer::GraphicsAPI gapi);
+		void Init(surf_Gapi gapi);
 
 		/// @brief Render loop for SDL window 
 		void Render() const;

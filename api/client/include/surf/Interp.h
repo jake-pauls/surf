@@ -2,17 +2,32 @@
 #define Interp_h
 
 #include "surf/Vec.h"
-#include "surf/SymbolTable.h"
+#include "surf/HashTable.h"
+
+#include <sys/types.h>
 
 /// @brief Directly submits a line of code to the interpreter through the API, all strings returned must be destroyed with 'surf_InterpFreeString'
 /// @param line String buffer containing the line of code to submit to the interpreter
 /// @return String buffer containing the interpreted result
 /// @note Requires a valid cfg.surf file loaded with 'surf_CfgLoad' prior to use
 char* surf_InterpLine(const char* line);
+
+/// @brief Looks up a filepath in the internal time table for the last time it was modified
+/// @param filepath Path to the file to lookup
+/// @return Time information for when the file was last modified
+time_t surf_InterpLookupFileTime(const char* filepath);
  
-/// @brief Reads and submits requests to interpret a surf file line-by-line 
+/// @brief Reads and submits requests to interpret a surf file line-by-line.
+///		   This is the unmanaged version for interpreting files and will submit the file regardless of whether it's been updated.
 /// @param filepath Absolute path (or path relative to this project) to the surf script to interpret
-/// @return True if the file was succesfully interpreted, false if it was not
+/// @return True if the file was interpreted, false if it was not 
+/// @note Requires a valid cfg.surf file loaded with 'surf_CfgLoad' prior to use
+int surf_UnmanagedInterpFile(const char* filepath);
+
+/// @brief Reads and submits requests to interpret a surf file line-by-line. 
+///        This is the managed version for interpreting files and will check if the file has been modified since it was last interpreted before submitting. 
+/// @param filepath Absolute path (or path relative to this project) to the surf script to interpret
+/// @return True if the file was interpreted, false if it was not 
 /// @note Requires a valid cfg.surf file loaded with 'surf_CfgLoad' prior to use
 int surf_InterpFile(const char* filepath);
 
@@ -95,18 +110,18 @@ void surf_InterpBindV4(const char* name, float f1, float f2, float f3, float f4)
 /// @brief Registers a symbol in the surf API, once the symbol is reflected in a surf script - the callback 'func' will be executed
 /// @param id The identifier for the symbol, this must match the name of the symbol being reflected in surf
 /// @param fun Callback function to be called when 'ref id()' is executed in a surf script
-void surf_InterpRegisterSymbol(const char* id, surf_fun_t fun);
+void surf_InterpRegisterSymbol(const char* id, void* fun);
 
-/// @brief Unregisters a symbol in the surf API 
+/// @brief Deregisters a symbol in the surf API 
 /// @param id The identifier for the symbol being unregistered
-void surf_InterpUnregisterSymbol(const char* id);
+void surf_InterpDeregisterSymbol(const char* id);
 
 /// @brief INTERNAL: Parses a returned buffer from the interpreter for a reflected function and executes it's associated callback in the symbol table
 /// @param buffer String buffer containing the reflected function in surf
 /// @note Only handles/reflects parameters with 'int', 'flt', or 'str' types
 void surf_InternalExecuteReflectionCallback(const char* buffer);
 
-/// @brief Destroys the APIs symbol table if it has symbols registered
+/// @brief Destroys the APIs symbol and time tables if they've been allocated
 void surf_InternalInterpDestroy();
 
 #endif /* Interp_h */

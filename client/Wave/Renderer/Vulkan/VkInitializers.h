@@ -76,15 +76,18 @@ namespace vkn
 	///	Push Constants
 	/// 
 
-	/// @brief Constructs a push constant range struct
-	VkPushConstantRange InitPushConstantRange(const uint32_t size);
+	/// @brief Constructs a push constant range struct for a vertex shader
+	VkPushConstantRange InitVertexPushConstantRange(const uint32_t size, const uint32_t offset = 0);
+
+	/// @brief Constructs a push constant range struct for a fragment shader
+	VkPushConstantRange InitFragmentPushConstantRange(const uint32_t size, const uint32_t offset = 0);
 
 	///
 	///	Descriptor Sets/Pools
 	/// 
 
 	/// @brief Constructs a create info struct for a descriptor pool 
-	VkDescriptorPoolCreateInfo InitDescriptorPoolCreateInfo(const uint32_t poolSizeCount, const VkDescriptorPoolSize* poolSizes, int maxSets);
+	VkDescriptorPoolCreateInfo InitDescriptorPoolCreateInfo(const uint32_t poolSizeCount, const VkDescriptorPoolSize* poolSizes, int maxSets, VkDescriptorPoolCreateFlags flags = 0);
 
 	/// @brief Constructs a layout binding for a descriptor set 
 	VkDescriptorSetLayoutBinding InitDescriptorSetLayoutBinding(VkDescriptorType type, VkShaderStageFlags stageFlags, int count = 1);

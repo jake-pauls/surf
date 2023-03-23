@@ -141,7 +141,13 @@ int surf_OpenConnection(StaticEnvironment* env)
 
                 // Testing: Interpret data submitted
                 char* res = surfgen_Interp(env, fData);
-                SURF_API_SERVER_LOG("%s", res);
+
+                // Avoid printing 'spt' (silent-put) commands to the server log
+                // These commands return the string value through the interpreter but don't 'print' them
+                // Although checking this string is suspicous, it avoids a lot of complexity for the time being at little risk
+                // TODO: Allow communication of command types between OCaml/C 
+                if (!strstr(fData, "spt("))
+                    SURF_API_SERVER_LOG("%s", res);
                 
                 // Temp: Add a newline for the client
                 size_t resLen = strlen(res);

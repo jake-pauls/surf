@@ -17,6 +17,7 @@ open Ast
 %token STVEC2 STVEC3 STVEC4
 %token REFLECT
 %token MPUT
+%token MSPT
 %token EOF
 
 %nonassoc UMINUS
@@ -66,6 +67,7 @@ expr:
     /* Built-ins */
 
     | MPUT; LPAREN; e = expr; RPAREN; SEMICOLON { Put (e) }
+    | MSPT; LPAREN; e = expr; RPAREN; SEMICOLON { Spt (e) }
     ;
 
     /* Arguments */

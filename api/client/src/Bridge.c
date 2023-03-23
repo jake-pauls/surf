@@ -1,6 +1,6 @@
 #include "surf/Bridge.h"
 #include "surf/Define.h"
-#include "surf/SymbolTable.h"
+#include "surf/HashTable.h"
 #include "surf/Interp.h"
 
 #ifdef WIN32
@@ -10,11 +10,18 @@
 
 #include <stdio.h>
 
+/// @brief PID for profiling 
+int g_APIPid;
+
 /// @brief Single socket used to connect to the API
 static int s_ApiSocket = -1;
 
 surf_ApiResult surf_StartBridge()
 {
+    SURF_PROFILE_INIT();
+    SURF_PROFILE_START("surf", "api runtime", g_APIPid);
+    SURF_PROFILE_START_STEP("initialization", "connection");
+
     int status;
     struct addrinfo pHints, *pAddrInfo, *pNextAddr;
  
@@ -42,9 +49,18 @@ surf_ApiResult surf_StartBridge()
         return SURF_API_ERROR;
     }
 
+    int isConnected = SURF_FALSE;
+    int attempts = 0;
+
     // Passing "localhost" returns all available local addresses, iterate to find the right one
     for (pNextAddr = pAddrInfo; pAddrInfo != NULL; pNextAddr = pAddrInfo->ai_next)
     {
+        // Bail out if more than five addresses were tried, should be enough in most cases
+        if (attempts > 5)
+            break;
+
+        attempts++;
+
         s_ApiSocket = socket(pNextAddr->ai_family, pNextAddr->ai_socktype, pNextAddr->ai_protocol);
         if (s_ApiSocket < 0)
         {
@@ -63,40 +79,49 @@ surf_ApiResult surf_StartBridge()
         }
 
         // Break if connection was successful
+        isConnected = SURF_TRUE;
         break;
     }
 
     // Free address info once connected
     freeaddrinfo(pAddrInfo);
 
-    return SURF_API_SUCCESS;
+    SURF_PROFILE_END_STEP("initialization", "connection");
+    return isConnected ? SURF_API_SUCCESS : SURF_API_ERROR;
 }
 
 surf_ApiResult surf_DestroyBridge()
 {
+    SURF_PROFILE_START_STEP("destruction", "disconnection");
+
     int result = SURF_API_SUCCESS;
 
     // TODO: Depending on this to reassign to SURF_API_ERROR is kind of unsafe...
     result = surf_InternalCloseSocket(s_ApiSocket);
 
-    // Destroy symbols if any were registered
+    // Destroy items if any were registered in the interpreter's tables
     surf_InternalInterpDestroy();
 
 #ifdef WIN32
     result = WSACleanup();
 #endif
 
+    SURF_PROFILE_END_STEP("destruction", "disconnection");
+    SURF_PROFILE_END("surf", "api runtime", g_APIPid);
+    SURF_PROFILE_DESTROY();
     return result;
 }
 
 int surf_InternalSendSocket(const char* buffer, size_t bufferLen, int flags)
 {
+    SURF_PROFILE_START_STEP("socket", "sending/receiving data from server");
     return send(s_ApiSocket, buffer, bufferLen, flags);
 }
 
 int surf_InternalReceiveSocket(char* buffer, size_t bufferLen, int flags)
 {
     int bytes = recv(s_ApiSocket, buffer, bufferLen, flags);
+    SURF_PROFILE_END_STEP("socket", "sending/receiving data from server");
 
     // Add null-termination to string
     buffer[bytes - 1] = '\0';
@@ -106,6 +131,7 @@ int surf_InternalReceiveSocket(char* buffer, size_t bufferLen, int flags)
 
 surf_ApiResult surf_InternalCloseSocket(int socket)
 {
+    SURF_PROFILE_START_STEP("socket", "closing socket");
     surf_ApiResult result = SURF_API_SUCCESS;
 
     if (socket != -1)
@@ -115,5 +141,6 @@ surf_ApiResult surf_InternalCloseSocket(int socket)
         result = close(socket);
 #endif
 
+    SURF_PROFILE_END_STEP("socket", "closing socket");
     return result;
 }

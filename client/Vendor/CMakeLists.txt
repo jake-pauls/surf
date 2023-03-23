@@ -42,5 +42,21 @@ message(STATUS "[Vendor] Recursed and collected libraries from SDL3")
 add_subdirectory(tinyobjloader EXCLUDE_FROM_ALL)
 message(STATUS "[Vendor] Recursed and collected libraries from tinyobjloader")
 
+# imgui
+add_library(imgui STATIC)
+target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
+	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends")
+target_sources(imgui PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_demo.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_draw.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_widgets.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_tables.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_vulkan.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_sdl3.cpp")
+target_link_libraries(imgui PUBLIC ${Vulkan_LIBRARY} SDL3::SDL3)
+target_include_directories(imgui PUBLIC ${Vulkan_INCLUDE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/SDL/include" stb)
+message(STATUS "[Vendor] Collected libraries from imgui")
+
 # Add to 'Vendor' directory for VS 
-set_target_properties(SDL3 VulkanMemoryAllocator tinyobjloader PROPERTIES FOLDER Vendor)
+set_target_properties(SDL3-shared VulkanMemoryAllocator tinyobjloader imgui PROPERTIES FOLDER Vendor)

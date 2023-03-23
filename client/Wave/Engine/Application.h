@@ -1,10 +1,15 @@
 #pragma once
 
-#include "Window.h"
+#include <string>
+
 #include "Renderer.h"
 
 namespace wv
 {
+	class Window;
+	class Camera;
+	class ToolPanel;
+
 	class Application
 	{
 	public:
@@ -18,7 +23,18 @@ namespace wv
 		void Teardown() const;
 
 	private:
+		void UpdateControls(bool* keys);
+
+	private:
 		Window* m_Window = nullptr;
+		Camera* m_Camera = nullptr;
+		ToolPanel* m_ToolPanel = nullptr;
 		core::Unique<Renderer> m_Renderer = nullptr;
+
+		bool m_IsMouseLocked = 0;
+		bool m_IsMouseDown = false;
+		bool m_FirstFrame = true;
+		float m_LastX = 0.0f;
+		float m_LastY = 0.0f;
 	};
 }

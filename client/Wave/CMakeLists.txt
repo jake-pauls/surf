@@ -26,11 +26,17 @@ list(TRANSFORM CORE_HEADER_FILES PREPEND "Core/")
 set(ENGINE_SOURCE_FILES
     Main.cpp
     Application.cpp
-	Window.cpp)
+	Window.cpp
+    Camera.cpp
+    ToolPanel.cpp 
+    SurfEngine.cpp)
 
 set(ENGINE_HEADER_FILES
     Application.h
-	Window.h)
+	Window.h
+    Camera.h
+    ToolPanel.h
+    SurfEngine.h)
 
 list(TRANSFORM ENGINE_SOURCE_FILES PREPEND "Engine/")
 list(TRANSFORM ENGINE_HEADER_FILES PREPEND "Engine/")
@@ -58,6 +64,7 @@ set(VKRENDERER_SOURCE_FILES
     VkShaderPipeline.cpp
     VkPass.cpp
     VkMesh.cpp
+    VkMaterial.cpp
     VkModel.cpp)
 
 set(VKRENDERER_HEADER_FILES
@@ -70,6 +77,7 @@ set(VKRENDERER_HEADER_FILES
     VkPass.h
     VkMesh.h
     VkModel.h
+    VkMaterial.h
     VkTypes.h)
 
 list(TRANSFORM VKRENDERER_SOURCE_FILES PREPEND "Renderer/Vulkan/")
@@ -122,7 +130,8 @@ target_link_libraries(${WAVE_EXECUTABLE_NAME}
     glm
     stb
     spdlog
-    tinyobjloader)
+    tinyobjloader
+    imgui)
 
 # Platform specific compiler flags
 if(MSVC)
@@ -145,8 +154,8 @@ add_custom_command(TARGET ${WAVE_EXECUTABLE_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/Assets" "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Assets")
 
-# Post-build: copy the scripts folder into the build folder
+# Post-build: copy the surf folder into the build folder
 add_custom_command(TARGET ${WAVE_EXECUTABLE_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Scripts"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/surf"
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_CURRENT_SOURCE_DIR}/Scripts" "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/Scripts")
+    "${CMAKE_CURRENT_SOURCE_DIR}/surf" "$<TARGET_FILE_DIR:${WAVE_EXECUTABLE_NAME}>/surf")

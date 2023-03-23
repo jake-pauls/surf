@@ -25,9 +25,9 @@ std::vector<const char*> vkn::VkRendererContext::GetVulkanContextExtensions(bool
 
 	// Retrieve required SDL extensions
 	uint32_t contextExtensionCount = 0;
-	SDL_Vulkan_GetInstanceExtensions(window, &contextExtensionCount, nullptr);
+	SDL_Vulkan_GetInstanceExtensions(&contextExtensionCount, nullptr);
 	std::vector<const char*> contextExtensions = std::vector<const char*>(contextExtensionCount);
-	SDL_Vulkan_GetInstanceExtensions(window, &contextExtensionCount, contextExtensions.data());
+	SDL_Vulkan_GetInstanceExtensions(&contextExtensionCount, contextExtensions.data());
 
 	// Ensure that the debug utils extension is included if validation layers are enabled
 	if (vLayerExtensions)
@@ -47,7 +47,7 @@ VkExtent2D vkn::VkRendererContext::GetVulkanClientExtent() const
 {
 	int width, height;
 
-	SDL_Vulkan_GetDrawableSize(m_Window->GetSDLWindow(), &width, &height);
+	SDL_GetWindowSize(m_Window->GetSDLWindow(), &width, &height);
 
 	return { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 }

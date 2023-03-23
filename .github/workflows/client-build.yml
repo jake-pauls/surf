@@ -7,10 +7,16 @@ on:
   pull_request:
     paths-ignore:
       - 'build/**'
+      - 'gen/**'
+      - 'stubs/**'
       - '.vs/**'
       - '.vscode/**'
       - '**/*.md'
       - '*.git*'
+
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   win32:
@@ -55,42 +61,6 @@ jobs:
       - name: Run msbuild
         run: msbuild ./build/surf.sln -interactive:False -property:Configuration=${{ matrix.build-cfg }} -m
 
-  linux:
-    name: Linux Builds
-    strategy:
-      fail-fast: false
-      matrix:
-        build-cfg:
-          - Debug
-          - Release
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          submodules: 'true'
-
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v1.13
-        with:
-          cmake-version: '3.25.x'
-
-      - name: Prepare Vulkan SDK
-        uses: humbletim/install-vulkan-sdk@v1.1.1
-        with:
-          version: 1.3.236.0
-          cache: true
-
-      - name: Build project
-        run: python ./scripts/surf.py wave ${{ matrix.build-cfg }}
-
-      - name: Run make
-        working-directory: ./build
-        run: make
+      - name: Run client API tests (Check)
+        working-directory: ${{ github.workspace }}
+        run: ctest --output-on-failure --test-dir ./build/api/client/tests/

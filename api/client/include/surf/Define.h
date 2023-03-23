@@ -41,4 +41,29 @@
 /// @brief Wrapper for 'false'
 #define SURF_FALSE 0
 
+#ifdef _DEBUG
+	#include <minitrace.h>
+	#define SURF_PROFILE_INIT() mtr_init("surf.trace.json");   \
+							    MTR_META_PROCESS_NAME("surf"); \
+							    MTR_META_THREAD_NAME("activity");  
+
+	#define SURF_PROFILE_START(n, d, id) MTR_START(n, d, &id);
+
+	#define SURF_PROFILE_START_STEP(n, d) MTR_BEGIN(n, d);
+
+	#define SURF_PROFILE_END_STEP(n, d) MTR_END(n, d);
+
+	#define SURF_PROFILE_END(n, d, id) MTR_FINISH(n, d, &id);
+	
+	#define SURF_PROFILE_DESTROY() mtr_flush();	   \
+								   mtr_shutdown(); 
+#else
+	#define SURF_PROFILE_INIT()
+	#define SURF_PROFILE_START(n, d, id)
+	#define SURF_PROFILE_START_STEP(n, d)
+	#define SURF_PROFILE_END_STEP(n, d)
+	#define SURF_PROFILE_END(n, d, id)
+	#define SURF_PROFILE_DESTROY()
+#endif
+
 #endif /* Define_h */

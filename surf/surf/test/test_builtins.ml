@@ -138,6 +138,12 @@ let put =
   ]
 ;;
 
+(** [spt] small set of tests for the 'spt' - silent put - builtin *)
+let spt = 
+  [ ("put int", `Quick, fun _ -> check_interp_str "spt int" "1" "spt(1);" empty)
+  ; ("put flt", `Quick, fun _ -> check_interp_str "spt float" "1." "spt(1.0);" empty)
+  ]
+
 (** [ref] general tests for the 'ref' builtin *)
 let ref =
   [ ( "basic ref"

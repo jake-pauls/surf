@@ -40,10 +40,10 @@ typedef struct surf_Cfg
 /// @return True if a 'cfg.surf' file has been loadeed and is valid, false if not
 int surf_CfgIsValidLoaded();
 
-/// @brief Searches a directory of surf scripts non-recursively for a 'cfg.surf' file
-/// @param surfDir Directory containing surf scripts to search
+/// @brief Loads a 'cfg.surf' file into the interpreter
+/// @param cfgSurfFilepath Complete file path to the client's 'cfg.surf' file
 /// @return True if loading the config succeeded, false if it failed
-surf_Cfg surf_CfgLoad(const char* surfDir);
+surf_Cfg surf_CfgLoad(const char* cfgSurfFilepath);
 
 /// @brief Retrieves the 'cfg_gapi' variable from the surf interpreter
 /// @return Enum representing the config's provided graphics api
@@ -59,6 +59,6 @@ surf_Method surf_CfgGetMethod();
 
 /// @brief Checks if a provided surf configuration is invalid or nil (all required configuration variables are provided)
 /// @return True if the config is nil, false if the config has an invalid configuration field 
-int surf_CfgIsNil(const surf_Cfg* cfg);
+int surf_CfgIsInvalid(const surf_Cfg* cfg);
 
 #endif /* Cfg_h */

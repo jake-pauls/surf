@@ -1,0 +1,7 @@
+##
+## cfg.surf - surf configuration file
+##
+
+let cfg_gapi: str = "Vulkan";
+let cfg_slang: str = "glsl";
+let cfg_method: str = "Forward";

@@ -37,6 +37,7 @@ type expr =
   | Vec4 of expr * expr * expr * expr
   (* Built-ins *)
   | Put of expr
+  | Spt of expr
 
 (** [is_value e] checks whether [e] is a value, vectors containing all value types are
     considered values *)
@@ -47,7 +48,7 @@ let rec is_value : expr -> bool = function
   | Vec4 (e1, e2, e3, e4) when is_value e1 && is_value e2 && is_value e3 && is_value e4 ->
     true
   | Var _ | Let _ | Binop _ | Unop _ | Vec2 _ | Vec3 _ | Vec4 _ -> false
-  | Put _ -> false
+  | Put _ -> false | Spt _ -> false
 ;;
 
 (** [vec2_string_of_val e1 e2] retrieves the string representation of a vec2 with value

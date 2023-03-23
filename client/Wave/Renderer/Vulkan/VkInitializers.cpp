@@ -288,13 +288,24 @@ VkPipelineViewportStateCreateInfo vkn::InitPipelineViewportStateCreateInfo(int v
 ///	Push Constants
 /// 
 
-VkPushConstantRange vkn::InitPushConstantRange(const uint32_t size)
+VkPushConstantRange vkn::InitVertexPushConstantRange(const uint32_t size, const uint32_t offset /* = 0 */)
 {
 	VkPushConstantRange range = VkPushConstantRange();
 	range.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 	range.size = size;
-	range.offset = 0;
+	range.offset = offset;
+	
+	return range;
+}
+
+VkPushConstantRange vkn::InitFragmentPushConstantRange(const uint32_t size, const uint32_t offset /* = 0 */)
+{
+	VkPushConstantRange range = VkPushConstantRange();
+	range.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	range.size = size;
+	range.offset = offset;
 	
 	return range;
 }
@@ -305,11 +316,12 @@ VkPushConstantRange vkn::InitPushConstantRange(const uint32_t size)
 
 VkDescriptorPoolCreateInfo vkn::InitDescriptorPoolCreateInfo(const uint32_t poolSizeCount, 
 	const VkDescriptorPoolSize* poolSizes,
-	int maxSets)
+	int maxSets,
+	VkDescriptorPoolCreateFlags flags /* = 0 */)
 {
 	VkDescriptorPoolCreateInfo info = VkDescriptorPoolCreateInfo();
 	info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	info.flags = 0;
+	info.flags = flags;
 
 	info.maxSets = maxSets;
 	info.poolSizeCount = poolSizeCount;
@@ -354,7 +366,7 @@ VkDescriptorSetAllocateInfo vkn::InitDescriptorSetAllocateInfo(const VkDescripto
 
 	info.descriptorPool = descriptorPool;
 	info.pSetLayouts = descriptorSetLayouts;
-	info.descriptorSetCount = 1;
+	info.descriptorSetCount = count;
 
 	return info;
 }

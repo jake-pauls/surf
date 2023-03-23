@@ -9,14 +9,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-static surf_SymbolTable* s_SymbolTable = NULL;
+static surf_HashTable* s_SymbolTable = NULL;
+static surf_HashTable* s_FileTimeTable = NULL;
+
+time_t surf_InterpLookupFileTime(const char* filepath)
+{
+    if (!s_FileTimeTable)
+        s_FileTimeTable = surf_HashTableCreate();
+
+    return (time_t) surf_HashTableLookup(s_FileTimeTable, filepath);
+}
 
 char* surf_InterpLine(const char* line)
 {
+    SURF_PROFILE_START_STEP("interp", "interpret line");
+
     // Bail out of all interpreter requests if no cfg.surf file is present 
     // TODO: Find a way to do this that is less ironic?
     if (!surf_CfgIsValidLoaded() && !strstr(line, "cfg"))
+    {
+        SURF_PROFILE_END_STEP("interp", "interpret line");
         return NULL;
+    }
 
     int _ = surf_InternalSendSocket(line, strlen(line), 0);
 
@@ -47,10 +61,11 @@ char* surf_InterpLine(const char* line)
     }
     free(dupLine);
 
+    SURF_PROFILE_END_STEP("interp", "interpret line");
     return STRDUP(buffer);
 }
 
-int surf_InterpFile(const char* filepath)
+int surf_UnmanagedInterpFile(const char* filepath)
 {
     FILE* handle = fopen(filepath, "r");
     if (handle == NULL)
@@ -67,6 +82,23 @@ int surf_InterpFile(const char* filepath)
     return SURF_TRUE;
 }
 
+int surf_InterpFile(const char* filepath)
+{
+    time_t fileTime = surf_InterpLookupFileTime(filepath);
+
+    // Bail out early if the file hasn't been modified - client doesn't need more data from the interpreter 
+    if (fileTime && !IsFileModified(filepath, fileTime))
+		return SURF_FALSE;
+
+    // Update file time appropriately
+	time_t newFileTime = GetFileLastModifiedTime(filepath);
+    surf_HashTableInsert(s_FileTimeTable, filepath, newFileTime);
+
+    // File is either new or modified and can be submitted
+    // 'Unmanaged' interpreting just submits the file line-by-line at the moment
+    return surf_UnmanagedInterpFile(filepath);
+}
+
 void surf_InterpFreeString(char* str)
 {
     if (str == NULL)
@@ -78,7 +110,7 @@ void surf_InterpFreeString(char* str)
 
 int surf_InterpGetInt(const char* name, int* out) 
 {
-    const char* fmt = "put(%s);";
+    const char* fmt = "spt(%s);";
 
     char* buffer;
     int _ = ASPRINTF(&buffer, fmt, name);
@@ -97,7 +129,7 @@ int surf_InterpGetInt(const char* name, int* out)
 
 int surf_InterpGetFlt(const char* name, float* out)
 {
-    const char* fmt = "put(%s);";
+    const char* fmt = "spt(%s);";
 
     char* buffer;
     int _ = ASPRINTF(&buffer, fmt, name);
@@ -116,7 +148,7 @@ int surf_InterpGetFlt(const char* name, float* out)
 
 int surf_InterpGetStr(const char* name, char** out)
 {
-    const char* fmt = "put(%s);";
+    const char* fmt = "spt(%s);";
 
     char* buffer;
     int _ = ASPRINTF(&buffer, fmt, name);
@@ -138,7 +170,7 @@ int surf_InterpGetStr(const char* name, char** out)
 
 int surf_InterpGetV2(const char* name, surf_V2* out)
 {
-    const char* fmt = "put(%s);";
+    const char* fmt = "spt(%s);";
 
     char* buffer;
     int _ = ASPRINTF(&buffer, fmt, name);
@@ -158,7 +190,7 @@ int surf_InterpGetV2(const char* name, surf_V2* out)
 
 int surf_InterpGetV3(const char* name, surf_V3* out)
 {
-    const char* fmt = "put(%s);";
+    const char* fmt = "spt(%s);";
 
     char* buffer;
     int _ = ASPRINTF(&buffer, fmt, name);
@@ -178,7 +210,7 @@ int surf_InterpGetV3(const char* name, surf_V3* out)
 
 int surf_InterpGetV4(const char* name, surf_V4* out)
 {
-    const char* fmt = "put(%s);";
+    const char* fmt = "spt(%s);";
 
     char* buffer;
     int _ = ASPRINTF(&buffer, fmt, name);
@@ -280,30 +312,36 @@ void surf_InterpBindV4(const char* name, float f1, float f2, float f3, float f4)
     free(buffer);
 }
 
-void surf_InterpRegisterSymbol(const char* id, surf_fun_t fun)
+void surf_InterpRegisterSymbol(const char* id, void* fun)
 {
-    if (s_SymbolTable == NULL)
-        s_SymbolTable = surf_SymbolTableCreate();
+    SURF_PROFILE_START_STEP("interp", "register symbol");
 
-    surf_SymbolTableInsert(s_SymbolTable, id, fun);
+    if (!s_SymbolTable)
+        s_SymbolTable = surf_HashTableCreate();
+
+    surf_HashTableInsert(s_SymbolTable, id, fun);
+
+    SURF_PROFILE_END_STEP("interp", "register symbol");
 }
 
-void surf_InterpUnregisterSymbol(const char* id)
+void surf_InterpDeregisterSymbol(const char* id)
 {
-    if (s_SymbolTable == NULL)
+    if (!s_SymbolTable)
         return;
 
-    surf_SymbolTableRemove(s_SymbolTable, id);
+    surf_HashTableRemove(s_SymbolTable, id);
 }
 
 void surf_InternalExecuteReflectionCallback(const char* buffer)
 {
     // Prevent retrieving reflected functions if they don't exist
-    if (s_SymbolTable == NULL)
+    if (!s_SymbolTable)
     {
         SURF_API_CLIENT_LOG("Attempted to reflect a function in surf, but no functions have been registered in the API");
         return;
     }
+
+    SURF_PROFILE_START_STEP("interp", "reflection callback");
 
     char* dupBuffer = STRDUP(buffer);
 	const char space = ' ';
@@ -313,9 +351,12 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
     char* identifier = args[1];
 
     // Exit out if function isn't found
-    surf_fun_t callback = surf_SymbolTableLookup(s_SymbolTable, identifier);
-    if (callback == NULL)
+    surf_fun_t callback = (surf_fun_t) surf_HashTableLookup(s_SymbolTable, identifier);
+    if (!callback)
+    {
+        SURF_PROFILE_END_STEP("interp", "reflection callback");
         return;
+    }
 
     // Retrieve the length of the args to check for argument pack
     int splitLen = -1;
@@ -327,6 +368,7 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
 		callback(NULL);
         free(args);
         free(dupBuffer);
+        SURF_PROFILE_END_STEP("interp", "reflection callback");
         return;
     } 
 
@@ -390,11 +432,20 @@ void surf_InternalExecuteReflectionCallback(const char* buffer)
 	free(vArgs);
     free(args);
     free(dupBuffer);
+
+	SURF_PROFILE_END_STEP("interp", "reflection callback");
 }
 
 void surf_InternalInterpDestroy()
 {
+    SURF_PROFILE_START_STEP("destruction", "tearing down environment");
+
     if (s_SymbolTable)
-		surf_SymbolTableDestroy(s_SymbolTable);
+		surf_HashTableDestroy(s_SymbolTable);
+
+    if (s_FileTimeTable)
+        surf_HashTableDestroy(s_FileTimeTable);
+
+    SURF_PROFILE_END_STEP("destruction", "tearing down environment");
 }
 

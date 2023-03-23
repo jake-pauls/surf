@@ -2,26 +2,30 @@
 
 #include <vector>
 #include <functional>
+#include <unordered_map>
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
 #include "Renderer.h"
 #include "VkMesh.h"
 #include "VkPass.h"
 #include "VkHardware.h"
+#include "VkMaterial.h"
 #include "VkSwapChain.h"
 #include "VkShaderPipeline.h"
 
 namespace wv
 {
 	class Window;
+	class Camera;
 }
 
 namespace vkn
 {
 	class VkModel;
 
+	/// @brief Context for uploading a render command to the renderer
 	struct RendererUploadContext
 	{
 		VkFence m_UploadFence;
@@ -29,17 +33,24 @@ namespace vkn
 		VkCommandBuffer m_CommandBuffer;
 	};
 
+	struct Renderable
+	{
+		VkMesh* m_Mesh;
+		VkMaterial* m_Material;
+	};
+
 	/// @brief Implementation for Vulkan renderer
 	class VkRenderer final : public wv::Renderer
 	{
 		friend class VkPass;
 		friend class VkModel;
+		friend class VkMaterial;
 		friend class VkHardware;
 		friend class VkSwapChain;
 		friend class VkShaderPipeline;
 
 	public:
-		explicit VkRenderer(wv::Window* window);
+		explicit VkRenderer(wv::Window* window, wv::Camera* camera);
 		~VkRenderer() override = default;
 
 		void Init() override;
@@ -58,6 +69,8 @@ namespace vkn
 		/// @param submitFunction Function using a command buffer to execute a rendering command
 		void SubmitToRenderer(std::function<void(VkCommandBuffer)>&& submitFunction) const;
 
+		void ReloadMeshes();
+
 	private:
 		/// @brief Creates required synchronization objects for the renderer
 		void CreateSyncObjects();
@@ -66,8 +79,8 @@ namespace vkn
 		/// @note Runtime commands use c_MaxFramesInFlight to manage frames 
 		void CreateCommands();
 
-		/// @brief Creates uniform buffers and allocates their associating descriptor sets
-		void CreateUniformBuffers();
+		/// @brief Creates all the available shader pipelines
+		void CreatePipelines();
 
 		VkCommandBuffer BeginFrame();
 		void EndFrame();
@@ -76,12 +89,27 @@ namespace vkn
 		void DrawCommandBuffer(VkCommandBuffer commandBuffer);
 		void EndRenderPass(VkCommandBuffer commandBuffer);
 
-		// TODO: Abstract mesh loading
+		void RegisterSurfSymbols();
+		void UpdateSurfCommands();
+
+		void InitImGui();
+
 		void LoadMeshes();
-		void CreateTexture(const std::string& filename);
+
+		VkMesh* LookupMesh(const std::string& meshName);
+		VkMaterial* LookupMaterial(const std::string& materialName);
+		VkMaterial* CreateMaterial(const VkShaderPipeline& shaderPipeline, 
+			const std::string& materialName);
+		VkMaterial* CreateTexturedMaterial(const VkShaderPipeline& shaderPipeline, 
+			const std::vector<std::string>& textureNames, 
+			const std::string& materialName);
+
+	public:
+		uint32_t c_MaxFramesInFlight = 2;
 
 	private:
 		wv::Window* m_Window = nullptr;
+		wv::Camera* m_Camera = nullptr;
 
 		RendererUploadContext m_UploadContext = {};
 
@@ -94,7 +122,13 @@ namespace vkn
 
 		// Passes/Pipelines
 		VkPass* m_DefaultPass = nullptr;
-		VkShaderPipeline* m_DefaultPipeline = nullptr;
+		VkShaderPipeline* m_TexturedPipeline = nullptr;
+		VkShaderPipeline* m_UntexturedPipeline = nullptr;
+		VkShaderPipeline* m_PBRPipeline = nullptr;
+		VkShaderPipeline* m_RustPBRPipeline = nullptr;
+		VkShaderPipeline* m_BambooPBRPipeline = nullptr;
+		VkShaderPipeline* m_SandPBRPipeline = nullptr;
+		VkShaderPipeline* m_RockPBRPipeline = nullptr;
 
 		// Frame Management
 		bool m_IsFrameStarted = false;
@@ -102,16 +136,35 @@ namespace vkn
 		uint32_t m_CurrentImageIndex = 0;
 
 		// Synchronization
-		uint32_t c_MaxFramesInFlight = 2;
 		std::vector<VkSemaphore> m_ImageAvailableSemaphores = {};
 		std::vector<VkSemaphore> m_RenderFinishedSemaphores = {};
 		std::vector<VkFence> m_InFlightFences = {};
 
 		// Temp
-		std::vector<VmaAllocatedDescriptorSet> m_UniformBuffers = {};
+		std::string m_SelectedModel = "";
+		std::string m_SelectedMaterial = "";
 		VkModel* m_LoadedModel = nullptr;
-		VkMesh m_LoadedMesh = {};
 
-		VkTexture m_Texture = {};
+		VkMesh m_VikingRoomMesh = {};
+		VkMesh m_RockMesh = {};
+		VkMesh m_TeapotMesh = {};
+		VkMesh m_BunnyMesh = {};
+		VkMesh m_SuzanneMesh = {};
+		VkMesh m_DragonMesh = {};
+		VkMesh m_SphereMesh = {};
+
+		VkDescriptorPool m_ImguiDescriptorPool;
+
+		std::vector<VkModel*> m_RenderableModels;
+		std::unordered_map<std::string, VkMesh> m_Meshes;
+		std::unordered_map<std::string, VkMaterial> m_Materials;
+
+		// surf bindings
+		glm::vec3 m_SurfAlbedo = {};
+		glm::vec3 m_SurfLightPosition = {};
+		glm::vec3 m_SurfLightColor = {};
+		float m_SurfMetallic = 0.0f;
+		float m_SurfRoughness = 0.0f;
+		float m_SurfAO = 0.0f;
 	};
 }

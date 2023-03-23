@@ -35,6 +35,7 @@ rule read =
   | "v4" { STVEC4 }
   | "ref" { REFLECT }
   | "put" { MPUT }
+  | "spt" { MSPT }
   | int { INT (int_of_string (Lexing.lexeme lexbuf)) }
   | float { FLOAT (float_of_string (Lexing.lexeme lexbuf)) }
   | id { ID (Lexing.lexeme lexbuf) }

@@ -7,6 +7,7 @@
 #include <glm/gtx/hash.hpp>
 
 #include "VkTypes.h"
+#include "VkShaderPipeline.h"
 
 namespace vkn
 {
@@ -40,19 +41,23 @@ namespace vkn
 		void LoadFromObj(const char* filename);
 	};
 
-	struct VkTexture
-	{
-		VmaAllocatedImage m_Image;
-		VkSampler m_Sampler;
-	};
-
     struct VkMeshPushConstants
     {
+		glm::vec4 m_CameraPosition;
         glm::mat4 m_ModelMatrix;
     };
 
+	/// @brief Represents the uniforms passed to the default UBO in shaders
+	/// @note Vectors are padded together to reduce the complexity of the descriptor sets
 	struct VkMeshUniformBufferObject
 	{
+		// PBR
+		glm::vec4 m_LightPosition;
+		glm::vec4 m_LightColor;
+		glm::vec4 m_Albedo;
+		// x - metallic, y - roughness, z - ao, w - unused
+		glm::vec4 m_PBRSettings;
+		// View
 		glm::mat4 m_ViewMatrix;
 		glm::mat4 m_ProjectionMatrix;
 	};

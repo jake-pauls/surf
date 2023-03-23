@@ -7,10 +7,16 @@ on:
   pull_request:
     paths-ignore:
       - 'build/**'
+      - 'gen/**'
+      - 'stubs/**'
       - '.vs/**'
       - '.vscode/**'
       - '**/*.md'
       - '*.git*'
+
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   build-test:

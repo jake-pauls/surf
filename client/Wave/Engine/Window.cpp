@@ -1,5 +1,7 @@
 #include "Window.h"
 
+#include <surf/surf.h>
+
 wv::Window::Window(const WindowProperties& props)
 	: m_WindowProperties(props)
 {
@@ -9,7 +11,7 @@ wv::Window::Window(const WindowProperties& props)
 	WAVE_ASSERT(result >= 0, "Failed to initialize SDL context");
 }
 
-void wv::Window::Init(Renderer::GraphicsAPI gapi)
+void wv::Window::Init(surf_Gapi gapi)
 {
 	WAVE_ASSERT(!m_Window, "Init() is being called on a window that has already been initialized");
 
@@ -19,12 +21,10 @@ void wv::Window::Init(Renderer::GraphicsAPI gapi)
 	
 	// Set window flags, retrieve context specific flags from render context
 	SDL_WindowFlags contextFlags = m_RendererContext->GetContextSDLWindowFlags();
-	SDL_WindowFlags windowFlags = static_cast<SDL_WindowFlags>(contextFlags | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+	SDL_WindowFlags windowFlags = static_cast<SDL_WindowFlags>(contextFlags | SDL_WINDOW_RESIZABLE);
 
 	m_Window = SDL_CreateWindow(
 		m_WindowProperties.Title.c_str(), 
-		SDL_WINDOWPOS_CENTERED, 
-		SDL_WINDOWPOS_CENTERED, 
 		m_WindowProperties.Width, 
 		m_WindowProperties.Height, 
 		windowFlags
