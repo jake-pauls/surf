@@ -193,7 +193,7 @@ void vkn::VkRenderer::CreateCommands()
 
 void vkn::VkRenderer::CreatePipelines()
 {
-	core::Log(ELogType::Info, "[VkRenderer] Loading shaders, this might take a while");
+	core::Log(ELogType::Info, "[VkRenderer] Loading shaders... this might take a while");
 
 	std::string untexturedVertexShader = core::FileSystem::GetShaderPath("UntexturedMesh.vert.hlsl.spv").string();
 	std::string untexturedFragmentShader = core::FileSystem::GetShaderPath("UntexturedMesh.frag.hlsl.spv").string();
@@ -470,6 +470,9 @@ void vkn::VkRenderer::UpdateSurfCommands()
 		m_SurfLightPosition = wv::SurfEngine::GetV3("pbr_light_position");
 		m_SurfLightColor = wv::SurfEngine::GetV3("pbr_light_color");
 	}
+
+	// Run C function callback surf script
+	wv::SurfEngine::InterpFile("fun.surf");
 }
 
 void vkn::VkRenderer::InitImGui()

@@ -1,0 +1,9 @@
+##
+## fun.surf - reflecting c functions in surf
+##
+
+# Call 'surf_SampleCFunction' as a C-function with no arguments 
+ref surf_SampleCFunction();
+
+# Call 'surf_SampleCFunctionWithArgs' as a C-function with arguments
+ref surf_SampleCFunctionWithArgs(1:int, 2.02:flt, "surf":str);
