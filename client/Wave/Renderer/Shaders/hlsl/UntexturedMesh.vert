@@ -13,6 +13,12 @@ struct VSOutput
 
 struct UniformBufferObject
 {
+	// PBR
+	float4 m_LightPosition;
+	float4 m_LightColor;
+	float4 m_Albedo;
+	float4 m_PBRSettings;
+	// View
     row_major float4x4 m_ViewMatrix;
     row_major float4x4 m_ProjectionMatrix;
 };
@@ -24,10 +30,7 @@ struct PushConstants
 };
 
 [[vk::binding(0, 0)]]
-cbuffer u_UBO 
-{
-	UniformBufferObject u_UBO;
-}
+cbuffer u_UBO { UniformBufferObject u_UBO; }
 
 [[vk::push_constant]]
 PushConstants u_PCS;

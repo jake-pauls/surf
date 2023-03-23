@@ -40,6 +40,14 @@ bool wv::SurfEngine::InterpFile(const std::string& filename)
 	return GetInstance().MInterpFile(filepath.c_str());
 }
 
+bool wv::SurfEngine::UnmanagedInterpFile(const std::string& filename)
+{
+	std::string filepath = core::FileSystem::GetSurfScriptPath(filename.c_str()).string();
+	WAVE_ASSERT(!filepath.empty(), "Attempted to interpret a file over the surf API that wasn't found in the scripts directory")
+
+	return GetInstance().MUnmanagedInterpFile(filepath.c_str());
+}
+
 void wv::SurfEngine::RegisterFunction(const std::string& functionId, surf_fun_t pFunction)
 {
 	GetInstance().MRegisterFunction(functionId.c_str(), pFunction);
@@ -165,6 +173,11 @@ char* wv::SurfEngine::MInterpLine(const char* line)
 bool wv::SurfEngine::MInterpFile(const char* filepath)
 {
 	return surf_InterpFile(filepath);
+}
+
+bool wv::SurfEngine::MUnmanagedInterpFile(const char* filepath)
+{
+	return surf_UnmanagedInterpFile(filepath);
 }
 
 void wv::SurfEngine::MRegisterFunction(const char* functionId, surf_fun_t pFunction)

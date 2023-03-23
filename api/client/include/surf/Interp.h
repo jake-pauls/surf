@@ -17,9 +17,17 @@ char* surf_InterpLine(const char* line);
 /// @return Time information for when the file was last modified
 time_t surf_InterpLookupFileTime(const char* filepath);
  
-/// @brief Reads and submits requests to interpret a surf file line-by-line, checks if files have been modified since the last time they were interpreted before submitting
+/// @brief Reads and submits requests to interpret a surf file line-by-line.
+///		   This is the unmanaged version for interpreting files and will submit the file regardless of whether it's been updated.
 /// @param filepath Absolute path (or path relative to this project) to the surf script to interpret
-/// @return True if the file was succesfully interpreted, false if it was not
+/// @return True if the file was interpreted, false if it was not 
+/// @note Requires a valid cfg.surf file loaded with 'surf_CfgLoad' prior to use
+int surf_UnmanagedInterpFile(const char* filepath);
+
+/// @brief Reads and submits requests to interpret a surf file line-by-line. 
+///        This is the managed version for interpreting files and will check if the file has been modified since it was last interpreted before submitting. 
+/// @param filepath Absolute path (or path relative to this project) to the surf script to interpret
+/// @return True if the file was interpreted, false if it was not 
 /// @note Requires a valid cfg.surf file loaded with 'surf_CfgLoad' prior to use
 int surf_InterpFile(const char* filepath);
 

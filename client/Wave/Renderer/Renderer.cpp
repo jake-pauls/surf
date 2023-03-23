@@ -2,19 +2,19 @@
 
 #include "Vulkan/VkRenderer.h"
 
-core::Unique<wv::Renderer> wv::Renderer::CreateRendererWithGAPI(Window* window, Camera* camera, Renderer::GraphicsAPI gapi)
+core::Unique<wv::Renderer> wv::Renderer::CreateRendererWithSurfCfg(Window* window, Camera* camera, surf_Cfg cfg)
 {
-	switch (gapi)
+	switch (cfg.Gapi)
 	{
-	case Renderer::GraphicsAPI::None:
+	case SURF_GAPI_NIL:
 		WAVE_ASSERT(false, "No rendering API selected");
 		return nullptr;
-	case Renderer::GraphicsAPI::DirectX:
+	case SURF_GAPI_DIRECTX:
 		WAVE_ASSERT(false, "DirectX is unimplemented");
 		return nullptr;
-	case Renderer::GraphicsAPI::OpenGL:
+	case SURF_GAPI_OPENGL:
 		WAVE_ASSERT(false, "OpenGL is unimplemented");
-	case Renderer::GraphicsAPI::Vulkan:
+	case SURF_GAPI_VULKAN:
 		return core::CreateUnique<vkn::VkRenderer>(window, camera);
 	};
 

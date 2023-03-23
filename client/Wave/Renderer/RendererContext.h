@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL3/SDL.h>
+#include <surf/surf.h>
 
 #include "Renderer.h"
 
@@ -22,6 +23,6 @@ namespace wv
 
 		/// @brief Creates a context for a provided renderer to a window
 		/// @return Unique pointer containing the graphics context 
-		static core::Unique<RendererContext> CreateRendererContext(Window* window, Renderer::GraphicsAPI api);
+		static core::Unique<RendererContext> CreateRendererContext(Window* window, surf_Gapi gapi);
 	};
 }

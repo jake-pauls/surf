@@ -10,20 +10,20 @@ namespace wv
 	std::string ToolPanel::s_SelectedMaterial = "Default";
 }
 
-wv::ToolPanel::ToolPanel(Renderer::GraphicsAPI gapi)
+wv::ToolPanel::ToolPanel(surf_Gapi gapi)
 {
 	switch (gapi)
 	{
-	case Renderer::GraphicsAPI::None:
+	case SURF_GAPI_NIL:
 		WAVE_ASSERT(false, "No graphics API selected");
 		break;
-	case Renderer::GraphicsAPI::DirectX:
+	case SURF_GAPI_DIRECTX:
 		WAVE_ASSERT(false, "DirectX is unimplemented");
 		break;
-	case Renderer::GraphicsAPI::OpenGL:
+	case SURF_GAPI_OPENGL:
 		WAVE_ASSERT(false, "OpenGL is unimplemented");
 		break;
-	case Renderer::GraphicsAPI::Vulkan:
+	case SURF_GAPI_VULKAN:
 		m_ImGuiNewFrameFunction = &ImGui_ImplVulkan_NewFrame;
 		break;
 	}
@@ -45,7 +45,7 @@ void wv::ToolPanel::Draw()
 	const float comboWidth = width * 0.5f;
 
 	// Note: 'VkRenderer' matches against these strings when selecting new meshes
-	const char* models[] = { "Sphere", "Viking Room", /* "Teapot",  "Bunny", "Suzanne", "Dragon" */ };
+	const char* models[] = { "Sphere", "Viking Room", "Rock" /* "Teapot",  "Bunny", "Suzanne", "Dragon" */};
 	static const char* currentItem = models[0];
 	ImGui::SetNextItemWidth(comboWidth);
 	if (ImGui::BeginCombo("Model", currentItem))
@@ -65,7 +65,7 @@ void wv::ToolPanel::Draw()
 		ImGui::EndCombo();
 	}
 
-	const char* materials[] = { "Default", "VikingRoomMaterial", "PBRMaterial", "TexturedPBRMaterial" };
+	const char* materials[] = { "Default", "Viking Room", "PBR Default", "Rock (PBR)", "Rust (PBR)", "Bamboo (PBR)", "Sand (PBR)"};
 	static const char* currentMaterial = materials[0];
 	ImGui::SetNextItemWidth(comboWidth);
 	if (ImGui::BeginCombo("Material", currentMaterial))

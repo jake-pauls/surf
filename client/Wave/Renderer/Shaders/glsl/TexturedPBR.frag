@@ -137,8 +137,8 @@ void main()
     // Add outgoing radiance
     Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
-    // Ambient lighting
-    vec3 ambient = vec3(0.03f) * albedo * ao;
+    // Ambient lighting - currently using surf pbr_ao float
+    vec3 ambient = vec3(0.03f) * albedo * u_UBO.m_PBRSettings.z;
 
     vec3 color = ambient + Lo;
     color = color / (color + vec3(1.0f));

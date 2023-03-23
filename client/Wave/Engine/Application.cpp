@@ -12,34 +12,6 @@
 #include <imgui_impl_vulkan.h>
 #include <surf/surf.h>
 
-void surf_SampleFunction(surf_argpack_t argpack) 
-{ 
-	core::Log(ELogType::Debug, "fun(): a simple function callback");
-}
-
-void surf_AnotherSampleFunction(surf_argpack_t argpack) 
-{ 
-	int aInt = surf_ArgpackGetInt(argpack, 0);
-	float aFlt = surf_ArgpackGetFlt(argpack, 1);
-	surf_V2 v2 = surf_ArgpackGetV2(argpack, 2);
-	surf_V3 v3 = surf_ArgpackGetV3(argpack, 3);
-	surf_V4 v4 = surf_ArgpackGetV4(argpack, 4);
-
-	// TODO: Strings can only be placed as the last arg of an argpack 
-	//		 Presumably for alignment reasons?
-	char* aStr = surf_ArgpackGetStr(argpack, 5);
-
-	core::Log(ELogType::Debug, "anotherFun(): a function callback with an argpack");
-	core::Log(ELogType::Debug, "int is {}", aInt);
-	core::Log(ELogType::Debug, "float is {}", aFlt);
-	core::Log(ELogType::Debug, "string is {}", aStr);
-	core::Log(ELogType::Debug, "v2 is (x:{}, y:{})", v2.x, v2.y);
-	core::Log(ELogType::Debug, "v3 is (x:{}, y:{}, z:{})", v3.x, v3.y, v3.z);
-	core::Log(ELogType::Debug, "v4 is (x:{}, y:{}, z:{}, w:{})", v4.x, v4.y, v4.z, v4.w);
-}
-
-//
-
 wv::Application::Application()
 	: m_Window(new Window)
 	, m_Camera(new Camera)
@@ -60,35 +32,16 @@ void wv::Application::Run()
 	// Start the surf runner
 	SurfEngine::Start();
 
-	SurfEngine::RegisterFunction("myFun", (surf_fun_t) &surf_SampleFunction);
-	SurfEngine::InterpLine("ref myFun();");
-
 	// Serve the surf configuration's rendering API
-	Renderer::GraphicsAPI gapi;
 	surf_Cfg cfg = SurfEngine::GetSurfCfg();
-	switch (cfg.Gapi)
-	{
-	case SURF_GAPI_VULKAN:
-		gapi = Renderer::GraphicsAPI::Vulkan;
-		break;
-	case SURF_GAPI_DIRECTX:
-		gapi = Renderer::GraphicsAPI::DirectX;
-		break;
-	case SURF_GAPI_OPENGL:
-		gapi = Renderer::GraphicsAPI::OpenGL;
-		break;
-	case SURF_GAPI_NIL:
-		WAVE_ASSERT(false, "surf's configuration reported an unknown graphics API");
-		break;
-	}
 
 	// Initialize the window and it's corresponding graphics context
-	m_Window->Init(gapi);
-	m_Renderer = Renderer::CreateRendererWithGAPI(m_Window, m_Camera, gapi);
+	m_Window->Init(cfg.Gapi);
+	m_Renderer = Renderer::CreateRendererWithSurfCfg(m_Window, m_Camera, cfg);
 	m_Renderer->Init();
 
 	// Initialize the tool panel
-	m_ToolPanel = new ToolPanel(gapi);
+	m_ToolPanel = new ToolPanel(cfg.Gapi);
 
 	// Initialize SDL Keys
 	bool sdlKeys[322];

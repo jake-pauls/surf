@@ -1,5 +1,7 @@
 #pragma once
 
+#include <surf/surf.h>
+
 #include <functional>
 
 #include "Renderer.h"
@@ -9,7 +11,7 @@ namespace wv
 	class ToolPanel
 	{
 	public:
-		explicit ToolPanel(Renderer::GraphicsAPI gapi);
+		explicit ToolPanel(surf_Gapi gapi);
 		~ToolPanel() = default;
 
 		/// @brief Draws ImGui tools to the SDL window

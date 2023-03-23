@@ -1,5 +1,7 @@
 #pragma once
 
+#include <surf/surf.h>
+
 namespace wv
 {
     class Window;
@@ -32,8 +34,8 @@ namespace wv
 
         virtual void Clear() const = 0;
 
-		/// @brief Creates a renderer containing the implementation for the selected rendering API
+		/// @brief Creates a renderer containing the implementation for a surf cfg
 		/// @return Unique pointer containing the constructed renderer 
-		static core::Unique<Renderer> CreateRendererWithGAPI(Window* window, Camera* camera, Renderer::GraphicsAPI gapi);
+		static core::Unique<Renderer> CreateRendererWithSurfCfg(Window* window, Camera* camera, surf_Cfg surfCfg);
     };
 }

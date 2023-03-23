@@ -1,5 +1,7 @@
 #include "Window.h"
 
+#include <surf/surf.h>
+
 wv::Window::Window(const WindowProperties& props)
 	: m_WindowProperties(props)
 {
@@ -9,7 +11,7 @@ wv::Window::Window(const WindowProperties& props)
 	WAVE_ASSERT(result >= 0, "Failed to initialize SDL context");
 }
 
-void wv::Window::Init(Renderer::GraphicsAPI gapi)
+void wv::Window::Init(surf_Gapi gapi)
 {
 	WAVE_ASSERT(!m_Window, "Init() is being called on a window that has already been initialized");
 

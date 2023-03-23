@@ -18,6 +18,27 @@
 #include "VkShaderPipeline.h"
 #include "VkInitializers.h"
 
+void surf_SampleCFunction(surf_argpack_t argpack) 
+{ 
+	core::Log(ELogType::Debug, "callback: surf_SampleCFunction");
+}
+
+void surf_SampleCFunctionWithArgs(surf_argpack_t argpack) 
+{ 
+	int aInt = surf_ArgpackGetInt(argpack, 0);
+	float aFlt = surf_ArgpackGetFlt(argpack, 1);
+
+	// TODO: Strings can only be placed as the last arg of an argpack 
+	//		 Presumably for alignment reasons?
+	char* aStr = surf_ArgpackGetStr(argpack, 2);
+
+	core::Log(ELogType::Debug, "callback: surf_SampleCFunctionWithArgs {} {} {}", aInt, aFlt, aStr);
+}
+
+///  
+///
+///
+
 vkn::VkRenderer::VkRenderer(wv::Window* window, wv::Camera* camera)
 	: m_Window(window)
 	, m_Camera(camera)
@@ -28,8 +49,9 @@ void vkn::VkRenderer::Init()
 {
 	core::Log(ELogType::Trace, "[VkRenderer] Initializing Vulkan renderer");
 
-	ExecuteSurfCommands();
-	
+	RegisterSurfSymbols();
+	UpdateSurfCommands();
+
 	// Default hardware
 	m_VkHardware = new VkHardware(m_Window);
 
@@ -45,39 +67,7 @@ void vkn::VkRenderer::Init()
 	CreateSyncObjects();
 
 	// Shader creation 
-	{
-		std::string untexturedVertexShader = core::FileSystem::GetShaderPath("UntexturedMesh.vert.glsl.spv").string();
-		std::string untexturedFragmentShader = core::FileSystem::GetShaderPath("UntexturedMesh.frag.glsl.spv").string();
-
-		std::string texturedVertexShader = core::FileSystem::GetShaderPath("TexturedMesh.vert.glsl.spv").string();
-		std::string texturedFragmentShader = core::FileSystem::GetShaderPath("TexturedMesh.frag.glsl.spv").string();
-
-		std::string uPBRVertexShader = core::FileSystem::GetShaderPath("UntexturedPBR.vert.glsl.spv").string();
-		std::string uPBRFragmentShader = core::FileSystem::GetShaderPath("UntexturedPBR.frag.glsl.spv").string();
-
-		std::string tPBRVertexShader = core::FileSystem::GetShaderPath("TexturedPBR.vert.glsl.spv").string();
-		std::string tPBRFragmentShader = core::FileSystem::GetShaderPath("TexturedPBR.frag.glsl.spv").string();
-
-		m_UntexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, untexturedVertexShader, untexturedFragmentShader);
-		m_TexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, texturedVertexShader, texturedFragmentShader, 1);
-		m_PBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, uPBRVertexShader, uPBRFragmentShader);
-		m_TexturedPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
-
-		CreateMaterial(*m_UntexturedPipeline, "Default");
-		CreateTexturedMaterial(*m_TexturedPipeline, { "viking_room.png" }, "VikingRoomMaterial");
-		CreateMaterial(*m_PBRPipeline, "PBRMaterial");
-
-		std::vector<std::string> rustedIronTextures = {
-			"PBR/RustedIron_Color.png",
-			"PBR/RustedIron_Normal.png",
-			"PBR/RustedIron_Metallic.png",
-			"PBR/RustedIron_Roughness.png",
-			//"PBR/RustedIron_AO.png", A0 is dampening the entire texture
-			"PBR/RustedIron_Color.png",
-		};
-
-		CreateTexturedMaterial(*m_TexturedPBRPipeline, rustedIronTextures, "TexturedPBRMaterial");
-	}
+	CreatePipelines();
 
 	LoadMeshes();
 
@@ -94,7 +84,7 @@ void vkn::VkRenderer::Draw()
 	ImGui::Render();
 
 	// Execute surf commands
-	ExecuteSurfCommands();
+	UpdateSurfCommands();
 
 	BeginRenderPass(commandBuffer);
 
@@ -115,10 +105,15 @@ void vkn::VkRenderer::Teardown()
 	// TODO: Implement main destruction queue as opposed to relying on destructors
 	delete m_LoadedModel;
 	delete m_VkSwapChain;
+
 	delete m_UntexturedPipeline;
 	delete m_TexturedPipeline;
 	delete m_PBRPipeline;
-	delete m_TexturedPBRPipeline;
+	delete m_RustPBRPipeline;
+	delete m_BambooPBRPipeline;
+	delete m_SandPBRPipeline;
+	delete m_RockPBRPipeline;
+
 	delete m_DefaultPass;
 
 	// Destroy materials
@@ -194,6 +189,78 @@ void vkn::VkRenderer::CreateCommands()
 
 	VkCommandBufferAllocateInfo uploadCommandBufferAllocateInfo = vkn::InitCommandBufferAllocateInfo(m_UploadContext.m_CommandPool);
 	VK_CALL(vkAllocateCommandBuffers(m_VkHardware->m_LogicalDevice, &uploadCommandBufferAllocateInfo, &m_UploadContext.m_CommandBuffer));
+}
+
+void vkn::VkRenderer::CreatePipelines()
+{
+	core::Log(ELogType::Info, "[VkRenderer] Loading shaders, this might take a while");
+
+	std::string untexturedVertexShader = core::FileSystem::GetShaderPath("UntexturedMesh.vert.hlsl.spv").string();
+	std::string untexturedFragmentShader = core::FileSystem::GetShaderPath("UntexturedMesh.frag.hlsl.spv").string();
+
+	std::string texturedVertexShader = core::FileSystem::GetShaderPath("TexturedMesh.vert.hlsl.spv").string();
+	std::string texturedFragmentShader = core::FileSystem::GetShaderPath("TexturedMesh.frag.hlsl.spv").string();
+
+	std::string uPBRVertexShader = core::FileSystem::GetShaderPath("UntexturedPBR.vert.glsl.spv").string();
+	std::string uPBRFragmentShader = core::FileSystem::GetShaderPath("UntexturedPBR.frag.glsl.spv").string();
+
+	std::string tPBRVertexShader = core::FileSystem::GetShaderPath("TexturedPBR.vert.glsl.spv").string();
+	std::string tPBRFragmentShader = core::FileSystem::GetShaderPath("TexturedPBR.frag.glsl.spv").string();
+
+	m_UntexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, untexturedVertexShader, untexturedFragmentShader);
+	m_TexturedPipeline = new VkShaderPipeline(*this, *m_VkHardware, texturedVertexShader, texturedFragmentShader, 1);
+	m_PBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, uPBRVertexShader, uPBRFragmentShader);
+	m_RustPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
+	m_BambooPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
+	m_SandPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 5);
+	m_RockPBRPipeline = new VkShaderPipeline(*this, *m_VkHardware, tPBRVertexShader, tPBRFragmentShader, 4);
+
+	CreateMaterial(*m_UntexturedPipeline, "Default");
+	CreateTexturedMaterial(*m_TexturedPipeline, { "viking_room.png" }, "Viking Room");
+	CreateMaterial(*m_PBRPipeline, "PBR Default");
+
+	std::vector<std::string> rustedIronTextures = {
+		"PBR/Rust/Rust_Albedo.png",
+		"PBR/Rust/Rust_Normal.png",
+		"PBR/Rust/Rust_Metallic.png",
+		"PBR/Rust/Rust_Roughness.png",
+		//"PBR/Rust/Rust_AO.png", 
+		"PBR/Rust/Rust_Albedo.png",
+	};
+
+	CreateTexturedMaterial(*m_RustPBRPipeline, rustedIronTextures, "Rust (PBR)");
+
+	std::vector<std::string> bambooTextures = {
+		"PBR/Bamboo/Bamboo_Albedo.png",
+		"PBR/Bamboo/Bamboo_Normal.png",
+		"PBR/Bamboo/Bamboo_Metallic.png",
+		"PBR/Bamboo/Bamboo_Roughness.png",
+		//"PBR/Bamboo/Bamboo_AO.png",
+		"PBR/Bamboo/Bamboo_Albedo.png",
+	};
+
+	CreateTexturedMaterial(*m_BambooPBRPipeline, bambooTextures, "Bamboo (PBR)");
+
+	std::vector<std::string> sandTextures = {
+		"PBR/Sand/Sand_Albedo.png",
+		"PBR/Sand/Sand_Normal.png",
+		"PBR/Sand/Sand_Metallic.png",
+		"PBR/Sand/Sand_Roughness.png",
+		//"PBR/Sand/Sand_AO.png",
+		"PBR/Sand/Sand_Albedo.png",
+	};
+
+	CreateTexturedMaterial(*m_SandPBRPipeline, sandTextures, "Sand (PBR)");
+
+	std::vector<std::string> rockTextures = {
+		"PBR/Rock/Rock_Albedo.png",
+		"PBR/Rock/Rock_Normal.png",
+		"PBR/Rock/Rock_Metallic.png",
+		"PBR/Sand/Sand_Roughness.png", // Rock didn't come with roughness map
+		//"PBR/Rock/Rock_AO.png",
+	};
+
+	CreateTexturedMaterial(*m_RockPBRPipeline, rockTextures, "Rock (PBR)");
 }
 
 void vkn::VkRenderer::SubmitToRenderer(std::function<void(VkCommandBuffer)>&& submitFunction) const
@@ -383,16 +450,25 @@ void vkn::VkRenderer::EndRenderPass(VkCommandBuffer commandBuffer)
 	vkCmdEndRenderPass(commandBuffer);
 }
 
-void vkn::VkRenderer::ExecuteSurfCommands()
+void vkn::VkRenderer::RegisterSurfSymbols()
+{
+	wv::SurfEngine::RegisterFunction("surf_SampleCFunction", (surf_fun_t) &surf_SampleCFunction);
+	wv::SurfEngine::RegisterFunction("surf_SampleCFunctionWithArgs", (surf_fun_t) &surf_SampleCFunctionWithArgs);
+}
+
+void vkn::VkRenderer::UpdateSurfCommands()
 {
 	// Load PBR surf script and retrieve it's variables
-	wv::SurfEngine::InterpFile("pbr.surf");
-	m_SurfAlbedo = wv::SurfEngine::GetV3("pbr_albedo");
-	m_SurfMetallic = wv::SurfEngine::GetFlt("pbr_metallic");
-	m_SurfRoughness = wv::SurfEngine::GetFlt("pbr_roughness");
-	m_SurfAO = wv::SurfEngine::GetFlt("pbr_ao");
-	m_SurfLightPosition = wv::SurfEngine::GetV3("pbr_light_position");
-	m_SurfLightColor = wv::SurfEngine::GetV3("pbr_light_color");
+	bool pbrSurfUpdates = wv::SurfEngine::InterpFile("pbr.surf");
+	if (pbrSurfUpdates)
+	{
+		m_SurfAlbedo = wv::SurfEngine::GetV3("pbr_albedo");
+		m_SurfMetallic = wv::SurfEngine::GetFlt("pbr_metallic");
+		m_SurfRoughness = wv::SurfEngine::GetFlt("pbr_roughness");
+		m_SurfAO = wv::SurfEngine::GetFlt("pbr_ao");
+		m_SurfLightPosition = wv::SurfEngine::GetV3("pbr_light_position");
+		m_SurfLightColor = wv::SurfEngine::GetV3("pbr_light_color");
+	}
 }
 
 void vkn::VkRenderer::InitImGui()
@@ -440,6 +516,7 @@ void vkn::VkRenderer::LoadMeshes()
 	core::Log(ELogType::Info, "[VkRenderer] Loading available meshes... this might take a while");
 
 	m_VikingRoomMesh.LoadFromObj(core::FileSystem::GetAssetPath("viking_room.obj").string().c_str());
+	m_RockMesh.LoadFromObj(core::FileSystem::GetAssetPath("rock.obj").string().c_str());
 	//m_TeapotMesh.LoadFromObj(core::FileSystem::GetAssetPath("teapot.obj").string().c_str());
 	//m_BunnyMesh.LoadFromObj(core::FileSystem::GetAssetPath("stanford_bunny.obj").string().c_str());
 	//m_SuzanneMesh.LoadFromObj(core::FileSystem::GetAssetPath("suzanne.obj").string().c_str());
@@ -447,6 +524,7 @@ void vkn::VkRenderer::LoadMeshes()
 	m_SphereMesh.LoadFromObj(core::FileSystem::GetAssetPath("sphere.obj").string().c_str());
 
 	m_Meshes.emplace("Viking Room", m_VikingRoomMesh);
+	m_Meshes.emplace("Rock", m_RockMesh);
 	//m_Meshes.emplace("Teapot", m_TeapotMesh);
 	//m_Meshes.emplace("Bunny", m_BunnyMesh);
 	//m_Meshes.emplace("Suzanne", m_SuzanneMesh);

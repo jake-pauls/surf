@@ -59,19 +59,8 @@ char* surf_InterpLine(const char* line)
     return STRDUP(buffer);
 }
 
-int surf_InterpFile(const char* filepath)
+int surf_UnmanagedInterpFile(const char* filepath)
 {
-    time_t fileTime = surf_InterpLookupFileTime(filepath);
-
-    // Bail out early if the file hasn't been modified - client doesn't need more data from the interpreter 
-    if (fileTime && !IsFileModified(filepath, fileTime))
-		return SURF_TRUE;
-
-    // Update file time appropriately
-	time_t newFileTime = GetFileLastModifiedTime(filepath);
-    surf_HashTableInsert(s_FileTimeTable, filepath, newFileTime);
-
-    // File is either new or modified and can be re-interpreted
     FILE* handle = fopen(filepath, "r");
     if (handle == NULL)
         return SURF_FALSE;
@@ -85,6 +74,23 @@ int surf_InterpFile(const char* filepath)
 
     fclose(handle);
     return SURF_TRUE;
+}
+
+int surf_InterpFile(const char* filepath)
+{
+    time_t fileTime = surf_InterpLookupFileTime(filepath);
+
+    // Bail out early if the file hasn't been modified - client doesn't need more data from the interpreter 
+    if (fileTime && !IsFileModified(filepath, fileTime))
+		return SURF_FALSE;
+
+    // Update file time appropriately
+	time_t newFileTime = GetFileLastModifiedTime(filepath);
+    surf_HashTableInsert(s_FileTimeTable, filepath, newFileTime);
+
+    // File is either new or modified and can be submitted
+    // 'Unmanaged' interpreting just submits the file line-by-line at the moment
+    return surf_UnmanagedInterpFile(filepath);
 }
 
 void surf_InterpFreeString(char* str)

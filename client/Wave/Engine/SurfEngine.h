@@ -32,13 +32,19 @@ namespace wv
 		/// @return Returns the result of the surf line in the interpreter 
 		static std::string InterpLine(const std::string& line);
 
-		/// @brief Interprets a file line-by-line over the surf API - searches for 'filename' in the 'core::FileSystem::SurfScriptDirectory' by default
-		/// @return True if the file was succesfully interpreted, false otherwise
+		/// @brief Interprets a file line-by-line over the surf API 
+		/// @param filename Name of a script in the 'core::FileSystem::SurfScriptDirectory'
+		/// @return True if the file was interpreted, false otherwise
 		/// @note The internal method 'surf_InterpFile' maintains a hash table of files and when they've been updated.
 		///		  As such, this can be placed in update/render loops at one's discretion.
 		///		  Obviously, the current version of surf (on a server) will incur some update delays for changes made to scripts in real-time.
 		///		  With this in mind, it is still super cool to test/play around with. :)
 		static bool InterpFile(const std::string& filename);
+
+		/// @brief 'InterpFile' except it submits to the unmanaged surf interpreter function, meaning it won't be checked for modifications before sending
+		/// @param filename Name of a script in the 'core::FileSystem::SurfScriptDirectory'
+		/// @return True if the file was interpreted, false otherwise
+		static bool UnmanagedInterpFile(const std::string& filename);
 
 		/// @brief Registers a function pointer in the surf API to become available for a 'ref' callback
 		static void RegisterFunction(const std::string& functionId, surf_fun_t pFunction);
@@ -91,6 +97,7 @@ namespace wv
 
 		char* MInterpLine(const char* line);
 		bool MInterpFile(const char* filepath);
+		bool MUnmanagedInterpFile(const char* filepath);
 
 		void MRegisterFunction(const char* functionId, surf_fun_t pFunction);
 		void MDeregisterFunction(const char* functionId);

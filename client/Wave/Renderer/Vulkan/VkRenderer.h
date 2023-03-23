@@ -79,6 +79,9 @@ namespace vkn
 		/// @note Runtime commands use c_MaxFramesInFlight to manage frames 
 		void CreateCommands();
 
+		/// @brief Creates all the available shader pipelines
+		void CreatePipelines();
+
 		VkCommandBuffer BeginFrame();
 		void EndFrame();
 
@@ -86,7 +89,8 @@ namespace vkn
 		void DrawCommandBuffer(VkCommandBuffer commandBuffer);
 		void EndRenderPass(VkCommandBuffer commandBuffer);
 
-		void ExecuteSurfCommands();
+		void RegisterSurfSymbols();
+		void UpdateSurfCommands();
 
 		void InitImGui();
 
@@ -121,7 +125,10 @@ namespace vkn
 		VkShaderPipeline* m_TexturedPipeline = nullptr;
 		VkShaderPipeline* m_UntexturedPipeline = nullptr;
 		VkShaderPipeline* m_PBRPipeline = nullptr;
-		VkShaderPipeline* m_TexturedPBRPipeline = nullptr;
+		VkShaderPipeline* m_RustPBRPipeline = nullptr;
+		VkShaderPipeline* m_BambooPBRPipeline = nullptr;
+		VkShaderPipeline* m_SandPBRPipeline = nullptr;
+		VkShaderPipeline* m_RockPBRPipeline = nullptr;
 
 		// Frame Management
 		bool m_IsFrameStarted = false;
@@ -139,6 +146,7 @@ namespace vkn
 		VkModel* m_LoadedModel = nullptr;
 
 		VkMesh m_VikingRoomMesh = {};
+		VkMesh m_RockMesh = {};
 		VkMesh m_TeapotMesh = {};
 		VkMesh m_BunnyMesh = {};
 		VkMesh m_SuzanneMesh = {};

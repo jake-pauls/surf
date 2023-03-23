@@ -9,3 +9,7 @@ let pbr_ao: flt = 1.0;
 
 let pbr_light_position: v3 = (-5.0, 2.0, 5.0);
 let pbr_light_color: v3 = (300.0, 300.0, 300.0);
+
+# Call myFun as a C-function
+ref surf_SampleCFunction();
+ref surf_SampleCFunctionWithArgs(1:int, 2.02:flt, "surf":str);
