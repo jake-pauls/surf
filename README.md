@@ -28,7 +28,7 @@ $ git clone --recursive git@github.com:jake-pauls/surf.git
 ```
 # mingw/cygwin
 $ python ./scripts/surf.py surf
-```   
+```
 
 6. In Cygwin, run the build scripts for the API (requires OCaml/dune/flexlink). This builds the **server** side of the API.
 ```
@@ -48,7 +48,7 @@ $ python ./scripts/surf.py wave profile
 8. In Cygwin, start the server.
 ```
 # mingw/cygwin
-$ ./api/build/server/surf.exe
+$ ./api/build/server/winsurf.exe
 ```
 
 9. Open the Visual Studio solution.

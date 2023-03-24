@@ -29,14 +29,16 @@ set(ENGINE_SOURCE_FILES
 	Window.cpp
     Camera.cpp
     ToolPanel.cpp 
-    SurfEngine.cpp)
+    SurfEngine.cpp
+    SurfStore.cpp)
 
 set(ENGINE_HEADER_FILES
     Application.h
 	Window.h
     Camera.h
     ToolPanel.h
-    SurfEngine.h)
+    SurfEngine.h
+    SurfStore.h)
 
 list(TRANSFORM ENGINE_SOURCE_FILES PREPEND "Engine/")
 list(TRANSFORM ENGINE_HEADER_FILES PREPEND "Engine/")

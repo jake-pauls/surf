@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "SurfEngine.h"
+#include "SurfStore.h"
 
 namespace wv
 {
@@ -37,10 +38,9 @@ void wv::ToolPanel::Draw()
 	m_ImGuiNewFrameFunction();
 	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
-	ImGui::ShowDemoWindow();
 
 	ImGui::Begin("wave. tool panel");
-	ImGui::SetWindowSize(ImVec2(350.0f, 165.0f), ImGuiCond_Always);
+	ImGui::SetWindowSize(ImVec2(350.0f, 230.0f), ImGuiCond_FirstUseEver);
 	ImGui::SetWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_FirstUseEver);
 
 	if (ImGui::CollapsingHeader("Render Settings"))
@@ -94,20 +94,23 @@ void wv::ToolPanel::Draw()
 
 	if (ImGui::CollapsingHeader("Uniform Data", ImGuiTreeNodeFlags_None))
 	{
+		glm::vec3 albedo = SurfStore::s_SurfAlbedo;
+		float metallic = SurfStore::s_SurfMetallic;
+		float roughness = SurfStore::s_SurfRoughness;
+		float ao = SurfStore::s_SurfAO;
+		glm::vec3 lightPosition = SurfStore::s_SurfLightPosition;
+		glm::vec3 lightColor = SurfStore::s_SurfLightColor;
+
 		ImGui::Text("pbr.surf");
-		glm::vec3 albedo = SurfEngine::GetV3("pbr_albedo");
 		ImGui::BulletText("");
 		ImGui::SameLine();
 		ImGui::TextColored(ImVec4(albedo.x, albedo.y, albedo.z, 1.0f), "pbr_albedo:");
 		ImGui::SameLine();
 		ImGui::Text("(%.2f, %.2f, %.2f)", albedo.x, albedo.y, albedo.z);
-		float metallic = SurfEngine::GetFlt("pbr_metallic");
 		ImGui::BulletText("pbr_metallic: %.2f", metallic);
-		float roughness = SurfEngine::GetFlt("pbr_roughness");
 		ImGui::BulletText("pbr_roughness: %.2f", roughness);
-		glm::vec3 lightPosition = SurfEngine::GetV3("pbr_light_position");
+		ImGui::BulletText("pbr_ao: %.2f", ao);
 		ImGui::BulletText("pbr_light_position: (%.2f, %.2f, %.2f)", lightPosition.x, lightPosition.y, lightPosition.z);
-		glm::vec3 lightColor = SurfEngine::GetV3("pbr_light_color");
 		ImGui::BulletText("");
 		ImGui::SameLine();
 		ImGui::TextColored(ImVec4(lightColor.x / 255, lightColor.y / 255, lightColor.z / 255, 1.0f), "pbr_light_color:");

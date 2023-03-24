@@ -117,12 +117,20 @@ surf_ApiResult surf_DestroyBridge()
 int surf_InternalSendSocket(const char* buffer, size_t bufferLen, int flags)
 {
     SURF_PROFILE_START_STEP("socket", "sending/receiving data from server");
-    return send(s_ApiSocket, buffer, bufferLen, flags);
+
+    SURF_PROFILE_START_STEP("socket", "sending data to the server");
+    int res = send(s_ApiSocket, buffer, bufferLen, flags);
+    SURF_PROFILE_END_STEP("socket", "sending data to the server");
+
+    return res;
 }
 
 int surf_InternalReceiveSocket(char* buffer, size_t bufferLen, int flags)
 {
+    SURF_PROFILE_START_STEP("socket", "receiving a response from the server");
     int bytes = recv(s_ApiSocket, buffer, bufferLen, flags);
+    SURF_PROFILE_END_STEP("socket", "receiving a response from the server");
+
     SURF_PROFILE_END_STEP("socket", "sending/receiving data from server");
 
     // Add null-termination to string

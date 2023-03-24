@@ -90,7 +90,6 @@ namespace vkn
 		void EndRenderPass(VkCommandBuffer commandBuffer);
 
 		void RegisterSurfSymbols();
-		void UpdateSurfCommands();
 
 		void InitImGui();
 
@@ -158,13 +157,5 @@ namespace vkn
 		std::vector<VkModel*> m_RenderableModels;
 		std::unordered_map<std::string, VkMesh> m_Meshes;
 		std::unordered_map<std::string, VkMaterial> m_Materials;
-
-		// surf bindings
-		glm::vec3 m_SurfAlbedo = {};
-		glm::vec3 m_SurfLightPosition = {};
-		glm::vec3 m_SurfLightColor = {};
-		float m_SurfMetallic = 0.0f;
-		float m_SurfRoughness = 0.0f;
-		float m_SurfAO = 0.0f;
 	};
 }

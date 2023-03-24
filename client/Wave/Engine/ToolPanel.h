@@ -1,6 +1,7 @@
 #pragma once
 
 #include <surf/surf.h>
+#include <glm/glm.hpp>
 
 #include <functional>
 

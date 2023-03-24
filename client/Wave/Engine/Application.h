@@ -31,6 +31,7 @@ namespace wv
 		ToolPanel* m_ToolPanel = nullptr;
 		core::Unique<Renderer> m_Renderer = nullptr;
 
+		// Controls
 		bool m_IsMouseLocked = 0;
 		bool m_IsMouseDown = false;
 		bool m_FirstFrame = true;

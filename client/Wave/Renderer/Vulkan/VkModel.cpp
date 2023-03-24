@@ -113,6 +113,7 @@ void vkn::VkModel::AllocateDescriptorSets()
 {
 	//! UBO
 	//! All mesh shaders have UBOs at the moment
+	//! TODO: This might need to be moved out
 	
 	const size_t uniformBufferSize = sizeof(VkMeshUniformBufferObject);
 	const VkShaderPipeline* modelPipeline = m_Material->GetShaderPipelinePtr();

@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "ToolPanel.h"
 #include "SurfEngine.h"
+#include "SurfStore.h"
 #include "Renderer.h"
 #include "Vulkan/VkRenderer.h"
 
@@ -95,7 +96,9 @@ void wv::Application::Run()
 		{
 			SDL_WaitEvent(&event);
 		}
-	
+
+		SurfStore::Update();
+
 		m_ToolPanel->Draw();
 		m_Renderer->Draw();
 	}
@@ -108,7 +111,6 @@ void wv::Application::Teardown() const
 	core::Log(ELogType::Info, "[Application] Tearing down the wave");
 
 	m_Renderer->Teardown();
-
 	m_Window->Teardown();
 
 	SurfEngine::Destroy();

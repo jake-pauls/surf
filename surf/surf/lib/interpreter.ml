@@ -42,8 +42,7 @@ let rec step env exp =
   | Vec4 (e1, e2, e3, e4) -> Vec4 (step env e1, e2, e3, e4)
   (* Put/Str statements can immediately return their expressions *)
   | (Put e | Spt e) when is_value e -> e
-  | (Put e | Spt e) -> step env e
-
+  | Put e | Spt e -> step env e
 
 (** [step_unop uop v] takes a single step to perform a unary operation *)
 and step_unop uop v =

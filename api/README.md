@@ -10,7 +10,7 @@ Interpreter API connecting to surf clients. Relies on codegen and injection from
 * `server` - This should be ran on a server or a local network to open communication via the surf API
 
 ### Compiler ABI Warning
-Note that this solution is improvised and hacky. Specifically, this is meant to hack around the inability to compile OCaml in an MSVC environment - as a result, please ensure that the environment you run OCaml with is used for compiling the **server** portion of this project. Inversely, the compiler being used to run the client interfacing with surf should also build the API's client library.
+Note that this solution is improvised and hacky. Specifically, this is meant to hack around my inability to compile OCaml in an MSVC environment - as a result, please ensure that the environment you run OCaml with is used for compiling the **server** portion of this project. Inversely, the compiler being used to run the client interfacing with surf should also build the API's client library.
 
 ### Compilation
 Compiling and running the server or building the client library have been abstracted to be fairly straightforward in the right environment. Once completed, there should be a build folder containing both a `client` and a `server` folder with the required static and shared libraries to both run the server and link a potential client.
