@@ -153,7 +153,6 @@ int surf_OpenConnection(StaticEnvironment* env)
                 status = send(clientSocket, resNewLine, strlen(resNewLine), 0);
 
                 // Free data 
-                free(res);
                 free(fData);
                 free(resNewLine);
             }
