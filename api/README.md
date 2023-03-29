@@ -15,6 +15,15 @@ Note that this solution is improvised and hacky. Specifically, this is meant to 
 ### Compilation
 Compiling and running the server or building the client library have been abstracted to be fairly straightforward in the right environment. Once completed, there should be a build folder containing both a `client` and a `server` folder with the required static and shared libraries to both run the server and link a potential client.
 
+#### Cygwin
+Ensure that `mingw64-x86_64-gcc-core` is installed and added to your PATH.
+
+```
+# ./bashrc
+export PATH="/usr/x86_64-w64-mingw32/sys-root/mingw/bin:$PATH"
+export PATH=/usr/bin:$PATH
+```
+
 #### Server
 The server can be compiled using cygwin and Make. **Note:** This only has support for mingw/cygwin environments at the moment.
 ```
