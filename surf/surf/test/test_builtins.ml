@@ -3,10 +3,7 @@ open Test_helpers
 (** [put] general tests for the 'put' builtin *)
 let put =
   [ ("put int", `Quick, fun _ -> check_interp_str "put int" "1" "put(1);" empty)
-  ; ("put flt", `Quick, fun _ -> check_interp_str "put float" "1." "put(1.0);" empty)
-  ; ( "put flt with decimals"
-    , `Quick
-    , fun _ -> check_interp_str "put flt with decimals" "1.23" "put(1.23);" empty )
+  ; ("put float", `Quick, fun _ -> check_interp_str "put float" "1.02" "put(1.02);" empty)
   ; ("put v2i", `Quick, fun _ -> check_interp_str "put v2i" "(1,2)" "put((1, 2));" empty)
   ; ( "put v2f"
     , `Quick
@@ -55,35 +52,35 @@ let put =
           "1 is an int"
           "put(1 + \" is an int\");"
           empty )
-  ; ( "put concat string with flt"
+  ; ( "put concat string with float"
     , `Quick
     , fun _ ->
         check_interp_str
-          "put concat string with flt"
+          "put concat string with float"
           "flt: 1."
           "put(\"flt: \" + 1.0);"
           empty )
-  ; ( "put concat flt with string"
+  ; ( "put concat float with string"
     , `Quick
     , fun _ ->
         check_interp_str
-          "put concat flt with string"
+          "put concat float with string"
           "1. is a flt"
           "put(1.0 + \" is a flt\");"
           empty )
-  ; ( "put concat string with flt (decimals)"
+  ; ( "put concat string with float (decimals)"
     , `Quick
     , fun _ ->
         check_interp_str
-          "put concat string with flt (decimals)"
+          "put concat string with float (decimals)"
           "flt: 1.23"
           "put(\"flt: \" + 1.23);"
           empty )
-  ; ( "put concat flt (decimals) with string"
+  ; ( "put concat float (decimals) with string"
     , `Quick
     , fun _ ->
         check_interp_str
-          "put concat flt (decimals) with string"
+          "put concat float (decimals) with string"
           "1.23 is a flt"
           "put(1.23 + \" is a flt\");"
           empty )
@@ -140,16 +137,16 @@ let put =
 
 (** [spt] small set of tests for the 'spt' - silent put - builtin *)
 let spt =
-  [ ("put int", `Quick, fun _ -> check_interp_str "spt int" "1" "spt(1);" empty)
-  ; ("put flt", `Quick, fun _ -> check_interp_str "spt float" "1." "spt(1.0);" empty)
+  [ ("spt integer", `Quick, fun _ -> check_interp_str "spt integer" "1" "spt(1);" empty)
+  ; ("spt float", `Quick, fun _ -> check_interp_str "spt float" "1." "spt(1.0);" empty)
   ]
 ;;
 
 (** [ref] general tests for the 'ref' builtin *)
 let ref =
-  [ ( "basic ref"
+  [ ( "no argument ref"
     , `Quick
-    , fun _ -> check_interp_str "basic ref" "ref myFunc" "ref myFunc();" empty )
+    , fun _ -> check_interp_str "no argument ref" "ref myFunc" "ref myFunc();" empty )
   ; ( "single arg ref"
     , `Quick
     , fun _ ->

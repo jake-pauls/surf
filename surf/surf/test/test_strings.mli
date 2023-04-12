@@ -1,1 +1,1 @@
-val strings : (string * [> `Quick ] * ('weak210 -> unit)) list
+val escape_sequences : (string * [> `Quick ] * ('weak210 -> unit)) list

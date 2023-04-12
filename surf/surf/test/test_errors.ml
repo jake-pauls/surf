@@ -1,9 +1,9 @@
 open Surf
 open Test_helpers
 
-(** [type_errors] suite of tests to test for type errors *)
+(** [type_errors] test case for type errors *)
 let type_errors =
-  [ ( "poor type annotation #1"
+  [ ( "string poor type annotation"
     , `Quick
     , fun _ ->
         check_interp_type_error
@@ -11,18 +11,50 @@ let type_errors =
           Errors.err_poor_type_annotation
           "let x: str = 10;"
           empty )
-  ; ( "poor type annotation #2"
+  ; ( "integer poor type annotation"
     , `Quick
     , fun _ ->
         check_interp_type_error
-          "poor type annotation #2"
+          "integer poor type annotation"
           Errors.err_poor_type_annotation
           "let x: int = \"Test\";"
+          empty )
+  ; ( "float poor type annotation"
+    , `Quick
+    , fun _ ->
+        check_interp_type_error
+          "float poor type annotation"
+          Errors.err_poor_type_annotation
+          "let x: flt = \"Test\";"
+          empty )
+  ; ( "v2 poor type annotation"
+    , `Quick
+    , fun _ ->
+        check_interp_type_error
+          "v2 poor type annotation"
+          Errors.err_poor_type_annotation
+          "let x: v2 = (1,2,3);"
+          empty )
+  ; ( "v3 poor type annotation"
+    , `Quick
+    , fun _ ->
+        check_interp_type_error
+          "v3 poor type annotation"
+          Errors.err_poor_type_annotation
+          "let x: v3 = (1,2);"
+          empty )
+  ; ( "v4 poor type annotation"
+    , `Quick
+    , fun _ ->
+        check_interp_type_error
+          "v4 poor type annotation"
+          Errors.err_poor_type_annotation
+          "let x: v4 = (1,2,3);"
           empty )
   ]
 ;;
 
-(** [parser_errors] suite of tests for common parser errors *)
+(** [parser_errors] test case for common parser errors *)
 let parser_errors =
   [ ( "c-style declaration"
     , `Quick
@@ -65,11 +97,11 @@ let parser_errors =
   ]
 ;;
 
-(** [syntax_errors] suite of tests for common syntax errors *)
+(** [syntax_errors] test case for common syntax errors *)
 let syntax_errors =
   [ ( "using an unregistered symbol '^'"
     , `Quick
-    , fun _ -> check_interp_syntax_error "using an unregistered symbol '^'" "^;" empty )
+    , fun _ -> check_interp_syntax_error "using an unregistered symbol '^'" "let x: flt = 2^3;" empty )
   ; ( "using an unregistered symbol '[]'"
     , `Quick
     , fun _ ->
@@ -87,7 +119,7 @@ let syntax_errors =
   ]
 ;;
 
-(** [runtime_errors] suite of tests for common runtime errors *)
+(** [runtime_errors] test case for common runtime errors *)
 let runtime_errors =
   [ ( "using an unbound variable"
     , `Quick
