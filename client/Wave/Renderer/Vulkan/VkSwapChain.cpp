@@ -38,11 +38,13 @@ void vkn::VkSwapChain::RecreateSwapchain()
 
 	// Cleanup swap chain before recreation
 	Destroy();
+	core::Log(ELogType::Warn, "Current swapchain was successfully destroyed");
 
 	CreateSwapchain();
 	CreateImageViews();
 	CreateDepthImage();
 	CreateFramebuffers();
+	core::Log(ELogType::Info, "Successfully created a new swapchain");
 }
 
 void vkn::VkSwapChain::CreateSwapchain() 

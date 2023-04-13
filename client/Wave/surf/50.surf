@@ -1,0 +1,50 @@
+# test.surf - Sample File
+# These are comments
+
+# cfg.surf
+let cfg_gapi: str = "Vulkan";
+let cfg_method: str = "Forward";
+let cfg_slang: str = "glsl";
+
+let f_math: flt = 10.2 * 20.3;                        # Floating-point math
+let i_math: int = 10 / 2;                             # Integer math
+
+let x: int = 100;                                     # Let binding for integer type
+let y: flt = 24.4;                                    # Let binding for float type       
+
+let z: int = x + y;                                   # Implicit type casting between 'int' and 'float'
+let x: int = y;                                       # Reassignment with casting
+
+# Vector support (no math)
+let test_v2f: v2 = (1.0, 2.0);                        # Vector2f
+let test_v3f: v3 = (1.0, 2.0, 3.0);                   # Vector3f
+let test_v4f: v4 = (1.0, 2.0, 3.0, 4.0);              # Vector4f
+
+let test_v2i: v2 = (1, 2);                            # Vector2i
+let test_v3i: v3 = (1, 2, 3);                         # Vector3i
+let test_v4i: v4 = (1, 2, 3, 4);                      # Vector4i
+
+let test_vector_sub: v2 = (x, z);                     # Substitution (vectors will implicitly become float-based)
+
+# Printing - all types have string representations
+put("--------");
+put("x: " + x);
+put("y: " + y);
+put("z: " + z);
+put("--------");
+put("Float Vectors");
+put("--------");
+put("test_v2f: " + test_v2f);
+put("test_v3f: " + test_v3f);
+put("test_v4f: " + test_v4f);
+put("--------");
+put("Int Vectors");
+put("--------");
+put("test_v2i: " + test_v2i);
+put("test_v3i: " + test_v3i);
+put("test_v4i: " + test_v4i);
+
+# End of the file
+put("---------------------------------------");
+put("This is duplicated for testing purposes");
+put("---------------------------------------");

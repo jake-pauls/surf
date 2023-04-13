@@ -562,6 +562,8 @@ void vkn::VkRenderer::ReloadMeshes()
 		return;
 	}
 
+	core::Log(ELogType::Warn, "Destroying current model/material and creating a new one...");
+
 	// Destroy pre-existing model data
 	delete m_LoadedModel;
 	m_RenderableModels.clear();
@@ -571,6 +573,8 @@ void vkn::VkRenderer::ReloadMeshes()
 
 	// More models could be pushed back here for rendering if needed
 	m_RenderableModels.push_back(m_LoadedModel);
+
+	core::Log(ELogType::Info, "Successfully loaded in the new model/material");
 }
 
 vkn::VkMesh* vkn::VkRenderer::LookupMesh(const std::string& meshName)

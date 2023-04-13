@@ -1,0 +1,11 @@
+put("This is the start of the 10 line file");
+
+# cfg.surf
+let cfg_gapi: str = "Vulkan";
+let cfg_method: str = "Forward";
+let cfg_slang: str = "glsl";
+
+# End of the file
+put("---------------------------------------");
+put("This is duplicated for testing purposes");
+put("---------------------------------------");

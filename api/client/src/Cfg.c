@@ -20,6 +20,13 @@ surf_Cfg surf_CfgLoad(const char* cfgSurfFilepath)
 	// Define a null configuration
 	surf_Cfg cfg = { SURF_GAPI_NIL, SURF_SLANG_NIL, SURF_METHOD_NIL };
 
+	if (!surf_InternalIsBridgeConnected())
+	{
+		SURF_PROFILE_END_STEP("config", "load config");
+		SURF_API_CLIENT_LOG("Attempting to load a cfg.surf file but the bridge hasn't been opened, have you called surf_StartBidge() in your application?");
+		return cfg;
+	}
+
 	if (!strstr(cfgSurfFilepath, cfgFileName))
 	{
 		SURF_API_CLIENT_LOG("Attempted to load an invalid configuration file: %s - should this be 'cfg.surf'?", cfgSurfFilepath);
@@ -44,6 +51,7 @@ surf_Cfg surf_CfgLoad(const char* cfgSurfFilepath)
 	}
 	else
 	{
+		SURF_API_CLIENT_LOG("Successfully initialized surf configuration");
 		s_CfgIsValidLoaded = SURF_TRUE;
 	}
 

@@ -20,14 +20,16 @@ time_t surf_InterpLookupFileTime(const char* filepath)
     return (time_t) surf_HashTableLookup(s_FileTimeTable, filepath);
 }
 
-char* surf_InterpLine(const char* line)
+char* surf_InterpLine(const char* line, int profile)
 {
-    SURF_PROFILE_START_STEP("interp", "interpret line");
+    if (profile)
+		SURF_PROFILE_START_STEP("interp", "interpret line");
 
     // Bail out if API isn't connected to the bridge yet
     if (!surf_InternalIsBridgeConnected())
     {
         SURF_PROFILE_END_STEP("interp", "interpret line");
+        SURF_API_CLIENT_LOG("Attempting to interpret a line of surf but the bridge hasn't been opened.");
         return NULL;
     }
 
@@ -36,6 +38,7 @@ char* surf_InterpLine(const char* line)
     if (!surf_CfgIsValidLoaded() && !strstr(line, "cfg"))
     {
         SURF_PROFILE_END_STEP("interp", "interpret line");
+        SURF_API_CLIENT_LOG("Attempting to interpret a line of surf but the surf configuration is unset.");
         return NULL;
     }
 
@@ -67,8 +70,6 @@ char* surf_InterpLine(const char* line)
         free(split);
     }
     free(dupLine);
-
-    SURF_PROFILE_END_STEP("interp", "interpret line");
     return STRDUP(buffer);
 }
 
@@ -78,13 +79,16 @@ int surf_UnmanagedInterpFile(const char* filepath)
     if (handle == NULL)
         return SURF_FALSE;
 
+	//SURF_PROFILE_END_STEP("interp file", "non-networked interp file");
     char str[SURF_MAX_BUFFER_SIZE];
     while (fgets(str, SURF_MAX_BUFFER_SIZE, handle))
     {
         // TODO: This is kind of unsafe...
-        char* res = surf_InterpLine(str);
+        char* res = surf_InterpLine(str, SURF_TRUE);
         surf_InterpFreeString(res);
+		//SURF_PROFILE_END_STEP("interp", "interpret line");
     }
+	//SURF_PROFILE_START_STEP("interp file", "non-networked interp file");
 
     fclose(handle);
     return SURF_TRUE;
@@ -123,8 +127,8 @@ int surf_InterpGetInt(const char* name, int* out)
     char* buffer;
     int _ = ASPRINTF(&buffer, fmt, name);
 
-    char* ret = surf_InterpLine(buffer);
-    if (!IsStringInt(ret) || IsStringEmpty(ret))
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
+    if (!ret || !IsStringInt(ret) || IsStringEmpty(ret))
         return SURF_FALSE;
 
     *(out) = atoi(ret);
@@ -142,7 +146,7 @@ int surf_InterpGetFlt(const char* name, float* out)
     char* buffer;
     int _ = ASPRINTF(&buffer, fmt, name);
 
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     if (!IsStringFloat(ret) || IsStringEmpty(ret))
         return SURF_FALSE;
 
@@ -162,7 +166,7 @@ int surf_InterpGetStr(const char* name, char** out)
     int _ = ASPRINTF(&buffer, fmt, name);
 
     // TODO: Check internal types of the interpreter to ensure this is a string
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     if (IsStringEmpty(ret))
         return SURF_FALSE;
 
@@ -184,7 +188,7 @@ int surf_InterpGetV2(const char* name, surf_V2* out)
     int _ = ASPRINTF(&buffer, fmt, name);
 
     // TODO: Check internal types of the interpreter to ensure this is a string
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     if (IsStringEmpty(ret))
         return SURF_FALSE;
 
@@ -204,7 +208,7 @@ int surf_InterpGetV3(const char* name, surf_V3* out)
     int _ = ASPRINTF(&buffer, fmt, name);
 
     // TODO: Check internal types of the interpreter to ensure this is a string
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     if (IsStringEmpty(ret))
         return SURF_FALSE;
 
@@ -224,7 +228,7 @@ int surf_InterpGetV4(const char* name, surf_V4* out)
     int _ = ASPRINTF(&buffer, fmt, name);
 
     // TODO: Check internal types of the interpreter to ensure this is a string
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     if (IsStringEmpty(ret))
         return SURF_FALSE;
 
@@ -244,7 +248,7 @@ void surf_InterpBindInt(const char* name, int i)
     int _ = ASPRINTF(&buffer, fmt, name, i);
 
     // Interpret and discard the result
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     free(ret);
 
     free(buffer);
@@ -258,7 +262,7 @@ void surf_InterpBindFlt(const char* name, float f)
     int _ = ASPRINTF(&buffer, fmt, name, f);
 
     // Interpret and discard the result
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     free(ret);
 
     free(buffer);
@@ -272,7 +276,7 @@ void surf_InterpBindStr(const char* name, const char* str)
     int _ = ASPRINTF(&buffer, fmt, name, str);
 
     // Interpret and discard the result
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     free(ret);
 
     free(buffer);
@@ -286,7 +290,7 @@ void surf_InterpBindV2(const char* name, float f1, float f2)
     int _ = ASPRINTF(&buffer, fmt, name, f1, f2);
 
     // Interpret and discard the result
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     free(ret);
 
     free(buffer);
@@ -300,7 +304,7 @@ void surf_InterpBindV3(const char* name, float f1, float f2, float f3)
     int _ = ASPRINTF(&buffer, fmt, name, f1, f2, f3);
 
     // Interpret and discard the result
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     free(ret);
 
     free(buffer);
@@ -314,7 +318,7 @@ void surf_InterpBindV4(const char* name, float f1, float f2, float f3, float f4)
     int _ = ASPRINTF(&buffer, fmt, name, f1, f2, f3, f4);
 
     // Interpret and discard the result
-    char* ret = surf_InterpLine(buffer);
+    char* ret = surf_InterpLine(buffer, SURF_FALSE);
     free(ret);
 
     free(buffer);
